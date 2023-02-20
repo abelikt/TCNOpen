@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*     AHW 2023-02-20: Ticket #420 Infinite loop in tlp_get() on unrecoverable errors
 *      AÖ 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *     AHW 2022-03-24: Ticket #391 Allow PD request without reply
@@ -1764,63 +1765,69 @@ EXT_DECL TRDP_ERR_T tlp_get (
                     case TRDP_NOSUB_ERR:         /* missing subscription should not lead to extensive error output */
                     case TRDP_NODATA_ERR:
                     case TRDP_BLOCK_ERR:
-                        break;
-                    case TRDP_PARAM_ERR:
-                        vos_printLog(VOS_LOG_ERROR, "trdp_pdReceive() failed (Err: %d)\n", err);
+                        ret = TRDP_NO_ERR;       /* just to make it clear, already set by vos_mutexLock() */
                         break;
                     case TRDP_WIRE_ERR:
                     case TRDP_CRC_ERR:
                     case TRDP_MEM_ERR:
-                    default:
                         vos_printLog(VOS_LOG_WARNING, "trdp_pdReceive() failed (Err: %d)\n", err);
+                        break;
+                    case TRDP_PARAM_ERR:        /* #420 */
+                    case TRDP_IO_ERR:
+                    default:
+                        vos_printLog(VOS_LOG_ERROR, "trdp_pdReceive() failed (Err: %d)\n", err);
+                        ret = err;
                         break;
                  }
              }
-            while ((err != TRDP_NODATA_ERR) && (err != TRDP_BLOCK_ERR)); /* as long as there are messages or a timeout is received */
+             while ((err != TRDP_NODATA_ERR) && (err != TRDP_BLOCK_ERR) && (ret == TRDP_NO_ERR)); /* as long as there are messages or a timeout is received */
         }
 
-        /*    Get the current time    */
-        vos_getTime(&now);
-
-        /*    Check time out    */
-        if (timerisset(&pElement->interval) &&
-            timercmp(&pElement->timeToGo, &now, <))
+        if (ret == TRDP_NO_ERR)
         {
-            /*    Packet is late    */
-            if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
-                pData != NULL && pDataSize != NULL)
+            /*    Get the current time    */
+            vos_getTime(&now);
+
+            /*    Check time out    */
+            if (timerisset(&pElement->interval) &&
+                timercmp(&pElement->timeToGo, &now, <))
             {
-                memset(pData, 0, *pDataSize);
+                /*    Packet is late    */
+                if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
+                    pData != NULL && pDataSize != NULL)
+                {
+                    memset(pData, 0, *pDataSize);
+                }
+                else /* TRDP_TO_KEEP_LAST_VALUE */
+                {
+                    ;
+                }
+                ret = TRDP_TIMEOUT_ERR;
             }
-            else /* TRDP_TO_KEEP_LAST_VALUE */
+            else
             {
-                ;
+                ret = trdp_pdGet(pElement,
+                                 appHandle->marshall.pfCbUnmarshall,
+                                 appHandle->marshall.pRefCon,
+                                 pData,
+                                 pDataSize);
             }
-            ret = TRDP_TIMEOUT_ERR;
-        }
-        else
-        {
-            ret = trdp_pdGet(pElement,
-                             appHandle->marshall.pfCbUnmarshall,
-                             appHandle->marshall.pRefCon,
-                             pData,
-                             pDataSize);
-        }
 
-        if (pPdInfo != NULL)
-        {
-            pPdInfo->comId          = pElement->addr.comId;
-            pPdInfo->srcIpAddr      = pElement->lastSrcIP;
-            pPdInfo->destIpAddr     = pElement->addr.destIpAddr;
-            pPdInfo->etbTopoCnt     = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
-            pPdInfo->opTrnTopoCnt   = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
-            pPdInfo->msgType        = (TRDP_MSG_T) vos_ntohs(pElement->pFrame->frameHead.msgType);
-            pPdInfo->seqCount       = pElement->curSeqCnt;
-            pPdInfo->protVersion    = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
-            pPdInfo->replyComId     = vos_ntohl(pElement->pFrame->frameHead.replyComId);
-            pPdInfo->replyIpAddr    = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
-            pPdInfo->pUserRef       = pElement->pUserRef;
-            pPdInfo->resultCode     = ret;
+            if (pPdInfo != NULL)
+            {
+                pPdInfo->comId = pElement->addr.comId;
+                pPdInfo->srcIpAddr = pElement->lastSrcIP;
+                pPdInfo->destIpAddr = pElement->addr.destIpAddr;
+                pPdInfo->etbTopoCnt = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
+                pPdInfo->opTrnTopoCnt = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
+                pPdInfo->msgType = (TRDP_MSG_T)vos_ntohs(pElement->pFrame->frameHead.msgType);
+                pPdInfo->seqCount = pElement->curSeqCnt;
+                pPdInfo->protVersion = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
+                pPdInfo->replyComId = vos_ntohl(pElement->pFrame->frameHead.replyComId);
+                pPdInfo->replyIpAddr = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
+                pPdInfo->pUserRef = pElement->pUserRef;
+                pPdInfo->resultCode = ret;
+            }
         }
 
         if (vos_mutexUnlock(appHandle->mutexRxPD) != VOS_NO_ERR)
