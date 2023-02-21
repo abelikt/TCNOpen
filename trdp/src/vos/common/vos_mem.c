@@ -20,8 +20,9 @@
  *
  * Changes:
  * 
+ *     AHW 2023-02-21: Lint warnings
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, CWE: easier init of gMem
- *      SB 2021-08.09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
+ *      SB 2021-08-09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
  *      BL 2018-06-20: Ticket #184: Building with VS 2015: WIN64 and Windows threads (SOCKET instead of INT32)
  *      BL 2016-07-06: Ticket #122 64Bit compatibility (+ compiler warnings)
  *      BL 2016-02-10: Debug print: tabs before size output
@@ -193,7 +194,7 @@ EXT_DECL VOS_ERR_T vos_memInit (
 
     memcpy(&gMem.mutex, &mutex, sizeof(mutex));                          /* bugfix from #2345 */
 
-    memcpy(&gMem.memCnt.preAlloc, &preAlloc, sizeof(preAlloc));
+    memcpy(gMem.memCnt.preAlloc, preAlloc, sizeof(preAlloc));
 
     /*  Create the memory mutex   */
     if (vos_mutexLocalCreate(&gMem.mutex) != VOS_NO_ERR)

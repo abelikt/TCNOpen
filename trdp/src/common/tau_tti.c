@@ -26,6 +26,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-02-21: Lint warnigs
 *  AO/AHW 2023-02-03: Ticket #416: Bug fixing and code refactoring
 *     AHW 2023-01-24: Ticket #416: Interface change for tau_getCstInfo(), tau_getStaticCstInfo(), tau_getVehInfo()
 *     AHW 2023-01-24: Naming #416: unified tau_getTrDir()/tau_getOpTrDir() -> tau_getTrnDir()/tau_getOpTrnDir()
@@ -268,7 +269,7 @@ static void ttiPDCallback (
             /* Has the etbTopoCnt changed? */
             if (appHandle->etbTopoCnt != appHandle->pTTDB->opTrnState.etbTopoCnt)
             {
-                int i;
+                UINT32 i;
                 vos_printLog(VOS_LOG_INFO, "ETB topocount changed (old: 0x%08x, new: 0x%08x) on %p!\n",
                              appHandle->etbTopoCnt, appHandle->pTTDB->opTrnState.etbTopoCnt, (void *) appHandle);
                 changed++;
@@ -1371,27 +1372,27 @@ static TRDP_ERR_T ttiCopyCstInfo(
  *
  */
 static TRDP_ERR_T ttiGetCstInfoByUUID(
-    TRDP_APP_SESSION_T  appHandle,
+    TRDP_APP_SESSION_T    appHandle,
     TRDP_CONSIST_INFO_T** ppCstInfo,
-    const TRDP_UUID_T   cstUUID
+    const TRDP_UUID_T     cstUUID
     )
 {
-    INT32 l_index;
-    const TRDP_UUID_T* pReqCstUUID = (const TRDP_UUID_T*)cstUUID;
-    TRDP_UUID_T ownUUID;
+    UINT32             l_index;
+    const TRDP_UUID_T* pReqCstUUID = (const TRDP_UUID_T*) cstUUID;
+    TRDP_UUID_T        ownUUID;
 
     *ppCstInfo = NULL;
 
     if (cstUUID == NULL)
     {
-        //Own cst
-        //Find own UUID
+        /* own cst */
+        /* Find own UUID */
         TRDP_ERR_T ret = ttiGetOwnCstUUID(appHandle, ownUUID);
         if (ret != TRDP_NO_ERR)
         {
             return ret;
         }
-        pReqCstUUID = &ownUUID;
+        pReqCstUUID = (const TRDP_UUID_T*) ownUUID;
     }
 
     /* find the consist in our cache list */
@@ -1432,7 +1433,7 @@ static TRDP_ERR_T ttiGetCstInfoByLable(
     const TRDP_LABEL_T  pCstLabel
 )
 {
-    INT32 l_index;
+    UINT32 l_index;
 
     *ppCstInfo = NULL;
 
@@ -1932,7 +1933,6 @@ EXT_DECL TRDP_ERR_T tau_getStaticCstInfo (
         
         return TRDP_NODATA_ERR;
     }
-    return TRDP_NO_ERR;
 }
 
 
@@ -2315,12 +2315,12 @@ EXT_DECL TRDP_ERR_T tau_getVehInfo (
                 pData += sizeof(TRDP_VEHICLE_INFO_T);
 
                 /* copy properties if there are any */
-				if (pVehInfoTTDB->pVehProp != NULL)
-				{
+                if (pVehInfoTTDB->pVehProp != NULL)
+                {
                     (*ppVehInfo)->pVehProp = (TRDP_PROP_T*)pData;
 
-					memcpy((*ppVehInfo)->pVehProp, pVehInfoTTDB->pVehProp, sizeof(TRDP_PROP_T) + pVehInfoTTDB->pVehProp->len);
-				}
+                    memcpy((*ppVehInfo)->pVehProp, pVehInfoTTDB->pVehProp, sizeof(TRDP_PROP_T) + pVehInfoTTDB->pVehProp->len);
+                }
                 return TRDP_NO_ERR;              /* return on first match */
             }
         }
@@ -2378,7 +2378,6 @@ EXT_DECL TRDP_ERR_T tau_getCstInfo (
     {
         return ttiRequestTTDBdataByLable(appHandle, TTDB_STAT_CST_REQ_COMID, pCstLabel);
     }
-    return TRDP_NO_ERR;
 }
 
 

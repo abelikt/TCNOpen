@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *     AHW 2023-02-21: Lint warnigs
  *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
  *     CWE 2023-01-09: Ticket #393 Incorrect behaviour if MD timeout occurs
  *     CWE 2022-12-21: Ticket #404 Fix compile error - Test does not need to run, it is only used to verify bugfixes. It requires a special network-setup to run
@@ -2564,7 +2565,7 @@ void trdp_mdCheckPending (
                        (vos_sockCmp(appHandle->ifaceMD[iterListener->socketIdx].sock, *pNoDesc) == 1)
                     || (*pNoDesc == VOS_INVALID_SOCKET)
                     )
-               {
+                {
                     *pNoDesc = appHandle->ifaceMD[iterListener->socketIdx].sock;
                 }
             }
@@ -2696,7 +2697,7 @@ void  trdp_mdCheckListenSocks (
             return;
         }
         noOfDesc = vos_select(highDesc, &rfds, NULL, NULL, &timeOut);
-        if (noOfDesc == VOS_INVALID_SOCKET)
+        if (noOfDesc == (INT32) VOS_INVALID_SOCKET)
         {
             vos_printLogStr(VOS_LOG_ERROR, "vos_select() failed\n");
             return;

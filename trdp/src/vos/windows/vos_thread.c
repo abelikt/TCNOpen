@@ -18,6 +18,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-02-21: Lint warnings
 *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - improved warning message
 *      BL 2019-12-06: Ticket #303: UUID creation does not always conform to standard
 *      SB 2019-08-30: Added vos_getRealTime and vos_getNanoTime
@@ -253,19 +254,26 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
     {
         VOS_THREAD_CYC_T *p_params = (VOS_THREAD_CYC_T *) vos_memAlloc(sizeof(VOS_THREAD_CYC_T));
 
-        p_params->pName = pName;
-        p_params->startTime.tv_sec  = 0;
-        p_params->startTime.tv_usec = 0;
-        p_params->interval      = interval;
-        p_params->pFunction     = pFunction;
-        p_params->pArguments    = pArguments;
-
-        if (pStartTime != NULL)
+        if (p_params == NULL)
         {
-            p_params->startTime = *pStartTime;
+            return VOS_MEM_ERR;
         }
-        /* Create a cyclic thread */
-        hThread = CreateThread(
+        else
+        {
+            p_params->pName = pName;
+            p_params->startTime.tv_sec = 0;
+            p_params->startTime.tv_usec = 0;
+            p_params->interval = interval;
+            p_params->pFunction = pFunction;
+            p_params->pArguments = pArguments;
+
+            if (pStartTime != NULL)
+            {
+                p_params->startTime = *pStartTime;
+            }
+
+            /* Create a cyclic thread */
+            hThread = CreateThread(
                 NULL,                      /* default security attributes */
                 stackSize,                                 /* use default stack size */
                 (LPTHREAD_START_ROUTINE)vos_runCyclicThread,  /* thread function name */
@@ -273,10 +281,11 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
                 0,                                         /* use default creation flags */
                 &threadId);
 
-/*
-      vos_printLog(VOS_LOG_ERROR, "%s cyclic threads not implemented yet\n", pName);
-        return VOS_INIT_ERR;
- */
+            /*
+                  vos_printLog(VOS_LOG_ERROR, "%s cyclic threads not implemented yet\n", pName);
+                    return VOS_INIT_ERR;
+             */
+        }
     }
     else
     {
