@@ -1,6 +1,98 @@
 
 --- Module:   ..\..\src\vos\common\vos_utils.c (C)
-..\..\src\vos\common\vos_utils.c(35) : error 322: unable to open include file 
-    'string.h'
-#include <string.h>
-         ^~~~~~~~~~
+
+--- Module:   ..\..\src\vos\common\vos_mem.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_thread.c (C)
+                                    _
+        *pTime = (*pTime * 100u) - (11644473600ull * NSECS_PER_USEC * USECS_PER_MSEC * MSECS_PER_SEC);
+..\..\src\vos\windows\vos_thread.c(558) : Warning 620: Suspicious constant (L
+    or one?)
+..\..\src\vos\windows\vos_thread.c(558) : Warning 620: Suspicious constant (L
+    or one?)
+
+--- Module:   ..\..\src\vos\windows\vos_sock.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_shared_mem.c (C)
+
+--- Module:   ..\..\src\common\tlc_if.c (C)
+
+--- Module:   ..\..\src\common\tlp_if.c (C)
+
+--- Module:   ..\..\src\common\tlm_if.c (C)
+
+--- Module:   ..\..\src\common\trdp_mdcom.c (C)
+
+--- Module:   ..\..\src\common\trdp_pdcom.c (C)
+
+--- Module:   ..\..\src\common\trdp_pdindex.c (C)
+
+--- Module:   ..\..\src\common\trdp_utils.c (C)
+
+--- Module:   ..\..\src\common\trdp_stats.c (C)
+
+--- Module:   ..\..\src\common\tau_marshall.c (C)
+
+--- Module:   ..\..\src\common\trdp_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_ctrl.c (C)
+
+--- Module:   ..\..\src\common\tau_dnr.c (C)
+
+--- Module:   ..\..\src\common\tau_tti.c (C)
+                                                   _
+        pReqCstUUID = (const TRDP_UUID_T*) &ownUUID;
+..\..\src\common\tau_tti.c(1395) : Warning 545: Suspicious use of &
+
+/// Start of Pass 2 ///
+
+--- Module:   ..\..\src\vos\common\vos_utils.c (C)
+
+--- Module:   ..\..\src\vos\common\vos_mem.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_thread.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_sock.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_shared_mem.c (C)
+
+--- Module:   ..\..\src\common\tlc_if.c (C)
+
+--- Module:   ..\..\src\common\tlp_if.c (C)
+
+--- Module:   ..\..\src\common\tlm_if.c (C)
+
+--- Module:   ..\..\src\common\trdp_mdcom.c (C)
+
+--- Module:   ..\..\src\common\trdp_pdcom.c (C)
+
+--- Module:   ..\..\src\common\trdp_pdindex.c (C)
+
+--- Module:   ..\..\src\common\trdp_utils.c (C)
+
+--- Module:   ..\..\src\common\trdp_stats.c (C)
+
+--- Module:   ..\..\src\common\tau_marshall.c (C)
+
+--- Module:   ..\..\src\common\trdp_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_ctrl.c (C)
+
+--- Module:   ..\..\src\common\tau_dnr.c (C)
+
+--- Module:   ..\..\src\common\tau_tti.c (C)
+
+--- Global Wrap-up
+
+Warning 526: Symbol '__alignof()' (line 143, file ..\..\src\common\tau_marshall.c)
+    not defined
+..\..\src\common\tau_marshall.c(143) : Info 830: Location cited in prior
+    message
+Warning 628: no argument information provided for function '__alignof()' (line
+    143, file ..\..\src\common\tau_marshall.c)
+..\..\src\common\tau_marshall.c(143) : Info 830: Location cited in prior
+    message

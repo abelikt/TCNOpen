@@ -3,7 +3,7 @@
 
 co-msc80.lnt
 lib-w32.lnt lib-wnt.lnt
-//lib-stl.lnt
+lib-stl.lnt
 au-misra.lnt
 -si4 -sp4
 
@@ -13,10 +13,15 @@ au-misra.lnt
 -i"..\..\src\vos\common"
 -i"..\..\src\vos\windows"
 
--i"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt"
--i"C:\Program Files (x86)\Windows Kits\8.1\Include\um"
--i"C:\Program Files (x86)\Windows Kits\8.1\Include\shared"
--i"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include"
+-i"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\SDK\include\ucrt"
+-i"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\SDK\include\um"
+-i"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\SDK\include\shared"
+-i"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\VC\include"
+
+//-i"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt"
+//-i"C:\Program Files (x86)\Windows Kits\8.1\Include\um"
+//-i"C:\Program Files (x86)\Windows Kits\8.1\Include\shared"
+//-i"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include"
 
 -D__ARMEB__=0
 -D__MIPSEB__=0
@@ -27,8 +32,10 @@ au-misra.lnt
 +macros
 +ppw(warning)
 
-+libdir(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include)
-+libdir(C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include)
++libdir(C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\VC\lib)
++libdir(C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\SDK\ScopeCppSDK\vc15\VC\bin)
+//+libdir(C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include)
+//+libdir(C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include)
 -elib(*)
 -e537   // "Repeated include file 'FileName'"
 -e755   // "global macro 'Symbol' (Location) not referenced"

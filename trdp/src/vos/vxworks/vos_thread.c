@@ -17,6 +17,7 @@
  /*
  * $Id$*
  *
+ *     AHW 2023-02-21: Lint warnings
  *     CEW 2023-01-09: Ticket #408: thread-safe localtime - but be aware of static pTimeString
  *      MM 2022-05-30: Ticket #326: Implementation of missing thread functionality
  *      MM 2021-03-05: Ticket #360: Adaption for VxWorks7
@@ -789,21 +790,28 @@ EXT_DECL VOS_ERR_T vos_mutexCreate (
     {
         *pMutex = (VOS_MUTEX_T) vos_memAlloc(sizeof (struct VOS_MUTEX));
 
-        /* get actual mutex object from OS, settings insure proper priority */
-        /* handling. vxworks creates always recursive mutexes  */
-        (*pMutex)->mutexId = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE);
-
-        if ((*pMutex)->mutexId != NULL)
+        if (*pMutex == NULL)
         {
-            /* mark mutex object as valid */
-            (*pMutex)->magicNo = cMutextMagic;
-            result = VOS_NO_ERR;
+            result = VOS_MEM_ERR;
         }
         else
-        {  
-            vos_printLogStr(VOS_LOG_ERROR, "Can not create Mutex\n");
-            vos_memFree(*pMutex);
-            result = VOS_MUTEX_ERR;
+        {
+            /* get actual mutex object from OS, settings insure proper priority */
+            /* handling. vxworks creates always recursive mutexes  */
+            (*pMutex)->mutexId = semMCreate(SEM_Q_PRIORITY | SEM_INVERSION_SAFE);
+
+            if ((*pMutex)->mutexId != NULL)
+            {
+                /* mark mutex object as valid */
+                (*pMutex)->magicNo = cMutextMagic;
+                result = VOS_NO_ERR;
+            }
+            else
+            {
+                vos_printLogStr(VOS_LOG_ERROR, "Can not create Mutex\n");
+                vos_memFree(*pMutex);
+                result = VOS_MUTEX_ERR;
+            }
         }
     }
     return result;

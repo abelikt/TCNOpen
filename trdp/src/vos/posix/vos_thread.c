@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2023-02-21: Lint warnings
  *     AHW 2023-01-10: Ticket #405 Problem with GLIBC > 2.34
  *     CEW 2023-01-09: Ticket #408: thread-safe localtime - but be aware of static pTimeString
  *      CK 2023-01-03: Ticket #403: Mutexes now honour PTHREAD_PRIO_INHERIT protocol
@@ -689,25 +690,32 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
         /* malloc freed in vos_runCyclicThread */
         VOS_THREAD_CYC_T *p_params = (VOS_THREAD_CYC_T *) vos_memAlloc(sizeof(VOS_THREAD_CYC_T));
 
-        p_params->pName = pName;
-        p_params->startTime.tv_sec  = 0;
-        p_params->startTime.tv_usec = 0;
-        p_params->interval      = interval;
-        p_params->pFunction     = pFunction;
-        p_params->pArguments    = pArguments;
-        vos_printLog(VOS_LOG_DBG, "thread parameters alloc: %p\n", (void *) p_params);
-
-        if (pStartTime != NULL)
+        if (p_params == NULL)
         {
-            p_params->startTime = *pStartTime;
+            return VOS_MEM_ERR;
         }
-        /* Create a cyclic thread */
-        retCode = pthread_create(&hThread, &threadAttrib, (void *(*)(void *))vos_runCyclicThread, p_params);
-        (void) vos_threadDelay(10000u);
+        else
+        {
+            p_params->pName = pName;
+            p_params->startTime.tv_sec  = 0;
+            p_params->startTime.tv_usec = 0;
+            p_params->interval      = interval;
+            p_params->pFunction     = pFunction;
+            p_params->pArguments    = pArguments;
+            vos_printLog(VOS_LOG_DBG, "thread parameters alloc: %p\n", (void *) p_params);
+
+            if (pStartTime != NULL)
+            {
+                p_params->startTime = *pStartTime;
+            }
+			
+            /* Create a cyclic thread */
+            retCode = pthread_create(&hThread, &threadAttrib, (void *(*)(void *))vos_runCyclicThread, p_params);
+            (void) vos_threadDelay(10000u);
+        }
     }
     else
     {
-
         /* Create the thread */
         retCode = pthread_create(&hThread, &threadAttrib, (void *(*)(void *))pFunction, pArguments);
     }
