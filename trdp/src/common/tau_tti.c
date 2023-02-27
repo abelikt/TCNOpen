@@ -26,7 +26,8 @@
 /*
 * $Id$
 *
-*     AHW 2023-02-21: Lint warnigs
+*     AHW 2023-02-27: tau_getCstFctInfo interface change to fit to tau_getVehInfo() and tau_getCstInfo() 
+*     AHW 2023-02-21: Lint warnings
 *  AO/AHW 2023-02-03: Ticket #416: Bug fixing and code refactoring
 *     AHW 2023-01-24: Ticket #416: Interface change for tau_getCstInfo(), tau_getStaticCstInfo(), tau_getVehInfo()
 *     AHW 2023-01-24: Naming #416: unified tau_getTrDir()/tau_getOpTrDir() -> tau_getTrnDir()/tau_getOpTrnDir()
@@ -2162,7 +2163,7 @@ EXT_DECL TRDP_ERR_T tau_getCstVehCnt (
  */
 EXT_DECL TRDP_ERR_T tau_getCstFctCnt (
     TRDP_APP_SESSION_T  appHandle,
-    UINT16              *pCstFctCnt,
+    UINT16             *pCstFctCnt,
     const TRDP_LABEL_T  pCstLabel)
 {
     TRDP_CONSIST_INFO_T* pFoundCstInfo = NULL;
@@ -2200,10 +2201,10 @@ EXT_DECL TRDP_ERR_T tau_getCstFctCnt (
  *
  *
  *  @param[in]      appHandle       Handle returned by tlc_openSession().
- *  @param[out]     pFctInfo        Pointer to function info list to be returned.
- *                                  Memory needs to be provided by application. Set NULL if not used.
+ *  @param[out]     ppFctInfo       Pointer to a pointer to function info list to be returned.
+ *                                  Memory needs to be freed by application.
+ *  @param[out]     pFctCnt         Pointer to number of functions returned in provided buffer.
  *  @param[in]      pCstLabel       Pointer to a consist label. NULL means own consist.
- *  @param[in]      maxFctCnt       Maximal number of functions to be returned in provided buffer.
  *
  *  @retval         TRDP_NO_ERR     no error
  *  @retval         TRDP_PARAM_ERR  Parameter error
@@ -2211,18 +2212,17 @@ EXT_DECL TRDP_ERR_T tau_getCstFctCnt (
  */
 EXT_DECL TRDP_ERR_T tau_getCstFctInfo (
     TRDP_APP_SESSION_T      appHandle,
-    TRDP_FUNCTION_INFO_T   *pFctInfo,
-    const TRDP_LABEL_T      pCstLabel,
-    UINT16                  maxFctCnt)
+    TRDP_FUNCTION_INFO_T  **ppFctInfo,
+    UINT16                 *pFctCnt,
+    const TRDP_LABEL_T      pCstLabel)
 {
     TRDP_CONSIST_INFO_T* pFoundCstInfo = NULL;
-    UINT32 l_index;
     TRDP_ERR_T ret;
 
     if ((appHandle == NULL) ||
         (appHandle->pTTDB == NULL) ||
-        (pFctInfo == NULL) ||
-        (maxFctCnt == 0))
+        (ppFctInfo == NULL) ||
+        (pFctCnt == NULL))
     {
         return TRDP_PARAM_ERR;
     }
@@ -2235,10 +2235,21 @@ EXT_DECL TRDP_ERR_T tau_getCstFctInfo (
 
     if (pFoundCstInfo != NULL)
     {
-        for (l_index = 0; (l_index < pFoundCstInfo->fctCnt) &&  /* #402 */
-             (l_index < maxFctCnt); ++l_index)
+        *ppFctInfo = (TRDP_FUNCTION_INFO_T *) vos_memAlloc(sizeof(TRDP_FUNCTION_INFO_T) * pFoundCstInfo->fctCnt);
+
+
+        if (*ppFctInfo == NULL)
         {
-            pFctInfo[l_index]          = pFoundCstInfo->pFctInfoList[l_index];
+            return TRDP_MEM_ERR;
+        }
+        else
+        {
+            UINT32 l_index;
+
+            for (l_index = 0; (l_index < pFoundCstInfo->fctCnt); ++l_index)
+            {
+                (*ppFctInfo)[l_index] = pFoundCstInfo->pFctInfoList[l_index];
+            }
         }
     }
     else    /* not found, get it and return directly */
