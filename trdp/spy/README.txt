@@ -5,15 +5,37 @@
                    |_| |__|__|____/|__|     |_____|__|    |_|  
                                                                
 
-This Plugin can be used to display packages containing TRDP (Train Realtime Data Protocol).
+This Plugin can be used to display packets containing TRDP (Train Realtime Data Protocol).
 
-You can apply your XML-config-file (for setup go [Edit]->Preferences->Protocols->TRDP and load your xml file there) for filtering and displaying.
+You can apply your XML-config-file (for setup go [Edit]->Preferences->Protocols->TRDP and load your xml file(s) there) for filtering and displaying.
 
 N E W S
 =======
+2023-01 Thorsten <thorsten.schulz@stadlerrail.com>
+
+  * Build for Wireshark 4.0 added. Minor cleanup due to API-deprecation and a bug in the protocol handler variable.
+
+2022-07 Palauqui <georges.palauqui@leroy-autom.com>
+
+ * Add support for Little Endian user data value (use non standard type in XML config file)
+
+ * Add SDTv2 Safety Code checking according to IEC 61375-2-3:2015 Annex B (use non standard type in XML config file)
+
+2022-06 Thorsten <thorsten.schulz@stadlerrail.com>
+
+ * Bug fix as reported by Lorenzo B., where in between variable arrays would break further parsing of a dataset.
+
+2022-03 Thorsten <thorsten.schulz@stadlerrail.com>
+
+ * Build for Wireshark 3.6 added. Minor upgrades in two calls.
+
+ * Added support for multiple XML definition files. Go to preferences, choose the first file in the dialog, then remove the file name in the text box just leaving the path. Be vary only to have consistent files in that folder, otherwise the parser will be pesky about it. On the other hand, it may help you spot these consistencies.
+
+ * Unfortunately, I noticed parsing TCP streams is generally broken, probably was before. I never needed it. Leave an issue in the tracker if it really needs changing.
+
 2021-08 Florian <florian.weispfenning@alstomgroup.com>
 
- * 	fix for #371 ComIDs > 2147483647 wrong displayed
+ * fix for #371 ComIDs > 2147483647 wrong displayed
  
 2020-12 Thorsten <t12z@tractionpad.de>
 
@@ -67,12 +89,12 @@ U S A G E
 On Linux, use your distribution's package manager to install wireshark or wireshark-qt.
 On Windows, download from [1].
 (Compared to earlier releases, you don't need the QtXML library any more.)
-If Wireshark happens to be a version of 2.6.*, 3.0.*, 3.2.* or 3.4.*, you may be lucky with the pre-compiled plugin-libraries. For version 3.4 (Linux) find them here:
+If Wireshark happens to be a version of 2.6.*, 3.0.*, 3.2.*, 3.4.*, 3.6.* or 4.0.* you may be lucky with the pre-compiled plugin-libraries. For version 4.0 (Linux) find them here:
 
-cp   plugins/3.4/epan/trdp_spy.so   ~/.local/lib/wireshark/plugins/3.4/epan/
+cp   plugins/4.0/epan/trdp_spy.so   ~/.local/lib/wireshark/plugins/4.0/epan/
 
 Or copy with a file manager of your choice.
-On Windows, obviously, take the *.dll files instead. The folder path for user plugins can be found when running Wireshark, go into [Help]->About Wireshark->Folders and check where "Personal Plugins" should go. You can double click on the path to open your platform's file-manager. Then put it into the sub-folder "epan" and restart Wireshark.
+On Windows, obviously, take the *.dll files instead. The folder path for user plugins can be found when running Wireshark, go into [Help]->About Wireshark->Folders and check where "Personal Plugins" should go. You can double click on the path to open your platform's file-manager. Then put it into the *sub-folder "epan"* and restart Wireshark.
 
 Now, when Wireshark started, check in the [Help]-menu --> About Wireshark and open the [Plugins] tab. Somewhere in the middle there should be trdp_spy.so. If not, check the [Folder] tab if your wireshark expects user-plugins somewhere else.
 
@@ -161,7 +183,7 @@ Open the VS2017 prompt (search Start menu for "x64 Native Tools [..]") and chang
 [2] https://www.wireshark.org/docs/wsdg_html_chunked/ChSetupWin32.html#ChWin32Build
 [3] https://sourceforge.net/projects/winflexbison/files/
 
-Last modified by Thorsten, 2020-Dec
+Last modified by Thorsten, 2022-Dec
 
 --
 notes to self for rebuilding:
