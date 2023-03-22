@@ -21,6 +21,7 @@
  *
  * $Id$
  *
+ *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      BL 2020-07-16: Ticket #334 dirent.h not part of delivery
  */
@@ -248,12 +249,25 @@ static void printTelegrams(
                 /*  SDT parameters  */
                 if (pDest->pSdtPar)
                 {
+                    printf("        SDTv2 params\n");
                     printf("        SDT smi1: %u, smi2: %u, udv: %u\n", 
                         pDest->pSdtPar->smi1, pDest->pSdtPar->smi2, pDest->pSdtPar->udv);
                     printf("          rx-period: %u, tx-period: %u\n", 
                         pDest->pSdtPar->rxPeriod, pDest->pSdtPar->txPeriod);
                     printf("          n-rxsafe: %u, n-guard: %u, cm-thr: %u, lmi-max: %u\n", 
                         pDest->pSdtPar->nrxSafe, pDest->pSdtPar->nGuard, pDest->pSdtPar->cmThr, pDest->pSdtPar->lmiMax);
+                }
+                if (pDest->pSdtv4Par)
+                {
+                    printf("        SDTv4 params\n");
+                    printf("        SDT smi1: %u, smi2: %u, udv: %u.%d\n",
+                        pDest->pSdtv4Par->smi1, pDest->pSdtv4Par->smi2, pDest->pSdtv4Par->udv_main, pDest->pSdtv4Par->udv_sub);
+                    printf("          rx-period: %u, tx-period: %u\n",
+                        pDest->pSdtv4Par->rxPeriod, pDest->pSdtv4Par->txPeriod);
+                    printf("          n-rxsafe: %u, n-guard: %u, proto-var: %u\n",
+                        pDest->pSdtv4Par->nrxSafe, pDest->pSdtv4Par->nGuard, pDest->pSdtv4Par->proto_var);
+                    printf("          safe-func-id: %u, safe-func-vers: %u, safe-channel-id: %u, safe-channel-vers: %u\n",
+                        pDest->pSdtv4Par->safe_func_id, pDest->pSdtv4Par->safe_func_vers, pDest->pSdtv4Par->safe_channel_id, pDest->pSdtv4Par->safe_channel_vers);
                 }
             }
         }
@@ -276,6 +290,7 @@ static void printTelegrams(
                 /*  SDT parameters  */
                 if (pSrc->pSdtPar)
                 {
+                    printf("        SDTv2 params\n");
                     printf("        SDT smi1: %u, smi2: %u, udv: %u\n", 
                         pSrc->pSdtPar->smi1, pSrc->pSdtPar->smi2, pSrc->pSdtPar->udv);
                     printf("          rx-period: %u, tx-period: %u\n", 
@@ -283,11 +298,46 @@ static void printTelegrams(
                     printf("          n-rxsafe: %u, n-guard: %u, cm-thr: %u, lmi-max: %u\n", 
                         pSrc->pSdtPar->nrxSafe, pSrc->pSdtPar->nGuard, pSrc->pSdtPar->cmThr, pSrc->pSdtPar->lmiMax);
                 }
+                if (pSrc->pSdtv4Par)
+                {
+                    printf("        SDTv4 params\n");
+                    printf("        SDT smi1: %u, smi2: %u, udv: %u.%d\n",
+                        pSrc->pSdtv4Par->smi1, pSrc->pSdtv4Par->smi2, pSrc->pSdtv4Par->udv_main, pSrc->pSdtv4Par->udv_sub);
+                    printf("          rx-period: %u, tx-period: %u\n",
+                        pSrc->pSdtv4Par->rxPeriod, pSrc->pSdtv4Par->txPeriod);
+                    printf("          n-rxsafe: %u, n-guard: %u, proto-var: %u\n",
+                        pSrc->pSdtv4Par->nrxSafe, pSrc->pSdtv4Par->nGuard, pSrc->pSdtv4Par->proto_var);
+                    printf("          safe-func-id: %u, safe-func-vers: %u, safe-channel-id: %u, safe-channel-vers: %u\n",
+                        pSrc->pSdtv4Par->safe_func_id, pSrc->pSdtv4Par->safe_func_vers, pSrc->pSdtv4Par->safe_channel_id, pSrc->pSdtv4Par->safe_channel_vers);
+                }
             }
         }
         else
         {
             printf("    No sources\n");
+        }
+
+        if (pExchgPar[idxExPar].sdtv4SrvInstParCnt)
+        {
+            printf("    SDTv4 service instance params\n");
+            for (i = 0; i < pExchgPar[idxExPar].sdtv4SrvInstParCnt; i++)
+            {
+                TRDP_SDTV4_SRV_INST_PAR_T* pSdtv4SrvInstPar = &(pExchgPar[idxExPar].pSdtv4SrvInstPar[i]);
+                printf("      Instance Id: %u\n",
+                    pSdtv4SrvInstPar->instance_id);
+                printf("        SDT smi1: %u, smi2: %u, udv: %u.%d\n",
+                    pSdtv4SrvInstPar->smi1, pSdtv4SrvInstPar->smi2, pSdtv4SrvInstPar->udv_main, pSdtv4SrvInstPar->udv_sub);
+                printf("          rx-period: %u, tx-period: %u\n",
+                    pSdtv4SrvInstPar->rxPeriod, pSdtv4SrvInstPar->txPeriod);
+                printf("          n-rxsafe: %u, n-guard: %u, proto-var: %u\n",
+                    pSdtv4SrvInstPar->nrxSafe, pSdtv4SrvInstPar->nGuard, pSdtv4SrvInstPar->proto_var);
+                printf("          safe-func-id: %u, safe-func-vers: %u, safe-channel-id: %u, safe-channel-vers: %u\n",
+                    pSdtv4SrvInstPar->safe_func_id, pSdtv4SrvInstPar->safe_func_vers, pSdtv4SrvInstPar->safe_channel_id, pSdtv4SrvInstPar->safe_channel_vers);
+            }
+        }
+        else
+        {
+            printf("    No SDTv4 service instance params\n");
         }
     }
 }

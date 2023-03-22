@@ -26,10 +26,21 @@
             </telegram>
             <telegram name="tlg1002" com-id="1002" data-set-id="1002" com-parameter-id="4">
                 <pd-parameter cycle="50000" marshall="on" timeout ="150000" validity-behavior="zero"/>
-                <source id="1" uri1="10.2.13.51" />
-                <destination id="1" uri="10.2.13.51" />
-                <destination id="2" uri="10.2.13.61" />
+                <source id="1" uri1="10.2.13.51">
+					<sdtv4-parameter smi1="10001" udv-main="1" rx-period="50" tx-period="150" n-rxsafe="3" n-guard="100" safe-func-id="50688" safe-func-vers="0" safe-channel-id="0" safe-channel-vers="0"/>
+				</source>
+                <destination id="1" uri="10.2.13.51">
+					<sdtv4-parameter smi1="10001" udv-main="1" udv-sub="2" rx-period="50" tx-period="150" n-rxsafe="3" n-guard="100" safe-func-id="50688" safe-func-vers="0" safe-channel-id="0" safe-channel-vers="0"/>
+				</destination>
+                <destination id="2" uri="10.2.13.61">
+					<sdtv4-parameter smi1="10002" udv-main="1" udv-sub="2" rx-period="50" tx-period="150" n-rxsafe="3" n-guard="100" proto-var="1" safe-func-id="50688" safe-func-vers="1" safe-channel-id="2" safe-channel-vers="3"/>
+				</destination>
             </telegram>
+			<telegram name="tlg1003" com-id="1003" data-set-id="1003" com-parameter-id="4">
+                <pd-parameter cycle="50000" marshall="on" timeout ="150000" validity-behavior="zero"/>
+				<sdtv4-srv-inst-parameter instance-id="1" smi1="10005" udv-main="1" rx-period="50" tx-period="50" n-rxsafe="3" n-guard="100" safe-func-id="50688" safe-func-vers="0" safe-channel-id="0" safe-channel-vers="0"/>
+				<sdtv4-srv-inst-parameter instance-id="5" smi1="10006" udv-main="1" rx-period="50" tx-period="50" n-rxsafe="3" n-guard="100" safe-func-id="50688" safe-func-vers="0" safe-channel-id="0" safe-channel-vers="0"/>
+			</telegram>
         </bus-interface>
     </bus-interface-list>
 

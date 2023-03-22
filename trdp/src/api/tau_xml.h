@@ -19,6 +19,7 @@
  /*
  * $Id$
  *
+ *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *      AR 2020-05-08: Added attribute 'name' to event, method, field and instance structures used for service oriented interface
  *      SB 2020-01-27: Added parsing for dummyService flag to Service definitions and MD option for events
  *     CKH 2019-10-11: Ticket #2: TRDPXML: Support of mapped devices missing (XLS #64)
@@ -84,6 +85,43 @@ typedef struct
 
 typedef struct
 {
+    UINT32  smi1;              /**< Safe message identifier 1 - unique for this message at consist level */
+    UINT32  smi2;              /**< Safe message identifier 2 - unique for this message at consist level */
+    UINT8   udv_main;          /**< User data main version */
+    UINT8   udv_sub;           /**< User data subversion */
+    UINT16  rxPeriod;          /**< Value for SDSINK period reading VDPs (ms) */
+    UINT16  txPeriod;          /**< Value for SDSRC period producing VDPs (ms) */
+    UINT16  nGuard;            /**< Value for number of guard cycles */
+    UINT8   nrxSafe;           /**< Value for T_rxSafe multiplier for reception of valid VDP */
+    UINT8   proto_var;         /**< SDTv4 protocol variant (1 or 2) */
+    UINT16  safe_func_id;      /**< Safety Function Identifier */
+    UINT16  safe_func_vers;    /**< Safety Function Version */
+    UINT16  safe_channel_id;   /**< Safety Channel Identifier */
+    UINT16  safe_channel_vers; /**< Safety Channel Version */
+    UINT8   reserved1;         /**< Reserved for future use */
+} TRDP_SDTV4_PAR_T;
+
+typedef struct
+{
+    UINT16  instance_id;       /**< Service instance id */
+    UINT32  smi1;              /**< Safe message identifier 1 - unique for this message at consist level */
+    UINT32  smi2;              /**< Safe message identifier 2 - unique for this message at consist level */
+    UINT16  udv_main;          /**< User data main version */
+    UINT16  udv_sub;           /**< User data subversion */
+    UINT16  rxPeriod;          /**< Value for SDSINK period reading VDPs (ms) */
+    UINT16  txPeriod;          /**< Value for SDSRC period producing VDPs (ms) */
+    UINT16  nGuard;            /**< Value for number of guard cycles */
+    UINT8   nrxSafe;           /**< Value for T_rxSafe multiplier for reception of valid VDP */
+    UINT8   proto_var;         /**< SDTv4 protocol variant (1 or 2) */
+    UINT16  safe_func_id;      /**< Safety Function Identifier */
+    UINT16  safe_func_vers;    /**< Safety Function Version */
+    UINT16  safe_channel_id;   /**< Safety Channel Identifier */
+    UINT16  safe_channel_vers; /**< Safety Channel Version */
+    UINT8   reserved1;         /**< Reserved for future use */
+} TRDP_SDTV4_SRV_INST_PAR_T;
+
+typedef struct
+{
     UINT32              cycle;     /**< Interval for push data in us */
     UINT32              redundant; /**< 0 = not redundant, != 0 redundancy group */
     UINT32              timeout;   /**< Timeout value in us, before considering received process data invalid */
@@ -101,36 +139,40 @@ typedef struct
 
 typedef struct
 {
-    UINT32          id;            /**< destination identifier */
-    TRDP_SDT_PAR_T  *pSdtPar;      /**< Pointer to optional SDT Parameters for this connection */
-    TRDP_URI_USER_T *pUriUser;     /**< Pointer to URI user part */
-    TRDP_URI_HOST_T *pUriHost;     /**< Pointer to URI host parts or IP */
+    UINT32           id;            /**< destination identifier */
+    TRDP_SDT_PAR_T   *pSdtPar;      /**< Pointer to optional SDT Parameters for this connection */
+    TRDP_SDTV4_PAR_T *pSdtv4Par;    /**< Pointer to optional SDTv4 Parameters for this connection */
+    TRDP_URI_USER_T  *pUriUser;     /**< Pointer to URI user part */
+    TRDP_URI_HOST_T  *pUriHost;     /**< Pointer to URI host parts or IP */
 } TRDP_DEST_T;
 
 typedef struct
 {
-    UINT32          id;            /**< source filter identifier */
-    TRDP_SDT_PAR_T  *pSdtPar;      /**< Pointer to optional SDT Parameters for this connection */
-    TRDP_URI_USER_T *pUriUser;     /**< Pointer to URI user part */
-    TRDP_URI_HOST_T *pUriHost1;    /**< Pointer to device URI host or IP */
-    TRDP_URI_HOST_T *pUriHost2;    /**< Pointer to a second device URI host parts or IP, used eg. for red. devices */
+    UINT32           id;            /**< source filter identifier */
+    TRDP_SDT_PAR_T   *pSdtPar;      /**< Pointer to optional SDT Parameters for this connection */
+    TRDP_SDTV4_PAR_T *pSdtv4Par;    /**< Pointer to optional SDTv4 Parameters for this connection */
+    TRDP_URI_USER_T  *pUriUser;     /**< Pointer to URI user part */
+    TRDP_URI_HOST_T  *pUriHost1;    /**< Pointer to device URI host or IP */
+    TRDP_URI_HOST_T  *pUriHost2;    /**< Pointer to a second device URI host parts or IP, used eg. for red. devices */
 } TRDP_SRC_T;
 
 typedef struct
 {
-    UINT32              comId;      /**< source filter identifier                       */
-    UINT32              datasetId;  /**< data set identifier                            */
-    UINT32              comParId;   /**< communication parameter id                     */
-    TRDP_MD_PAR_T       *pMdPar;    /**< Pointer to MD Parameters for this connection   */
-    TRDP_PD_PAR_T       *pPdPar;    /**< Pointer to PD Parameters for this connection   */
-    UINT32              destCnt;    /**< number of destinations                         */
-    TRDP_DEST_T         *pDest;     /**< Pointer to array of destination descriptors    */
-    UINT32              srcCnt;     /**< number of sources                              */
-    TRDP_SRC_T          *pSrc;      /**< Pointer to array of source descriptors         */
-    TRDP_EXCHG_OPTION_T type;       /**< shall telegram be sent or received             */
-    BOOL8               create;     /**< TRUE: associated publisher/listener/subscriber
-                                         shall be generated automatically               */
-    UINT32              serviceId;  /**< optional serviceId                             */
+    UINT32                    comId;              /**< source filter identifier                         */
+    UINT32                    datasetId;          /**< data set identifier                              */
+    UINT32                    comParId;           /**< communication parameter id                       */
+    TRDP_MD_PAR_T             *pMdPar;            /**< Pointer to MD Parameters for this connection     */
+    TRDP_PD_PAR_T             *pPdPar;            /**< Pointer to PD Parameters for this connection     */
+    UINT32                    destCnt;            /**< number of destinations                           */
+    TRDP_DEST_T               *pDest;             /**< Pointer to array of destination descriptors      */
+    UINT32                    srcCnt;             /**< number of sources                                */
+    TRDP_SRC_T                *pSrc;              /**< Pointer to array of source descriptors           */
+    TRDP_EXCHG_OPTION_T       type;               /**< shall telegram be sent or received               */
+    BOOL8                     create;             /**< TRUE: associated publisher/listener/subscriber
+                                                  shall be generated automatically                      */
+    UINT32                    serviceId;          /**< optional serviceId                               */
+    UINT32                    sdtv4SrvInstParCnt; /**< number of SDTv4 Parameters for service instances */
+    TRDP_SDTV4_SRV_INST_PAR_T *pSdtv4SrvInstPar; /**< Pointer to array of optional SDTv4 Parameters for service instances */
 } TRDP_EXCHG_PAR_T;
 
 typedef struct

@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2023-01-11: Lint warnings
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      SB 2021-02-04: Ticket #359: fixed parsing of 'service-device' elements
@@ -89,6 +90,26 @@
 #endif
 #ifndef TRDP_SDT_DEFAULT_LMIMAX
 #define TRDP_SDT_DEFAULT_LMIMAX  (11u*TRDP_SDT_DEFAULT_NRXSAFE)     /**< Default SDT chan. latency monitoring cycles */
+#endif
+
+/*  Default SDTv4 values  */
+#ifndef TRDP_SDTV4_DEFAULT_UDV_SUB
+#define TRDP_SDTV4_DEFAULT_UDV_SUB  0u                              /**< Default SDTv4 User data subversion        */
+#endif
+#ifndef TRDP_SDTV4_DEFAULT_PROTO_VAR
+#define TRDP_SDTV4_DEFAULT_PROTO_VAR  2u                            /**< SDTv4 protocol variant                    */
+#endif
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID
+#define TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID  0u                         /**< Default SDTv4 Safety Function Identifier  */
+#endif
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS
+#define TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS  0u                       /**< Default SDTv4 Safety Function Version     */
+#endif
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID
+#define TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID  0u                     /**< Default SDTv4 Safety Channel Identifier   */
+#endif
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS
+#define TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS  0u                   /**< Default SDTv4 Safety Channel Version      */
 #endif
 
 /*******************************************************************************
@@ -281,8 +302,10 @@ static TRDP_ERR_T readTelegramDef (
     UINT32      valueInt;
     UINT32      countSrc;
     UINT32      countDst;
+    UINT32      countSdtv4SrvInstParams;
     TRDP_SRC_T  *pSrc;
     TRDP_DEST_T *pDest;
+    TRDP_SDTV4_SRV_INST_PAR_T* pSdtv4SrvInstPar;
     XML_TOKEN_T token;
 
     /* Get the attributes */
@@ -330,6 +353,7 @@ static TRDP_ERR_T readTelegramDef (
     pSrc        = NULL;
     countDst    = (UINT32) trdp_XMLCountStartTag(pXML, "destination");
     pDest       = NULL;
+    countSdtv4SrvInstParams = (UINT32)trdp_XMLCountStartTag(pXML, "sdtv4-srv-inst-parameter");
 
     /* Iterate thru <telegram> */
 
@@ -583,6 +607,85 @@ static TRDP_ERR_T readTelegramDef (
                         }
                     }
                 }
+                else if (trdp_XMLCountStartTag(pXML, "sdtv4-parameter") > 0 &&
+                    trdp_XMLSeekStartTag(pXML, "sdtv4-parameter") == 0 &&
+                    pSrc != NULL)
+                {
+                    pSrc->pSdtv4Par = (TRDP_SDTV4_PAR_T*)vos_memAlloc(sizeof(TRDP_SDTV4_PAR_T));
+
+                    if (pSrc->pSdtv4Par == NULL)
+                    {
+                        vos_printLog(VOS_LOG_ERROR, "%lu Bytes failed to allocate while reading XML source sdtv4 parameter definitions!\n",
+                            (unsigned long)sizeof(TRDP_SDTV4_PAR_T));
+                        return TRDP_MEM_ERR;
+                    }
+
+                    pSrc->pSdtv4Par->smi2 = TRDP_SDT_DEFAULT_SMI2;
+                    pSrc->pSdtv4Par->nrxSafe = TRDP_SDT_DEFAULT_NRXSAFE;
+                    pSrc->pSdtv4Par->nGuard = TRDP_SDT_DEFAULT_NGUARD;
+                    pSrc->pSdtv4Par->udv_sub = TRDP_SDTV4_DEFAULT_UDV_SUB;
+                    pSrc->pSdtv4Par->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
+                    pSrc->pSdtv4Par->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
+                    pSrc->pSdtv4Par->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
+                    pSrc->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
+                    pSrc->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+
+                    while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE)
+                    {
+                        if (vos_strnicmp(attribute, "smi1", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->smi1 = valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "smi2", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->smi2 = valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "udv-main", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->udv_main = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "udv-sub", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->udv_sub = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "rx-period", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->rxPeriod = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "tx-period", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->txPeriod = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "n-rxsafe", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->nrxSafe = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "n-guard", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->nGuard = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "proto-var", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->proto_var = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-func-id", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->safe_func_id = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-func-vers", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->safe_func_vers = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-channel-id", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->safe_channel_id = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-channel-vers", MAX_TOK_LEN) == 0)
+                        {
+                            pSrc->pSdtv4Par->safe_channel_vers = (UINT16)valueInt;
+                        }
+                    }
+                }
                 trdp_XMLLeave(pXML);
             }
             if (pSrc != NULL)
@@ -707,11 +810,184 @@ static TRDP_ERR_T readTelegramDef (
                         }
                     }
                 }
+                else if (trdp_XMLCountStartTag(pXML, "sdtv4-parameter") > 0 &&
+                    trdp_XMLSeekStartTag(pXML, "sdtv4-parameter") == 0 &&
+                    pDest != NULL)
+                {
+                    pDest->pSdtv4Par = (TRDP_SDTV4_PAR_T*)vos_memAlloc(sizeof(TRDP_SDTV4_PAR_T));
+
+                    if (pDest->pSdtv4Par == NULL)
+                    {
+                        vos_printLog(VOS_LOG_ERROR, "%lu Bytes failed to allocate while reading XML destination sdtv4 parameter definitions!\n",
+                            (unsigned long)sizeof(TRDP_SDTV4_PAR_T));
+                        return TRDP_MEM_ERR;
+                    }
+
+                    pDest->pSdtv4Par->smi2 = TRDP_SDT_DEFAULT_SMI2;
+                    pDest->pSdtv4Par->nrxSafe = TRDP_SDT_DEFAULT_NRXSAFE;
+                    pDest->pSdtv4Par->nGuard = TRDP_SDT_DEFAULT_NGUARD;
+                    pDest->pSdtv4Par->udv_sub = TRDP_SDTV4_DEFAULT_UDV_SUB;
+                    pDest->pSdtv4Par->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
+                    pDest->pSdtv4Par->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
+                    pDest->pSdtv4Par->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
+                    pDest->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
+                    pDest->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+
+                    while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE)
+                    {
+                        if (vos_strnicmp(attribute, "smi1", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->smi1 = valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "smi2", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->smi2 = valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "udv-main", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->udv_main = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "udv-sub", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->udv_sub = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "rx-period", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->rxPeriod = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "tx-period", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->txPeriod = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "n-rxsafe", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->nrxSafe = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "n-guard", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->nGuard = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "proto-var", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->proto_var = (UINT8)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-func-id", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->safe_func_id = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-func-vers", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->safe_func_vers = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-channel-id", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->safe_channel_id = (UINT16)valueInt;
+                        }
+                        else if (vos_strnicmp(attribute, "safe-channel-vers", MAX_TOK_LEN) == 0)
+                        {
+                            pDest->pSdtv4Par->safe_channel_vers = (UINT16)valueInt;
+                        }
+                    }
+                }
                 trdp_XMLLeave(pXML);
             }
             if (pDest != NULL)
             {
                 pDest++;
+            }
+        }
+        else if (vos_strnicmp(tag, "sdtv4-srv-inst-parameter", MAX_TAG_LEN) == 0)
+        {
+            if (countSdtv4SrvInstParams > 0u)
+            {
+                pExchgParam->pSdtv4SrvInstPar = (TRDP_SDTV4_SRV_INST_PAR_T*)vos_memAlloc(countSdtv4SrvInstParams * sizeof(TRDP_SDTV4_SRV_INST_PAR_T));
+
+                if (pExchgParam->pSdtv4SrvInstPar == NULL)
+                {
+                    vos_printLog(VOS_LOG_ERROR, "%lu Bytes failed to allocate while reading XML sdtv4-srv-inst-parameter definitions!\n",
+                        (unsigned long)(countSdtv4SrvInstParams * sizeof(TRDP_SDTV4_SRV_INST_PAR_T)));
+                    return TRDP_MEM_ERR;
+                }
+                pExchgParam->sdtv4SrvInstParCnt = countSdtv4SrvInstParams;
+                countSdtv4SrvInstParams = 0u;
+                pSdtv4SrvInstPar = pExchgParam->pSdtv4SrvInstPar;
+            }
+
+            if (pSdtv4SrvInstPar != NULL)
+            {
+                pSdtv4SrvInstPar->smi2 = TRDP_SDT_DEFAULT_SMI2;
+                pSdtv4SrvInstPar->nrxSafe = TRDP_SDT_DEFAULT_NRXSAFE;
+                pSdtv4SrvInstPar->nGuard = TRDP_SDT_DEFAULT_NGUARD;
+                pSdtv4SrvInstPar->udv_sub = TRDP_SDTV4_DEFAULT_UDV_SUB;
+                pSdtv4SrvInstPar->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
+                pSdtv4SrvInstPar->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
+                pSdtv4SrvInstPar->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
+                pSdtv4SrvInstPar->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
+                pSdtv4SrvInstPar->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+            }
+
+            while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE && pSdtv4SrvInstPar != NULL)
+            {
+                if (vos_strnicmp(attribute, "instance-id", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->instance_id = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "smi1", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->smi1 = valueInt;
+                }
+                else if (vos_strnicmp(attribute, "smi2", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->smi2 = valueInt;
+                }
+                else if (vos_strnicmp(attribute, "udv-main", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->udv_main = (UINT8)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "udv-sub", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->udv_sub = (UINT8)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "rx-period", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->rxPeriod = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "tx-period", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->txPeriod = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "n-rxsafe", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->nrxSafe = (UINT8)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "n-guard", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->nGuard = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "proto-var", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->proto_var = (UINT8)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "safe-func-id", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->safe_func_id = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "safe-func-vers", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->safe_func_vers = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "safe-channel-id", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->safe_channel_id = (UINT16)valueInt;
+                }
+                else if (vos_strnicmp(attribute, "safe-channel-vers", MAX_TOK_LEN) == 0)
+                {
+                    pSdtv4SrvInstPar->safe_channel_vers = (UINT16)valueInt;
+                }
+            }
+            if (pSdtv4SrvInstPar != NULL)
+            {
+                pSdtv4SrvInstPar++;
             }
         }
     }
