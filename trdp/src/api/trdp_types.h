@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - Comments adapted for base 2 cycle time support
  *     AHW 2023-01-11: Lint warnigs
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -231,7 +232,7 @@ typedef enum
 #define TRDP_INFINITE_TIMEOUT       0xffffffffu /**< Infinite reply timeout                               */
 #define TRDP_DEFAULT_PD_TIMEOUT     100000u /**< Default PD timeout 100ms from 61375-2-3 Table C.7        */
 
-#ifdef HIGH_PERF_INDEXED
+#if defined(HIGH_PERF_INDEXED) || defined(TSN_SUPPORT)
 #   define TRDP_TIMER_GRANULARITY   500u                /**< granularity in us - we allow 0.5ms now!      */
 #else
 #   define TRDP_TIMER_GRANULARITY   5000u               /**< granularity in us - we allow 5ms now!        */
@@ -750,6 +751,8 @@ typedef struct
     UINT32              cycleTime;      /**< TRDP main process cycle time in us  */
     UINT32              priority;       /**< TRDP main process priority (0-255, 0=default, 255=highest)   */
     TRDP_OPTION_T       options;        /**< TRDP options */
+    UINT8               vlanPrio;       /**< 0..7 VLAN priority: ingress-/egress-qos-map matches IP QoS   */
+    UINT16              vlanId;         /**< 0=no VLAN, 1=reserved, 2..4094=VLAN-ID, 4095=wildcard match  */
 } TRDP_PROCESS_CONFIG_T;
 
 /**********************************************************************************************************************/

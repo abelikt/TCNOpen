@@ -17,7 +17,7 @@
  /*
  * $Id$
  *
- *      AÖ 2023-01-13: Ticket #413 In Windows export gPDebugFunction and gRefCon
+ *      AÃ– 2023-01-13: Ticket #413 In Windows export gPDebugFunction and gRefCon
  *     AHW 2023-01-11: Lint warnigs
  *      BL 2019-01-23: Ticket #231: XML config from stream buffer
  *     AHW 2018-11-28: Doxygen comment errors

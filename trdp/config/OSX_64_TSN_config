@@ -20,6 +20,12 @@ CFLAGS += -Wno-unused-label -Wno-unused-function -Wno-int-to-void-pointer-cast -
 
 CFLAGS +=  -DHAS_UUID
 
+# TSN depends on RT_THREADS (already set in Makefile)
+# no longer required: VOS_USE_RAW_IP_SOCKET = 1
+TSN_SUPPORT = 1
+RT_THREADS = 1
+# SOA_SUPPORT = 1
+
 # Additional sources for TSN support
 ADD_INC += ../TSN
 ADD_SRC += ../TSN

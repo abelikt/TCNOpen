@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *     AHW 2023-01-10: Ticket #406 Socket handling: check for EAGAIN missing for Linux/Posix
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *      SB 2021-08-09: Lint warnings
@@ -108,55 +109,98 @@ const CHAR8 *cDefaultIface = "eth0";
  *  LOCALS
  */
 
-BOOL8           vosSockInitialised = FALSE;
+BOOL8           gVosSockInitialised = FALSE;
 
 struct ifreq    gIfr;
 
-UINT32 vos_getInterfaceIP (UINT32 ifIndex);
-BOOL8 vos_getMacAddress (UINT8 *pMacAddr, const char  *pIfName);
+/* store the IP, VLAN and MAC addresses of local network interfaces for fast access - set once in vos_sockInit(), cleared by vos_sockTerm() */
+VOS_IF_REC_T    gIpInterfaces[VOS_MAX_NUM_IF]               = { 0 };    /* IP-interface-list containing IP and MAC addresses */
+UINT32          gIpInterfaceCount                           = 0u;       /* length of stored IP-interface-list */
+
+VOS_IP4_ADDR_T  gIpInterfaceIndexToIpAddr[VOS_MAX_NUM_IF]   = { 0 };    /* resolves OS-interface-index to IP address */
 
 /***********************************************************************************************************************
  * LOCAL FUNCTIONS
  */
 
+void vos_collectIpInterfaces ();
+UINT32 vos_getInterfaceIP (UINT32 ifIndex);
+BOOL8 vos_getMacAddress (UINT8 *pMacAddr, const char  *pIfName);
+
 /**********************************************************************************************************************/
-/** Get the IP address of local network interface.
+/** Get the IP, VLAN and MAC addresses of local network interfaces for faster access
+ *  If called while interface data is already stored: discard data and collect again
+ *
+*/
+void vos_collectIpInterfaces ()
+{
+    VOS_ERR_T     err       = VOS_NO_ERR;
+    UINT32        i         = 0u;
+    UINT32        tempIndex = 0U; 
+
+    /* initialize (clear) global storage */
+    memset(gIpInterfaceIndexToIpAddr, 0, sizeof(gIpInterfaceIndexToIpAddr));
+    memset(gIpInterfaces, 0, sizeof(gIpInterfaces));
+
+    gIpInterfaceCount = VOS_MAX_NUM_IF;
+    err = vos_getInterfaces(&gIpInterfaceCount, gIpInterfaces);             /* setup interface record array */
+
+    if (err != VOS_NO_ERR)
+    {
+        gIpInterfaceCount = 0u;
+    }
+
+    for (i = 0; i < gIpInterfaceCount; i++)
+    {
+        tempIndex = gIpInterfaces[i].ifIndex;
+        if ((0 < tempIndex) && (tempIndex < VOS_MAX_NUM_IF) &&              /* array boundaries 1..VOS_MAX_NUM_IF */
+            ((VOS_IP4_ADDR_T) 0 == gIpInterfaceIndexToIpAddr[tempIndex]))   /* index not yet used */
+        {
+            gIpInterfaceIndexToIpAddr[tempIndex] = gIpInterfaces[i].ipAddr;
+        }
+        else
+        {
+            for (tempIndex = 0; tempIndex < VOS_MAX_NUM_IF; tempIndex++)
+            {
+                
+                gIpInterfaceIndexToIpAddr[tempIndex] = (VOS_IP4_ADDR_T) 0;
+            }
+        }
+    }
+}
+
+/**********************************************************************************************************************/
+/** Get the IP address from interface index (requires global data preset by vos_sockInit)
  *
  *  @param[in]      index    interface index
  *
  *  @retval         IP address of interface
  *  @retval         0 if index not found
  */
-UINT32 vos_getInterfaceIP (UINT32 ifIndex)
+UINT32 vos_getInterfaceIP (UINT32 index)
 {
-    static VOS_IF_REC_T ifAddrs[VOS_MAX_NUM_IF]  = {0};
-    static UINT32                       ifCount  = 0u;
-    VOS_ERR_T                               err  = VOS_NO_ERR;
-    UINT32                                    i  = 0u;
 
-    if (ifCount == 0u)
+    if (0 < gIpInterfaceCount)                             /* any IP interfaces stored? */
     {
-        ifCount = VOS_MAX_NUM_IF;
-        err = vos_getInterfaces(&ifCount, ifAddrs);
-
-        if (err != VOS_NO_ERR)
+        if ((0 < index) && (index < VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T) 0 != gIpInterfaceIndexToIpAddr[index]))
         {
-            ifCount = 0u;
-            return 0u;
+            return gIpInterfaceIndexToIpAddr[index];       /* quick return the IP address != 0.0.0.0 stored for OS interface index */
         }
-    }
-
-    for (i = 0; i < ifCount; i++)
-    {
-        if (ifAddrs[i].ifIndex == ifIndex)
+        else                                               /* fallback, if requested index is invalid or empty */
         {
-            return ifAddrs[i].ipAddr;
+            UINT32 i;
+            for (i = 0; i < gIpInterfaceCount; i++)
+            {
+                if (gIpInterfaces[i].ifIndex == index)
+                {
+                    return gIpInterfaces[i].ipAddr;
+                }
+            }
         }
     }
 
     return 0u;
 }
-
 
 /**********************************************************************************************************************/
 /** Get the MAC address for a named interface.
@@ -170,7 +214,8 @@ BOOL8 vos_getMacAddress (
     UINT8       *pMacAddr,
     const char  *pIfName)
 {
-#ifdef __linux
+
+#if (defined (__linux) || defined (INTEGRITY))
     struct ifreq    ifinfo;
     int             sd;
     int             result = -1;
@@ -233,40 +278,71 @@ BOOL8 vos_getMacAddress (
 
     return found;
 
-#elif defined(INTEGRITY)
-    struct ifreq    ifinfo;
-    int             sd;
-    int             result = -1;
-
-    if (pIfName == NULL)
-    {
-        strcpy(ifinfo.ifr_name, cDefaultIface);
-    }
-    else
-    {
-        strcpy(ifinfo.ifr_name, pIfName);
-    }
-    sd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sd != -1)
-    {
-        result = ioctl(sd, SIOCGIFHWADDR, &ifinfo);
-        close(sd);
-    }
-    if ((result == 0) && (ifinfo.ifr_hwaddr.sa_family == 1))
-    {
-        memcpy(pMacAddr, ifinfo.ifr_hwaddr.sa_data, ifinfo.ifr_hwaddr.sa_len);
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-
 #elif defined(__QNXNTO__)
 #   warning "no definition for get_mac_address() on this platform!"
 #else
 #   error no definition for get_mac_address() on this platform!
 #endif
+}
+
+/**********************************************************************************************************************/
+/** Get the VLAN-ID for a named interface.
+ *
+ *  @param[in]          pIfName    pointer to interface name
+ *
+ *  @retval             VLAN-ID    0 = no VLAN or failed
+ */
+UINT16 vos_getVlanId (
+    const char  *pIfName)
+{
+#if (defined (__linux) || defined (INTEGRITY))
+    struct vlan_ioctl_args ifv = {};
+    int                    sd;
+    UINT16                 vlan_id = 0;
+
+    sd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sd != -1)
+    {
+        if (pIfName == NULL)
+        {
+            strncpy(ifv.device1, cDefaultIface, sizeof(ifv.device1));
+        }
+        else
+        {
+            strncpy(ifv.device1, pIfName, sizeof(ifv.device1));
+        }
+
+        ifv.cmd = GET_VLAN_VID_CMD;                    // see https://github.com/lldpd/lldpd/blob/master/src/daemon/interfaces-linux.c
+        if (ioctl(sd, SIOCGIFVLAN, &ifv) >= 0) {
+            vlan_id = (UINT16) ifv.u.VID;              // is a VLAN interface - return VLAN-ID
+        }
+
+        close(sd);
+    }
+   
+    return vlan_id;
+
+#elif defined(__APPLE__)
+#   warning "no definition for get_mac_address() on this platform!"
+#elif defined(__QNXNTO__)
+#   warning "no definition for get_mac_address() on this platform!"
+#else
+#   error no definition for get_mac_address() on this platform!
+#endif
+}
+
+/***********************************************************************************************************************
+ * GLOBAL FUNCTIONS
+ */
+
+/**********************************************************************************************************************/
+/** Use after creating or deleting a network interface: to update the stored IP, VLAN and MAC addresses of local network interfaces
+ *
+ */
+
+EXT_DECL void vos_reCollectIpInterfaces ()
+{
+    vos_collectIpInterfaces();
 }
 
 /**********************************************************************************************************************/
@@ -311,9 +387,32 @@ EXT_DECL VOS_ERR_T vos_sockSetBuffer (VOS_SOCK_T sock)
     return VOS_NO_ERR;
 }
 
-/***********************************************************************************************************************
- * GLOBAL FUNCTIONS
+/**********************************************************************************************************************/
+/** Get the MAC address for a named interface.
+ *
+ *  @param[in]      pIfName    pointer to interface name
+ *
+ *  @retval         IP address of interface
+ *  @retval         0 if index not found
  */
+EXT_DECL UINT32 vos_getIpAddress (
+    const char  *pIfName)
+{
+
+    if (0 < gIpInterfaceCount)                             /* any IP interfaces stored? */
+    {
+        UINT32 i;
+        for (i = 0; i < gIpInterfaceCount; i++)
+        {
+            if (strncmp(pIfName, gIpInterfaces[i].name, VOS_MAX_IF_NAME_SIZE) == 0)
+            {
+                return gIpInterfaces[i].ipAddr;
+            }
+        }
+    }
+
+    return 0u;
+}
 
 /**********************************************************************************************************************/
 /** Byte swapping.
@@ -469,7 +568,7 @@ EXT_DECL INT32 vos_select (
  *  @param[in,out]  ifAddrs           array of interface records
  *
  *  @retval         VOS_NO_ERR      no error
- *  @retval         VOS_PARAM_ERR   pMAC == NULL
+ *  @retval         VOS_PARAM_ERR   pMAC == NULL or table too small for all network interfaces
  */
 EXT_DECL VOS_ERR_T vos_getInterfaces (
     UINT32          *pAddrCnt,
@@ -486,7 +585,7 @@ EXT_DECL VOS_ERR_T vos_getInterfaces (
         return VOS_PARAM_ERR;
     }
 
-    if (getifaddrs(&pAddrs) == -1)
+    if (getifaddrs(&pAddrs) == -1)        // get a linked list of structures describing the network interfaces of the local system
     {
         char buff[VOS_MAX_ERR_STR_SIZE];
         STRING_ERR(buff);
@@ -511,12 +610,7 @@ EXT_DECL VOS_ERR_T vos_getInterfaces (
                 /* Store interface index */
                 ifAddrs[count].ifIndex = if_nametoindex(ifAddrs[count].name);
 
-                vos_printLog(VOS_LOG_INFO, "IP-Addr for '%s': %u.%u.%u.%u\n",
-                             ifAddrs[count].name,
-                             (unsigned int)(ifAddrs[count].ipAddr >> 24) & 0xFF,
-                             (unsigned int)(ifAddrs[count].ipAddr >> 16) & 0xFF,
-                             (unsigned int)(ifAddrs[count].ipAddr >> 8)  & 0xFF,
-                             (unsigned int)(ifAddrs[count].ipAddr        & 0xFF));
+                /* Store MAC address */
                 if (vos_getMacAddress(ifAddrs[count].mac, ifAddrs[count].name) == TRUE)
                 {
                     vos_printLog(VOS_LOG_INFO, "Mac-Addr for '%s': %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -528,6 +622,8 @@ EXT_DECL VOS_ERR_T vos_getInterfaces (
                                  (unsigned int)ifAddrs[count].mac[4],
                                  (unsigned int)ifAddrs[count].mac[5]);
                 }
+
+                /* Store interface state */
                 if (pCursor->ifa_flags & IFF_RUNNING)
                 {
                     ifAddrs[count].linkState = TRUE;
@@ -536,9 +632,26 @@ EXT_DECL VOS_ERR_T vos_getInterfaces (
                 {
                     ifAddrs[count].linkState = FALSE;
                 }
+
+                /* Store VLAN-ID */
+                ifAddrs[count].vlanId = vos_getVlanId(ifAddrs[count].name);
+
+                vos_printLog(VOS_LOG_INFO, " IP-Addr for '%s': %u.%u.%u.%u, VLAN %u\n",
+                             ifAddrs[count].name,
+                             (unsigned int)(ifAddrs[count].ipAddr >> 24) & 0xFF,
+                             (unsigned int)(ifAddrs[count].ipAddr >> 16) & 0xFF,
+                             (unsigned int)(ifAddrs[count].ipAddr >> 8)  & 0xFF,
+                             (unsigned int)(ifAddrs[count].ipAddr        & 0xFF),
+                             ifAddrs[count].vlanId);
+
                 count++;
             }
             pCursor = pCursor->ifa_next;
+        }
+        if (pCursor != NULL && count >= *pAddrCnt)
+        {
+            vos_printLog(VOS_LOG_ERROR, "ifAddrs[%u] is too small to store all system network interfaces!\n", *pAddrCnt);
+            return VOS_PARAM_ERR;
         }
 
         freeifaddrs(pAddrs);
@@ -556,7 +669,6 @@ EXT_DECL VOS_ERR_T vos_getInterfaces (
 /**********************************************************************************************************************/
 /** Get the state of an interface
  *
- *
  *  @param[in]      ifAddress       address of interface to check
  *
  *  @retval         TRUE            interface is up and ready
@@ -567,9 +679,8 @@ EXT_DECL BOOL8 vos_netIfUp (
 {
     struct ifaddrs  *pAddrs;
     struct ifaddrs  *pCursor;
-    VOS_IF_REC_T    ifAddrs;
-
-    ifAddrs.linkState = FALSE;
+    VOS_IP4_ADDR_T  ipAddr = 0;
+    BOOL8           linkState = FALSE;
 
     if (getifaddrs(&pAddrs) == 0)
     {
@@ -578,14 +689,14 @@ EXT_DECL BOOL8 vos_netIfUp (
         {
             if (pCursor->ifa_addr != NULL && pCursor->ifa_addr->sa_family == AF_INET)
             {
-                memcpy(&ifAddrs.ipAddr, &pCursor->ifa_addr->sa_data[2], 4);
-                ifAddrs.ipAddr = vos_ntohl(ifAddrs.ipAddr);
+                memcpy(&ipAddr, &pCursor->ifa_addr->sa_data[2], 4);
+                ipAddr = vos_ntohl(ipAddr);
                 /* Exit if first (default) interface matches */
-                if (ifAddress == VOS_INADDR_ANY || ifAddress == ifAddrs.ipAddr)
+                if (ifAddress == VOS_INADDR_ANY || ifAddress == ipAddr)
                 {
                     if (pCursor->ifa_flags & IFF_UP)
                     {
-                        ifAddrs.linkState = TRUE;
+                        linkState = TRUE;
                     }
                     /* vos_printLog(VOS_LOG_INFO, "pCursor->ifa_flags = 0x%x\n", pCursor->ifa_flags); */
                     break;
@@ -593,11 +704,9 @@ EXT_DECL BOOL8 vos_netIfUp (
             }
             pCursor = pCursor->ifa_next;
         }
-
         freeifaddrs(pAddrs);
-
     }
-    return ifAddrs.linkState;
+    return linkState;
 }
 
 
@@ -614,8 +723,8 @@ EXT_DECL BOOL8 vos_netIfUp (
 EXT_DECL VOS_ERR_T vos_sockInit (void)
 {
     memset(&gIfr, 0, sizeof(gIfr));
-    (void) vos_getInterfaceIP(0);
-    vosSockInitialised = TRUE;
+    vos_collectIpInterfaces();            // fill global interface list: gIpInterfaces, gIpInterfaceIndexToIpAddr, gIpInterfaceCount
+    gVosSockInitialised = TRUE;
     return VOS_NO_ERR;
 }
 
@@ -627,11 +736,12 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
 EXT_DECL void vos_sockTerm (void)
 {
-    vosSockInitialised = FALSE;
+    gIpInterfaceCount = 0;
+    gVosSockInitialised = FALSE;
 }
 
 /**********************************************************************************************************************/
-/** Return the MAC address of the default adapter.
+/** Return the MAC address of the default adapter (requires global data preset by vos_sockInit)
  *
  *  @param[out]     pMAC            return MAC address.
  *
@@ -644,9 +754,6 @@ EXT_DECL VOS_ERR_T vos_sockGetMAC (
     UINT8 pMAC[VOS_MAC_SIZE])
 {
     UINT32          i;
-    UINT32          AddrCount = VOS_MAX_NUM_IF;
-    VOS_IF_REC_T    ifAddrs[VOS_MAX_NUM_IF];
-    VOS_ERR_T       err;
 
     if (pMAC == NULL)
     {
@@ -654,23 +761,20 @@ EXT_DECL VOS_ERR_T vos_sockGetMAC (
         return VOS_PARAM_ERR;
     }
 
-    err = vos_getInterfaces(&AddrCount, ifAddrs);
-
-    if (err == VOS_NO_ERR)
+    if (gVosSockInitialised == FALSE)                       /* init creates the global interface list */
     {
-        for (i = 0u; i < AddrCount; ++i)
+        vos_printLogStr(VOS_LOG_WARNING, "Please call vos_sockInit before calling vos_sockGetMAC\n");
+        vos_sockInit();
+    }
+
+    if (0 < gIpInterfaceCount)                             /* any IP interfaces available? */
+    {
+        UINT8   emptyMac[VOS_MAC_SIZE] = { 0 };
+        for (i = 0u; i < gIpInterfaceCount; ++i)
         {
-            if (ifAddrs[i].mac[0] ||
-                ifAddrs[i].mac[1] ||
-                ifAddrs[i].mac[2] ||
-                ifAddrs[i].mac[3] ||
-                ifAddrs[i].mac[4] ||
-                ifAddrs[i].mac[5])
-            {
-                if (vos_getMacAddress(pMAC, ifAddrs[i].name) == TRUE)
-                {
-                    return VOS_NO_ERR;
-                }
+            if (memcmp(gIpInterfaces[i].mac, emptyMac, VOS_MAC_SIZE) != 0) {
+                memcpy(pMAC, gIpInterfaces[i].mac, VOS_MAC_SIZE);
+                return VOS_NO_ERR;
             }
         }
     }
@@ -698,7 +802,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
 {
     int sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -750,7 +854,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
 {
     int sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -912,7 +1016,7 @@ EXT_DECL VOS_ERR_T vos_sockSetOptions (
 
 
 #ifdef SO_PRIORITY
-            /* if available (and the used socket is tagged) set the VLAN PCP field as well. */
+            /* if available (and the used socket is tagged) set the skb_priority, which is then mapped to the VLAN PCP field. */
             sockOptValue = (int) pOptions->qos;
             if (setsockopt(sock, SOL_SOCKET, SO_PRIORITY, &sockOptValue,
                            sizeof(sockOptValue)) == -1)
@@ -1390,7 +1494,7 @@ EXT_DECL VOS_ERR_T vos_sockReceiveUDP (
  *
  *  @param[in]      sock            socket descriptor
  *  @param[in]      ipAddress       source IP to receive on, 0 for any
- *  @param[in]      port            port to receive on, 17224 for PD
+ *  @param[in]      port            port to receive on, TRDP_PD_UDP_PORT = 17224 for PD
  *
  *  @retval         VOS_NO_ERR      no error
  *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
@@ -1403,7 +1507,7 @@ EXT_DECL VOS_ERR_T vos_sockBind (
     UINT32     ipAddress,
     UINT16     port)
 {
-    struct sockaddr_in srcAddress;
+    struct sockaddr_in srcAddress = { 0 };
 
     if (sock == -1)
     {
@@ -1413,7 +1517,6 @@ EXT_DECL VOS_ERR_T vos_sockBind (
     /* Allow the socket to be bound to an address and port
         that is already in use */
 
-    memset((char *)&srcAddress, 0, sizeof(srcAddress));
     srcAddress.sin_family       = AF_INET;
     srcAddress.sin_addr.s_addr  = vos_htonl(ipAddress);
     srcAddress.sin_port         = vos_htons(port);
@@ -1484,7 +1587,7 @@ EXT_DECL VOS_ERR_T vos_sockListen (
  *  @param[in]      sock            Socket descriptor
  *  @param[out]     pSock           Pointer to socket descriptor, on exit new socket
  *  @param[out]     pIPAddress      source IP to receive on, 0 for any
- *  @param[out]     pPort           port to receive on, 17224 for PD
+ *  @param[out]     pPort           port to receive on, TRDP_PD_UDP_PORT = 17224 for PD
  *
  *  @retval         VOS_NO_ERR      no error
  *  @retval         VOS_PARAM_ERR   NULL parameter, parameter error

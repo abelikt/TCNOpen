@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1', it is provided with the highest socket, and VOS implementation of the function will add the '+1' (if needed)
  *     AHW 2021-05-06: Ticket #322 Subscriber multicast message routing in multi-home device
  *      AÖ 2019-11-11: Ticket #290: Add support for Virtualization on Windows
@@ -90,8 +91,8 @@ extern "C" {
 #endif
 
 #endif
-
 #define VOS_TTL_MULTICAST  64       /**< The maximum number of hops a multicast packet can take    */
+
 #ifndef VOS_MAX_IF_NAME_SIZE        /**< The maximum size for the interface name                   */
 #ifdef IFNAMSIZ
 #define VOS_MAX_IF_NAME_SIZE    IFNAMSIZ
@@ -99,9 +100,15 @@ extern "C" {
 #define VOS_MAX_IF_NAME_SIZE   40
 #endif
 #endif
+
 #ifndef VOS_MAX_NUM_IF              /**< The maximum number of IP interface adapters that can be handled by VOS */
+#ifdef TSN_SUPPORT
+#define VOS_MAX_NUM_IF  64          /**< TSN uses VLAN and each VLAN creates its own IP interface */
+#else
 #define VOS_MAX_NUM_IF  8
 #endif
+#endif
+
 #ifndef VOS_MAX_NUM_UNICAST         /**< The maximum number of unicast addresses that can be handled by VOS    */
 #define VOS_MAX_NUM_UNICAST  10
 #endif
@@ -173,7 +180,7 @@ typedef struct
     BOOL8   reuseAddrPort;  /**< allow reuse of address and port                    */
     BOOL8   nonBlocking;    /**< use non blocking calls                             */
     BOOL8   no_mc_loop;     /**< no multicast loop back                             */
-    BOOL8   no_udp_crc;     /**< supress udp crc computation                       */
+    BOOL8   no_udp_crc;     /**< supress udp crc computation                        */
     BOOL8   txTime;         /**< use transmit time on send, if available            */
     BOOL8   raw;            /**< use raw socket, not for receiver!                  */
     UINT16  vlanId;
@@ -190,14 +197,41 @@ typedef struct
     UINT8           mac[VOS_MAC_SIZE];          /**< interface adapter MAC address  */
     BOOL8           linkState;                  /**< link down (false) / link up (true) */
     UINT32          ifIndex;                    /**< interface index                */
-/*    UINT16          vlanId; */
+    UINT16          vlanId;                     /**< Interface VLAN ID (0=no VLAN)  */
 } VOS_IF_REC_T;
+
+
+/***********************************************************************************************************************
+ *  LOCALS (for access in vos_sock.c and vos_sockTSN.c)
+ */
+
+/* store the IP, VLAN and MAC addresses of local network interfaces for fast access - set once in vos_sockInit(), cleared by vos_sockTerm() */
+extern VOS_IF_REC_T    gIpInterfaces[VOS_MAX_NUM_IF];      /* IP-interface-list containing IP and MAC addresses */
+extern UINT32          gIpInterfaceCount;                  /* length of stored IP-interface-list */
+
 
 /***********************************************************************************************************************
  * PROTOTYPES
  */
 
 /**********************************************************************************************************************/
+/** Use after creating or deleting a network interface: to update the stored IP, VLAN and MAC addresses of local network interfaces
+ */
+
+EXT_DECL void vos_reCollectIpInterfaces ();
+
+/**********************************************************************************************************************/
+/** Get the MAC address for a named interface.
+ *
+ *  @param[in]      pIfName    pointer to interface name
+ *
+ *  @retval         IP address of interface
+ *  @retval         0 if index not found
+ */
+EXT_DECL UINT32 vos_getIpAddress (
+    const char  *pIfName);
+
+    /**********************************************************************************************************************/
 /** Byte swapping 2 Bytes.
  *
  *  @param[in]          val             Initial value.
@@ -668,10 +702,10 @@ EXT_DECL VOS_ERR_T vos_sockReceiveTCP (
  *  @retval         VOS_NO_ERR                 no error
  *  @retval         VOS_PARAM_ERR              sock descriptor unknown, parameter error
  */
+
 EXT_DECL VOS_ERR_T vos_sockSetMulticastIf (
     VOS_SOCK_T  sock,
     UINT32      mcIfAddress);
-
 
 /**********************************************************************************************************************/
 /** Determines the address to bind to since the behaviour in the different OS is different
@@ -681,38 +715,177 @@ EXT_DECL VOS_ERR_T vos_sockSetMulticastIf (
  *
  *  @retval         Address to bind to
  */
+
 EXT_DECL VOS_IP4_ADDR_T vos_determineBindAddr ( VOS_IP4_ADDR_T  srcIP,
                                                 VOS_IP4_ADDR_T  mcGroup,
                                                 VOS_IP4_ADDR_T  rcvMostly);
 
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
+
 #ifdef TSN_SUPPORT
-/* Extension for TSN & VLAN support */
-EXT_DECL VOS_ERR_T  vos_ifnameFromVlanId (UINT16    vlanId,
-                                          CHAR8     *pIFaceName);
-EXT_DECL VOS_ERR_T  vos_createVlanIF (UINT16            vlanId,
-                                      CHAR8             *pIFaceName,
-                                      VOS_IP4_ADDR_T    ipAddr);
-EXT_DECL VOS_ERR_T  vos_sockOpenTSN (VOS_SOCK_T             *pSock,
-                                     const VOS_SOCK_OPT_T   *pOptions);
-EXT_DECL VOS_ERR_T  vos_sockSendTSN (VOS_SOCK_T     sock,
-                                     const UINT8    *pBuffer,
-                                     UINT32         *pSize,
-                                     VOS_IP4_ADDR_T srcIpAddress,
-                                     VOS_IP4_ADDR_T dstIpAddress,
-                                     UINT16         port,
-                                     VOS_TIMEVAL_T  *pTxTime);
-EXT_DECL VOS_ERR_T vos_sockReceiveTSN (VOS_SOCK_T   sock,
-                                       UINT8        *pBuffer,
-                                       UINT32       *pSize,
-                                       UINT32       *pSrcIPAddr,
-                                       UINT16       *pSrcIPPort,
-                                       UINT32       *pDstIPAddr,
-                                       BOOL8        peek);
-EXT_DECL VOS_ERR_T  vos_sockBind2IF (VOS_SOCK_T     sock,
-                                     VOS_IF_REC_T   *pIFace,
-                                     BOOL8          doBind);
-EXT_DECL void       vos_sockPrintOptions (VOS_SOCK_T sock);
+
+/*
+    Extension for TSN & VLAN support
+*/
+
+/**********************************************************************************************************************/
+/** Get the interface name for a given VLAN ID (and IP address, if given)
+ *
+ *  @param[in]      vlanId          vlan ID to find
+ *  @param[in]      ipAddr          IP to find (0 = match any)
+ *  @param[in]      pIFaceName      found interface
+ *
+ *  @retval         VOS_NO_ERR      if found
+ *  @retval         VOS_INIT_ERR    vos_sockInit needs to be called first
+ *  @retval         VOS_PARAM_ERR   vlan 1..4094 allowed (0=no VLAN, 4095=wildcard)
+ */
+EXT_DECL VOS_ERR_T vos_ifnameFromVlanId (
+    UINT16          vlanId,
+    VOS_IP4_ADDR_T  ipAddr,
+    CHAR8           *pIFaceName);
+
+/**********************************************************************************************************************/
+/** Create a suitable interface for the supplied VLAN ID.
+ *  Prepare the Ethernet PCP / IP QoS mapping for each priority as 1:1 for ingress and egress
+ *  This is quite slow and works on systems with a command shell only, but is only called on initialization!
+ *
+ *  @param[in]      vlanId          socket descriptor
+ *  @param[out]     pIFaceName      name of vlan interface
+ *  @param[in]      ipAddr          IP address
+ *
+ *  @retval         VOS_NO_ERR       no error
+ *  @retval         VOS_SOCK_ERR     failed
+ */
+
+EXT_DECL VOS_ERR_T vos_createVlanIF (
+    UINT16          vlanId,
+    CHAR8           *pIFaceName,
+    VOS_IP4_ADDR_T  ipAddr);
+
+/**********************************************************************************************************************/
+/** Use after creating or deleting a network interface: to update the stored IP, VLAN and MAC addresses of local network interfaces
+ *
+*/
+
+EXT_DECL void vos_reCollectIpInterfaces ();
+
+/**********************************************************************************************************************/
+/** Create a TSN socket.
+ *  Return a socket descriptor for further calls. The socket options are optional and can be
+ *  applied later.
+ *
+ *  @param[out]     pSock           pointer to socket descriptor returned
+ *  @param[in]      pOptions        pointer to socket options (optional)
+ *
+ *  @retval         VOS_NO_ERR      no error
+ *  @retval         VOS_PARAM_ERR   pSock == NULL
+ *  @retval         VOS_SOCK_ERR    socket not available or option not supported
+ */
+
+EXT_DECL VOS_ERR_T vos_sockOpenTSN (
+    VOS_SOCK_T              *pSock,
+    const VOS_SOCK_OPT_T    *pOptions);
+
+/**********************************************************************************************************************/
+/** Send TSN over UDP data.
+ *  Send data to the supplied address and port.
+ *
+ *  @param[in]      sock            socket descriptor
+ *  @param[in]      pBuffer         pointer to data to send
+ *  @param[in,out]  pSize           In: size of the data to send, Out: no of bytes sent
+ *  @param[in]      srcIpAddress    source IP
+ *  @param[in]      dstIpAddress    destination IP
+ *  @param[in]      port            destination port
+ *  @param[in]      pTxTime         absolute time when to send this packet
+ *
+ *  @retval         VOS_NO_ERR      no error
+ *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
+ *  @retval         VOS_IO_ERR      data could not be sent
+ *  @retval         VOS_BLOCK_ERR   Call would have blocked in blocking mode
+ */
+
+EXT_DECL VOS_ERR_T vos_sockSendTSN (
+    VOS_SOCK_T      sock,
+    const UINT8     *pBuffer,
+    UINT32          *pSize,
+    VOS_IP4_ADDR_T  srcIpAddress,
+    VOS_IP4_ADDR_T  dstIpAddress,
+    UINT16          port,
+    VOS_TIMEVAL_T   *pTxTime);
+
+/**********************************************************************************************************************/
+/** Receive TSN (UDP) data.
+ *  The caller must provide a sufficient sized buffer. If the supplied buffer is smaller than the bytes received, *pSize
+ *  will reflect the number of copied bytes and the call should be repeated until *pSize is 0 (zero).
+ *  If the socket was created in blocking-mode (default), then this call will block and will only return if data has
+ *  been received or the socket was closed or an error occured.
+ *  If called in non-blocking mode, and no data is available, VOS_NODATA_ERR will be returned.
+ *  If pointers are provided, source IP, source port and destination IP will be reported on return.
+ *
+ *  @param[in]      sock            socket descriptor
+ *  @param[out]     pBuffer         pointer to applications data buffer
+ *  @param[in,out]  pSize           pointer to the received data size
+ *  @param[out]     pSrcIPAddr      pointer to source IP
+ *  @param[out]     pSrcIPPort      pointer to source port
+ *  @param[out]     pDstIPAddr      pointer to dest IP
+ *  @param[in]      peek            if true, leave data in queue
+ *
+ *  @retval         VOS_NO_ERR      no error
+ *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
+ *  @retval         VOS_IO_ERR      data could not be read
+ *  @retval         VOS_NODATA_ERR  no data
+ *  @retval         VOS_BLOCK_ERR   Call would have blocked in blocking mode
+ */
+
+EXT_DECL VOS_ERR_T vos_sockReceiveTSN (
+    VOS_SOCK_T sock,
+    UINT8      *pBuffer,
+    UINT32     *pSize,
+    UINT32     *pSrcIPAddr,
+    UINT16     *pSrcIPPort,
+    UINT32     *pDstIPAddr,
+    BOOL8      peek);
+
+/**********************************************************************************************************************/
+/** Bind a socket to an interface instead of IP address and port.
+ *  Devices which do not support the SO_BINDTODEVICE option try to find its address in the device list and
+ *  use the assigned IP address to bind.
+ *
+ *  @param[in]      sock            socket descriptor
+ *  @param[in,out]  iFace           interface to bind to
+ *  @param[in]      doBind          if false, return IP addr only
+ *
+ *  @retval         VOS_NO_ERR      no error
+ *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
+ *  @retval         VOS_IO_ERR      Input/Output error
+ *  @retval         VOS_MEM_ERR     resource error
+ */
+
+EXT_DECL VOS_ERR_T vos_sockBind2IF (
+    VOS_SOCK_T      sock,
+    VOS_IF_REC_T    *iFace,
+    BOOL8           doBind);
+
+/**********************************************************************************************************************/
+/** Debug output main socket options
+ *
+ *  @param[in]      sock            socket
+ */
+
+EXT_DECL void vos_sockPrintOptions (
+    VOS_SOCK_T sock);
+
+/**********************************************************************************************************************/
+
+/*
+    Extension for TSN & VLAN support
+*/
+
 #endif
+
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
 
 #ifdef __cplusplus
 }

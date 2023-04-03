@@ -72,6 +72,32 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "Setup Kontron TSN: TRANSMITTER Qbv VLAN configuration",
+            "type": "shell",
+            "command": "${userHome}/sourceforge/trdp/.vscode/kontron_transmitter_qbv_configuration.sh",
+            "args":[],
+            "group":  {
+                "kind": "none"
+            },
+            "presentation": {
+                "reveal":"always"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Setup Kontron TSN: RECEIVER Qbv VLAN configuration",
+            "type": "shell",
+            "command": "${userHome}/sourceforge/trdp/.vscode/kontron_receiver_qbv_configuration.sh",
+            "args":[],
+            "group":  {
+                "kind": "none"
+            },
+            "presentation": {
+                "reveal":"always"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "Make Debug",
             "type": "shell",
             "command": "make",

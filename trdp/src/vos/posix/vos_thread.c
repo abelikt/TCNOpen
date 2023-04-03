@@ -17,6 +17,8 @@
  *
  * $Id$
  *
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
+ *     CWE 2023-02-27: switch semaphore-wait to use CLOCK_MONOTONIC, available since glibc 2.30 through sem_clockwait()
  *     AHW 2023-02-21: Lint warnings
  *     AHW 2023-01-10: Ticket #405 Problem with GLIBC > 2.34
  *     CEW 2023-01-09: Ticket #408: thread-safe localtime - but be aware of static pTimeString
@@ -87,7 +89,7 @@ const UINT32    cMutextMagic        = 0x1234FEDCu;
 
 int             vosThreadInitialised = FALSE;
 
-#if defined(SCHED_DEADLINE) && defined (RT_THREADS)
+#if defined(SCHED_DEADLINE) && (defined(RT_THREADS) || defined(TSN_SUPPORT))
 
 /* __NR_sched_setattr number */
 #ifndef __NR_sched_setattr
@@ -245,8 +247,10 @@ static int clock_nanosleep (
     {
         switch (clock_id)
         {
-            case CLOCK_REALTIME:
-            case CLOCK_MONOTONIC:
+            case CLOCK_REALTIME:            /* defined as 0 */
+#if defined CLOCK_MONOTONIC            
+            case CLOCK_MONOTONIC:           /* defined as 1 */
+#endif
             {
                 uint64_t nanos = (uint64_t) rqtp->tv_sec * IV_1E9 + (uint64_t) rqtp->tv_nsec;
                 int success;
@@ -296,7 +300,7 @@ static int clock_nanosleep (
 #define NSECS_PER_USEC  1000u
 #define USECS_PER_MSEC  1000u
 #define MSECS_PER_SEC   1000u
-#define NSECS_PER_SEC   1000000000u;
+#define NSECS_PER_SEC   1000000000ull;
 
 /* This define holds the max amount os seconds to get stored in 32bit holding micro seconds        */
 /* It is the result when using the common time struct with tv_sec and tv_usec as on a 32 bit value */
@@ -325,7 +329,7 @@ typedef struct
 static void vos_runCyclicThread (
     VOS_THREAD_CYC_T *pParameters)
 {
-#if defined(SCHED_DEADLINE) && defined (RT_THREADS)
+#if defined(SCHED_DEADLINE) && (defined(RT_THREADS) || defined(TSN_SUPPORT))
     struct timespec     deadline;
     struct timespec     now;
 #else
@@ -337,8 +341,8 @@ static void vos_runCyclicThread (
 #endif
     UINT32              interval    = pParameters->interval;
     VOS_THREAD_FUNC_T   pFunction   = pParameters->pFunction;
-    void *pArguments = pParameters->pArguments;
-    VOS_TIMEVAL_T       startTime = pParameters->startTime;
+    void                *pArguments = pParameters->pArguments;
+    VOS_TIMEVAL_T       startTime   = pParameters->startTime;
     CHAR8               name[16];
 
     vos_strncpy(name, pParameters->pName, 16);      /* for logging */
@@ -346,22 +350,31 @@ static void vos_runCyclicThread (
     vos_printLog(VOS_LOG_DBG, "thread parameters freed: %p\n", (void *) pParameters);
     vos_memFree(pParameters);
 
-#if defined(SCHED_DEADLINE) && defined (RT_THREADS)
+#if defined(SCHED_DEADLINE) && (defined(RT_THREADS) || defined(TSN_SUPPORT))
 
-    UINT64  interval_ns = interval * NSECS_PER_USEC;
+    UINT64  interval_ns = (UINT64) interval * NSECS_PER_USEC;
     int     retCode;
     /* Cyclic tasks are real-time tasks (RTLinux only) */
     {
         struct sched_attr rt_attribs;
-        rt_attribs.size             = sizeof(struct sched_attr); /* Size of this structure */
-        rt_attribs.sched_policy     = SCHED_DEADLINE; /* Policy (SCHED_*) */
-        rt_attribs.sched_flags      = 0u;           /* Flags */
-        rt_attribs.sched_nice       = 0;            /* Nice value (SCHED_OTHER, SCHED_BATCH) */
-        rt_attribs.sched_priority   = 0u;           /* Static priority (SCHED_FIFO, SCHED_RR) */
+        rt_attribs.size             = sizeof(struct sched_attr);    /* Size of this structure */
+        rt_attribs.sched_flags      = 0u;                           /* Flags */
+        rt_attribs.sched_nice       = 0;                            /* Nice value (SCHED_OTHER, SCHED_BATCH) */
+
+#if defined(TSN_SUPPORT)
+        rt_attribs.sched_policy     = SCHED_FIFO;                   /* Policy (SCHED_*) */
+        rt_attribs.sched_priority   = 99u;                          /* Static priority (SCHED_FIFO, SCHED_RR) */
+#else
+        rt_attribs.sched_policy     = SCHED_DEADLINE;               /* Policy (SCHED_*) */
+        rt_attribs.sched_priority   = 0u;                           /* Static priority (SCHED_FIFO, SCHED_RR) */
+#if defined(SCHED_DEADLINE)
         /* Remaining fields are for SCHED_DEADLINE only */
         rt_attribs.sched_runtime    = interval_ns / 4u;
         rt_attribs.sched_deadline   = interval_ns / 2u;
         rt_attribs.sched_period     = interval_ns;
+#endif
+#endif
+
         retCode = sched_setattr(0, &rt_attribs, 0);
         if (retCode != 0)
         {
@@ -377,14 +390,15 @@ static void vos_runCyclicThread (
     deadline.tv_sec     = startTime.tv_sec;
     deadline.tv_nsec    = startTime.tv_usec * NSECS_PER_USEC;
 
-    deadline.tv_nsec    += 7500000;
+    deadline.tv_nsec    += 1000000 - (deadline.tv_nsec % 1000000); /* adjust start-time to next full ms to sync with TSN cycle */
+    deadline.tv_nsec    += 800000;                                 /* 200µs before the next TSN timeslot (should be configured to start on full ms) */
     deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
     deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
 
     for (;; )
     {
         /* Sleep until deadline */
-        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL) != 0)
+        while (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &deadline, NULL) != 0)
         {
             if (errno != EINTR)
             {
@@ -400,18 +414,29 @@ static void vos_runCyclicThread (
         deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
         deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
 
-        clock_gettime(CLOCK_MONOTONIC, &now);
+        (void)clock_gettime(CLOCK_REALTIME, &now);
         if (now.tv_sec > deadline.tv_sec || (now.tv_sec == deadline.tv_sec && now.tv_nsec > deadline.tv_nsec))
         {
-            /*severe error: cyclic task time violated*/
+            UINT32 too_late = (1000 * 1000 * (now.tv_sec - deadline.tv_sec)) + ((now.tv_nsec - deadline.tv_nsec) / 1000);
+            
+            /* severe error: cyclic task time violated */
             /* calculate next deadline */
             deadline.tv_nsec    += interval_ns;
             deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
             deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
+
+            /* if still not in the future: move deadline one interval into the future */
+            if (now.tv_sec > deadline.tv_sec || (now.tv_sec == deadline.tv_sec && now.tv_nsec > deadline.tv_nsec))
+            {
+                deadline.tv_nsec  = now.tv_nsec + interval_ns;
+                deadline.tv_sec   = now.tv_sec  + deadline.tv_nsec / NSECS_PER_SEC;
+                deadline.tv_nsec  = deadline.tv_nsec % NSECS_PER_SEC;
+            }
+
             /* Log the runtime violation */
             vos_printLog(VOS_LOG_WARNING,
-                         "cyclic thread with interval %u usec was running too long.\n",
-                         (unsigned int)interval);
+                         "cyclic thread with interval %uµsec was running %10.3fms too long.\n",
+                         (unsigned int)interval, too_late/1000.0);
         }
         pthread_testcancel();
     }
@@ -420,7 +445,10 @@ static void vos_runCyclicThread (
     for (;; )
     {
         /* Synchronize with starttime */
-        vos_getTime(&now);                      /* get initial time */
+        /* See: https://stackoverflow.com/questions/54241080/how-to-schedule-a-real-time-task-with-absolute-start-time */
+        /* use CLOCK_REALTIME: in most environments the realtime clock runs synchronized to TSN- / PTP-time */
+        (void)vos_getRealTime(&now);             /* get initial time */
+
         vos_subTime(&now, &startTime);
 
         /* Wait for multiples of interval */
@@ -437,9 +465,9 @@ static void vos_runCyclicThread (
         /* Idle for the difference */
         (void) vos_threadDelay(waitingTime);
 
-        vos_getTime(&priorCall);  /* get initial time */
-        pFunction(pArguments);    /* perform thread function */
-        vos_getTime(&afterCall);  /* get time after function ghas returned */
+        (void)vos_getRealTime(&priorCall);       /* get initial time */
+        pFunction(pArguments);                   /* perform thread function */
+        (void)vos_getRealTime(&afterCall);       /* get time after function has returned */
 
         /* subtract in the pattern after - prior to get the runtime of function() */
         vos_subTime(&afterCall, &priorCall);
@@ -609,7 +637,7 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
         return VOS_THREAD_ERR;
     }
 
-#if defined(SCHED_DEADLINE) && defined (RT_THREADS)
+#if defined(SCHED_DEADLINE) && (defined(RT_THREADS) || defined(TSN_SUPPORT))
     /* Experimental !!! */
     /* Real-time task handling (RTLinux only) */
     if (policy == VOS_THREAD_POLICY_DEADLINE)
@@ -656,8 +684,11 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
     /* Limit and set the scheduling priority of the thread */
     if (priority > sched_get_priority_max(policy))
     {
-        vos_printLog(VOS_LOG_WARNING, "priority reduced to %d (from demanded %d)\n",
-                     (int) sched_get_priority_max(policy), (int) priority);
+        if (priority != 255)
+        {
+            vos_printLog(VOS_LOG_WARNING, "priority reduced to %d (from demanded %d)\n",
+                         (int) sched_get_priority_max(policy), (int) priority);
+        }
         priority = (VOS_THREAD_PRIORITY_T) sched_get_priority_max(policy);
     }
     schedParam.sched_priority = priority;
@@ -696,23 +727,23 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
         }
         else
         {
-            p_params->pName = pName;
-            p_params->startTime.tv_sec  = 0;
-            p_params->startTime.tv_usec = 0;
-            p_params->interval      = interval;
-            p_params->pFunction     = pFunction;
-            p_params->pArguments    = pArguments;
-            vos_printLog(VOS_LOG_DBG, "thread parameters alloc: %p\n", (void *) p_params);
+			p_params->pName = pName;
+			p_params->startTime.tv_sec  = 0;
+			p_params->startTime.tv_usec = 0;
+			p_params->interval      = interval;
+			p_params->pFunction     = pFunction;
+			p_params->pArguments    = pArguments;
+			vos_printLog(VOS_LOG_DBG, "thread parameters alloc: %p\n", (void *) p_params);
 
-            if (pStartTime != NULL)
-            {
-                p_params->startTime = *pStartTime;
-            }
-			
-            /* Create a cyclic thread */
-            retCode = pthread_create(&hThread, &threadAttrib, (void *(*)(void *))vos_runCyclicThread, p_params);
-            (void) vos_threadDelay(10000u);
-        }
+			if (pStartTime != NULL)
+			{
+				p_params->startTime = *pStartTime;
+			}
+				
+			/* Create a cyclic thread */
+			retCode = pthread_create(&hThread, &threadAttrib, (void *(*)(void *))vos_runCyclicThread, p_params);
+			(void) vos_threadDelay(10000u);
+		}
     }
     else
     {
@@ -903,7 +934,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
     wanted_delay.tv_sec     = delay / 1000000u;
     wanted_delay.tv_nsec    = (delay % 1000000) * 1000;
     // Using absolute time to avoid program block with nanosleep
-    (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
+    (void)clock_gettime(CLOCK_REALTIME, &current_time);
     target_time.tv_sec    = current_time.tv_sec + wanted_delay.tv_sec;
     target_time.tv_nsec   = current_time.tv_nsec + wanted_delay.tv_nsec;
     if (target_time.tv_nsec >= 1000000000)
@@ -915,7 +946,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
     {
         pthread_testcancel();
         ret = clock_nanosleep(
-                              CLOCK_MONOTONIC,
+                              CLOCK_REALTIME,
                               TIMER_ABSTIME,
                               &target_time,
                               &remaining_delay);
@@ -926,7 +957,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
         //ret = nanosleep(&wanted_delay, &remaining_delay);
         if (ret == -1 && errno == EINTR)
         {
-            (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
+            (void)clock_gettime(CLOCK_REALTIME, &current_time);
             target_time.tv_sec    = current_time.tv_sec + remaining_delay.tv_sec;
             target_time.tv_nsec   = current_time.tv_nsec + remaining_delay.tv_nsec;
             if (target_time.tv_nsec >= 1000000000)
@@ -945,7 +976,9 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 
 
 /**********************************************************************************************************************/
-/** Return the current time in sec and us
+/** Return the current time in sec and µs
+ ** Be aware, that MONOTONIC time is returned, if available!
+ ** Fallback is REALTIME, with additional consideration of time zones and daylight saving time
  *
  *
  *  @param[out]     pTime           Pointer to time value
@@ -964,11 +997,11 @@ EXT_DECL void vos_getTime (
     {
 #ifndef CLOCK_MONOTONIC
 
-        /*    On systems without monotonic clock support,
+        /*  On systems without monotonic clock support,
             changing the system clock during operation
             might interrupt process data packet transmissions!    */
 
-        (void)gettimeofday(&myTime, NULL);
+        (void)gettimeofday(&myTime, NULL);      /* uses CLOCK_REALTIME as fallback */
 
 #else
 
@@ -1722,10 +1755,8 @@ EXT_DECL VOS_ERR_T vos_semaTake (
         vos_getTime(&waitTimeVos);
         waitTimeSpec.tv_sec     = waitTimeVos.tv_sec;
         waitTimeSpec.tv_nsec    = waitTimeVos.tv_usec * (suseconds_t) NSECS_PER_USEC;
-#elif defined(__QNXNTO__)
-#warning "Please verify which clock 'sem_timedwait_monotonic()' really needs, remove this warning via TCNOpen then!"
-#warning "I suspect it must be CLOCK_MONOTONIC. It was CLOCK_REALTIME before..."
-        (void) clock_gettime(CLOCK_MONOTONIC, &waitTimeSpec);
+#elif defined CLOCK_MONOTONIC
+        (void) clock_gettime(CLOCK_MONOTONIC, &waitTimeSpec);   // since glibc 2.30: sem_clockwait() available for use with monotonic clock
 #else
         (void) clock_gettime(CLOCK_REALTIME, &waitTimeSpec);
 #endif
@@ -1753,17 +1784,11 @@ EXT_DECL VOS_ERR_T vos_semaTake (
             /* carry not necessary */
         }
         /* take semaphore with specified timeout */
-        /* BL 2013-05-06:
-           This call will fail under LINUX, because it depends on CLOCK_REALTIME (opposed to CLOCK_MONOTONIC)!
-        */
 #ifdef __QNXNTO__
         rc = sem_timedwait_monotonic(&sema->sem, &waitTimeSpec);
+#elif defined CLOCK_MONOTONIC
+        rc = sem_clockwait(&sema->sem, CLOCK_MONOTONIC, &waitTimeSpec);  // since glibc 2.30: behaves like sem_timedwait() except the time is measured against the clock specified by clockid (CLOCK_MONOTONIC or CLOCK_REALTIME)
 #else
-        /* BL 2013-11-28:
-           Currently, under Linux, there is no semaphore call which will work with CLOCK_MONOTONIC; the semaphore
-           will fail if the clock was changed by the system (NTP, adjtime etc.).
-           See also http://sourceware.org/bugzilla/show_bug.cgi?id=14717
-        */
         rc = sem_timedwait(&sema->sem, &waitTimeSpec);
 #endif
     }

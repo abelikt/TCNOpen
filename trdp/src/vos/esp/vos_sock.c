@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *     AHW 2021-05-06: Ticket #322 Subscriber multicast message routing in multi-home device
  *      BL 2019-08-27: Changed send failure from ERROR to WARNING
@@ -61,7 +62,7 @@ extern "C" {
  *  LOCALS
  */
 
-static int vosSockInitialised = FALSE;
+static int gVosSockInitialised = FALSE;
 
 /***********************************************************************************************************************
  * LOCAL FUNCTIONS
@@ -70,63 +71,6 @@ static int vosSockInitialised = FALSE;
 /***********************************************************************************************************************
  * GLOBAL FUNCTIONS
  */
-
-#ifdef TSN_SUPPORT
-
-/* Unimplemented extensions for TSN & VLAN support */
-EXT_DECL VOS_ERR_T  vos_ifnameFromVlanId (UINT16    vlanId,
-                                          CHAR8     *pIFaceName)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL VOS_ERR_T  vos_createVlanIF (UINT16            vlanId,
-                                      CHAR8             *pIFaceName,
-                                      VOS_IP4_ADDR_T    ipAddr)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL VOS_ERR_T  vos_sockOpenTSN (VOS_SOCK_T             *pSock,
-                                     const VOS_SOCK_OPT_T   *pOptions)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL VOS_ERR_T  vos_sockSendTSN (VOS_SOCK_T     sock,
-                                     const UINT8    *pBuffer,
-                                     UINT32         *pSize,
-                                     VOS_IP4_ADDR_T srcIpAddress,
-                                     VOS_IP4_ADDR_T dstIpAddress,
-                                     UINT16         port,
-                                     VOS_TIMEVAL_T  *pTxTime)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL VOS_ERR_T vos_sockReceiveTSN (VOS_SOCK_T sock,
-                                       UINT8      *pBuffer,
-                                       UINT32     *pSize,
-                                       UINT32     *pSrcIPAddr,
-                                       UINT16     *pSrcIPPort,
-                                       UINT32     *pDstIPAddr,
-                                       BOOL8      peek)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL VOS_ERR_T  vos_sockBind2IF (VOS_SOCK_T     sock,
-                                     VOS_IF_REC_T   *pIFace,
-                                     BOOL8          doBind)
-{
-    return VOS_NO_ERR;
-}
-
-EXT_DECL void       vos_sockPrintOptions (VOS_SOCK_T sock)
-{
-    return;
-}
-#endif
 
 /**********************************************************************************************************************/
 /** Byte swapping.
@@ -320,7 +264,7 @@ EXT_DECL BOOL8 vos_netIfUp (
 
 EXT_DECL VOS_ERR_T vos_sockInit (void)
 {
-    vosSockInitialised = TRUE;
+    gVosSockInitialised = TRUE;
     return VOS_NO_ERR;
 }
 
@@ -332,7 +276,7 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
 EXT_DECL void vos_sockTerm (void)
 {
-    vosSockInitialised = FALSE;
+    gVosSockInitialised = FALSE;
 }
 
 /**********************************************************************************************************************/
@@ -378,7 +322,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
 {
     int sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -429,7 +373,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
 {
     int sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }

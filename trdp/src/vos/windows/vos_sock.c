@@ -18,6 +18,7 @@
 /*
 * $Id$
 *
+*     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *     AHW 2023-01-11: Lint warnigs
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *     AHW 2021-08-04: Ticket #372: Possible infinite loop in vos_getInterfaces()
@@ -107,7 +108,7 @@
  *  LOCALS
  */
 
-BOOL8   vosSockInitialised = FALSE;
+BOOL8   gVosSockInitialised = FALSE;
 UINT8   mac[VOS_MAC_SIZE];
 
 
@@ -538,29 +539,56 @@ EXT_DECL INT32 vos_select (
  *  @retval         IP address of interface
  *  @retval         0 if index not found
  */
-UINT32 vos_getInterfaceIP(UINT32 index)
+UINT32 vos_getInterfaceIP (UINT32 index)
 {
-    static VOS_IF_REC_T ifAddrs[VOS_MAX_NUM_IF] = { 0 };
-    static UINT32       ifCount = 0u;
-    VOS_ERR_T           err = VOS_NO_ERR;
-    UINT32              i = 0u;
+    static VOS_IF_REC_T     ifAddrs[VOS_MAX_NUM_IF]  = {0};                         /* set once: get IP Interface list once and remember them */
+    static VOS_IP4_ADDR_T   indexToIpAddr[4*VOS_MAX_NUM_IF] = {(VOS_IP4_ADDR_T) 0}; /* set once: quick resolve OS-interface index to IP address - there may be many virtual interfaces, not all are setup for IP traffic */
+    static UINT32           ifCount     = 0u;                                       /* set once: number of stored interface-records */
+    VOS_ERR_T               err         = VOS_NO_ERR;
+    UINT32                  i           = 0u;
+    UINT32                  tempIndex   = 0U; 
 
-    if (ifCount == 0u)
+    if (ifCount == 0u)                                  /* first function-call - or no IP interface found */
     {
         ifCount = VOS_MAX_NUM_IF;
-        err = vos_getInterfaces(&ifCount, ifAddrs);
+        err = vos_getInterfaces(&ifCount, ifAddrs);     /* setup interface record array */
+
         if (err != VOS_NO_ERR)
         {
             ifCount = 0u;
             return 0u;
         }
+
+        for (i = 0; i < ifCount; i++)
+        {
+            tempIndex = ifAddrs[i].ifIndex;
+            if ((0 < tempIndex) && (tempIndex < 4*VOS_MAX_NUM_IF) &&    /* array boundaries 1..(4*VOS_MAX_NUM_IF) */
+                ((VOS_IP4_ADDR_T) 0 == indexToIpAddr[tempIndex]))       /* index unused */
+            {
+                indexToIpAddr[tempIndex] = ifAddrs[i].ipAddr;
+            }
+            else                                                        /* on any single failure: clear fast index table and search the old way */
+            {
+                for (tempIndex = 0; tempIndex < 4*VOS_MAX_NUM_IF; tempIndex++)
+                {
+                    indexToIpAddr[tempIndex] = (VOS_IP4_ADDR_T) 0;
+                }
+            }
+        }
     }
 
-    for (i = 0; i < ifCount; i++)
+    if ((0 < index) && (index < 4*VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T) 0 != indexToIpAddr[index]))
     {
-        if (ifAddrs[i].ifIndex == index)
+        return indexToIpAddr[index];        /* quick return the IP address != 0.0.0.0 stored for OS interface index */
+    }
+    else
+    {
+        for (i = 0; i < ifCount; i++)
         {
-            return ifAddrs[i].ipAddr;
+            if (ifAddrs[i].ifIndex == index)
+            {
+                return ifAddrs[i].ipAddr;
+            }
         }
     }
 
@@ -591,7 +619,7 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
     memset(mac, 0, sizeof(mac));
     (void) vos_getInterfaceIP(0);
-    vosSockInitialised = TRUE;
+    gVosSockInitialised = TRUE;
 
     return VOS_NO_ERR;
 }
@@ -604,7 +632,7 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
 EXT_DECL void vos_sockTerm (void)
 {
-    vosSockInitialised = FALSE;
+    gVosSockInitialised = FALSE;
     (void) WSACleanup();
 }
 
@@ -623,7 +651,7 @@ EXT_DECL VOS_ERR_T vos_sockGetMAC (
 {
     UINT32 i;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -722,7 +750,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
 {
     VOS_SOCK_T sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -784,7 +812,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
 {
     VOS_SOCK_T sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }

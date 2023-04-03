@@ -161,7 +161,7 @@ int main (int argc, char *argv[])
                                                TRDP_FLAGS_CALLBACK, 10000000,
                                                TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
 
     UINT32                  ownIP = 0;
     int                     rv = 0;

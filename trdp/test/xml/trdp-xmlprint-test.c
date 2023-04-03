@@ -21,7 +21,7 @@
  *
  * $Id$
  *
- *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
+ *      Aï¿½ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      BL 2020-07-16: Ticket #334 dirent.h not part of delivery
  */
@@ -54,6 +54,8 @@ static void printProcessConfig(TRDP_PROCESS_CONFIG_T  * pProcessConfig)
         if (pProcessConfig->options & procOptions[i])
             printf(" %s", strProcOptions[i]);
     printf("\n");
+    printf("    VLAN-ID: %u, VLAN-Priority: %u\n",
+           pProcessConfig->vlanId, pProcessConfig->vlanPrio);
 }
 
 static void printMemConfig(TRDP_MEM_CONFIG_T * pMemConfig)

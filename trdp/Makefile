@@ -151,7 +151,8 @@ ifeq ($(TSN_SUPPORT),1)
 	# Additional sources for TSN support
 	VOS_OBJS += vos_sockTSN.o
 	CFLAGS += -DTSN_SUPPORT
-#	Option: Building with TSN support
+	CFLAGS += -DRT_THREADS
+#	Option: Building with TSN support (requires: RT_THREADS)
 endif
 
 ifeq ($(HIGH_PERF_INDEXED),1)
@@ -171,7 +172,7 @@ ifeq ($(FULL_BUILD), 1)
 	TRDP_OBJS += $(TRDP_OPT_OBJS)
 endif
 
-all:		$(TARGETS)
+all:	$(TARGETS)
 
 debug:
 	rm -rf bld/* test/logs/*

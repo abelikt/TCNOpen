@@ -236,7 +236,7 @@ static TRDP_APP_SESSION_T test_init(
 void usage(const char *appName)
 {
     printf("Usage of %s\n", appName);
-    printf("This tool receives PD MC messages from an ED on to interfaces using the same MC address.\n"
+    printf("This tool receives PD MC messages from an ED on two interfaces using the same MC address.\n"
            "Arguments are:\n"
            "-f <first IP address> (default INADDR_ANY)\n"
            "-s <second IP address> (default INADDR_ANY)\n"

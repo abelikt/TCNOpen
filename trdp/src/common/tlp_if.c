@@ -19,7 +19,7 @@
 *
 *     AHW 2023-02-21: Lint warnings
 *     AHW 2023-02-20: Ticket #420 Infinite loop in tlp_get() on unrecoverable errors
-*      AÖ 2023-01-13: Ticket #412 Added tlp_republishService
+*      Aï¿½ 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *     AHW 2022-03-24: Ticket #391 Allow PD request without reply
 *     IBO 2021-08-12: Ticket #355 Redundant PD default state should be follower
@@ -1447,7 +1447,7 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
                                  subHandle.mcGroup,
                                  usage,
                                  appHandle->option,
-                                 TRUE,
+                                 TRUE,                              // rcvMostly: RAW socket option not needed for receivers
                                  VOS_INVALID_SOCKET,
                                  &lIndex,
                                  0u);
@@ -1800,49 +1800,49 @@ EXT_DECL TRDP_ERR_T tlp_get (
 
         if (ret == TRDP_NO_ERR)
         {
-            /*    Get the current time    */
-            vos_getTime(&now);
+			/*    Get the current time    */
+			vos_getTime(&now);
 
-            /*    Check time out    */
-            if (timerisset(&pElement->interval) &&
-                timercmp(&pElement->timeToGo, &now, <))
-            {
-                /*    Packet is late    */
-                if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
-                    pData != NULL && pDataSize != NULL)
-                {
-                    memset(pData, 0, *pDataSize);
-                }
-                else /* TRDP_TO_KEEP_LAST_VALUE */
-                {
-                    ;
-                }
-                ret = TRDP_TIMEOUT_ERR;
-            }
-            else
-            {
-                ret = trdp_pdGet(pElement,
-                                 appHandle->marshall.pfCbUnmarshall,
-                                 appHandle->marshall.pRefCon,
-                                 pData,
-                                 pDataSize);
-            }
+			/*    Check time out    */
+			if (timerisset(&pElement->interval) &&
+				timercmp(&pElement->timeToGo, &now, <))
+			{
+				/*    Packet is late    */
+				if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
+					pData != NULL && pDataSize != NULL)
+				{
+					memset(pData, 0, *pDataSize);
+				}
+				else /* TRDP_TO_KEEP_LAST_VALUE */
+				{
+					;
+				}
+				ret = TRDP_TIMEOUT_ERR;
+			}
+			else
+			{
+				ret = trdp_pdGet(pElement,
+								 appHandle->marshall.pfCbUnmarshall,
+								 appHandle->marshall.pRefCon,
+								 pData,
+								 pDataSize);
+			}
 
-            if (pPdInfo != NULL)
-            {
-                pPdInfo->comId = pElement->addr.comId;
-                pPdInfo->srcIpAddr = pElement->lastSrcIP;
-                pPdInfo->destIpAddr = pElement->addr.destIpAddr;
-                pPdInfo->etbTopoCnt = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
-                pPdInfo->opTrnTopoCnt = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
-                pPdInfo->msgType = (TRDP_MSG_T)vos_ntohs(pElement->pFrame->frameHead.msgType);
-                pPdInfo->seqCount = pElement->curSeqCnt;
-                pPdInfo->protVersion = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
-                pPdInfo->replyComId = vos_ntohl(pElement->pFrame->frameHead.replyComId);
-                pPdInfo->replyIpAddr = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
-                pPdInfo->pUserRef = pElement->pUserRef;
-                pPdInfo->resultCode = ret;
-            }
+			if (pPdInfo != NULL)
+			{
+				pPdInfo->comId          = pElement->addr.comId;
+				pPdInfo->srcIpAddr      = pElement->lastSrcIP;
+				pPdInfo->destIpAddr     = pElement->addr.destIpAddr;
+				pPdInfo->etbTopoCnt     = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
+				pPdInfo->opTrnTopoCnt   = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
+				pPdInfo->msgType        = (TRDP_MSG_T) vos_ntohs(pElement->pFrame->frameHead.msgType);
+				pPdInfo->seqCount       = pElement->curSeqCnt;
+				pPdInfo->protVersion    = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
+				pPdInfo->replyComId     = vos_ntohl(pElement->pFrame->frameHead.replyComId);
+				pPdInfo->replyIpAddr    = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
+				pPdInfo->pUserRef       = pElement->pUserRef;
+				pPdInfo->resultCode     = ret;
+			}
         }
 
         if (vos_mutexUnlock(appHandle->mutexRxPD) != VOS_NO_ERR)

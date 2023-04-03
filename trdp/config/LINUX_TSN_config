@@ -10,7 +10,8 @@
 #// Copyright NewTec GmbH, 2015. All rights reserved.
 #//
 #// Remarks
-#//   CWE 2022-12-21: UUID needed to compile and link TSN
+#//   CWE 2023-03-27: Commitment: TSN will be used by selecting a VLAN-Ethenet-interface over a certain IP-address (VLAN-tag is added by the OS, TSN is matched over VLAN PCP egress/ingress IP-QoS). Etherner/IP/UDP+TCP will be handled by the OS: no RAW socket necessary
+#//   CWE 2022-12-21: UUID needed to compile and link TSN 
 #//
 
 ARCH = linux
@@ -18,20 +19,23 @@ TARGET_VOS = posix
 TARGET_OS = LINUX
 TCPREFIX = 
 TCPOSTFIX = 
-DOXYPATH = /usr/local/bin/
+DOXYPATH = /usr/bin/
 
 # the _GNU_SOURCE is needed to get the extended poll feature for the POSIX socket
 
 CFLAGS += -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -D_GNU_SOURCE -DPOSIX -DHAS_UUID
 CFLAGS += -Wno-unknown-pragmas -Wno-format -Wno-unused-label -Wno-unused-function -Wno-int-to-void-pointer-cast -Wno-self-assign
 
+INCPATH += -I/usr/include/uuid
 LDFLAGS += -lrt -luuid
 
 LINT_SYSINCLUDE_DIRECTIVES = -i ./src/vos/posix -wlib 0 -DL_ENDIAN
 
+# TSN depends on RT_THREADS (already set in Makefile)
+# no longer required: VOS_USE_RAW_IP_SOCKET = 1
 TSN_SUPPORT = 1
-SOA_SUPPORT = 1
 RT_THREADS = 1
+# SOA_SUPPORT = 1
 
 #ADD_INC += ../TSN
 #ADD_SRC += ../TSN

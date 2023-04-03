@@ -1214,7 +1214,7 @@ TRDP_ERR_T trdp_pdSendIndexed (TRDP_SESSION_PT appHandle)
             timeDiff = clockTimeStamp;
             vos_subTime(&timeDiff, &pSlot->latestCycleStartTimeStamp);
             clockTimeSpentInCycle = timeDiff.tv_sec * 1000000 + timeDiff.tv_usec;
-            percentClockUsed = 100.0 * clockTimeSpentInCycle / pSlot->currentCycle;  /* optimal: 100%, on slow hardware > 100% */
+            percentClockUsed = (REAL32)100.0 * (REAL32)(clockTimeSpentInCycle / pSlot->currentCycle);  /* optimal: 100%, on slow hardware > 100% */
 
             if (percentClockUsed > CLOCK_PERCENT_ERROR_LIMIT) {            /* consider to improve setup */
                 logLevel = VOS_LOG_ERROR;

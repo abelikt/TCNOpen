@@ -94,7 +94,7 @@ int             vosThreadInitialised = FALSE;
 #define USECS_PER_MSEC  1000u
 #define MSECS_PER_SEC   1000u
 
-/* This define holds the max amount os seconds to get stored in 32bit holding micro seconds        */
+/* This define holds the max amount of seconds to get stored in 32bit holding micro seconds        */
 /* It is the result when using the common time struct with tv_sec and tv_usec as on a 32 bit value */
 /* so far 0..999999 gets used for the tv_usec field as per definition, then 0xFFF0BDC0 usec        */
 /* are remaining to represent the seconds, which in turn give 0x10C5 seconds or in decimal 4293    */
@@ -113,7 +113,7 @@ EXT_DECL void vos_cyclicThread (
     {
         vos_getTime(&priorCall);  /* get initial time */
         pFunction(pArguments);    /* perform thread function */
-        vos_getTime(&afterCall);  /* get time after function ghas returned */
+        vos_getTime(&afterCall);  /* get time after function has returned */
         /* subtract in the pattern after - prior to get the runtime of function() */
         vos_subTime(&afterCall, &priorCall);
         /* afterCall holds now the time difference within a structure not compatible with interval */
@@ -452,7 +452,9 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 
 
 /**********************************************************************************************************************/
-/** Return the current time in sec and us
+/** Return the current time in sec and µs
+ ** Be aware, that MONOTONIC time is returned, if available!
+ ** Fallback is REALTIME, with additional consideration of time zones and daylight saving time
  *
  *
  *  @param[out]     pTime           Pointer to time value
@@ -475,7 +477,7 @@ EXT_DECL void vos_getTime (
             changing the system clock during operation
             might interrupt process data packet transmissions!    */
 
-        (void)gettimeofday(&myTime, NULL);
+        (void)gettimeofday(&myTime, NULL);      /* uses CLOCK_REALTIME as fallback */
 
 #else
 

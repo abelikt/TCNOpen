@@ -15,10 +15,11 @@ TARGET_VOS = posix
 TARGET_OS = POSIX
 TCPREFIX = 
 TCPOSTFIX = 
-DOXYPATH = /usr/local/bin/
+DOXYPATH = /usr/bin/
 
 CFLAGS += -O2 -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -DL_ENDIAN
 LDFLAGS += -lrt
 
+INCPATH += -I/usr/include/uuid
 CFLAGS +=  -DHAS_UUID
 LDFLAGS += -luuid

@@ -13,6 +13,7 @@
  *
  * $Id$
  *
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *
  */
@@ -41,51 +42,57 @@
 
 #define DATA_MAX            1432
 
-/* TSN PD sample definition (fast) */
-#define PD_COMID            1000u               /* 24byte string as payload                     */
-#define PD_COMID_CYCLE      10000u              /* default in us (10000 = 0.01 sec)             */
-#define PD_COMID_DEST       "239.1.1.3"         /* default target MC group for TSN PD           */
-#define PD_COMID_DEF_PRIO   5u                  /* default priority for TSN PD                  */
-#define PD_COMID_DEF_VLAN   10u                 /* default VLAN ID for TSN PD                   */
+/* TSN PD sample definition */
+#define PD_COMID_TSN        1000u               /* 24byte string as payload                     */
+#define PD_COMID_TSN_CYCLE  1000u               /* default in us (1000 = 0.001 sec)             */
+#define PD_COMID_TSN_DEST   "239.1.1.3"         /* default target (MC group) for TSN PD         */
+#define PD_COMID_TSN_PRIO   7u                  /* default priority for TSN PD                  */
+#define PD_COMID_TSN_VLAN   10u                 /* default VLAN ID for TSN PD                   */
 
 /* Standard PD sample definition */
-#define PD_COMID2           0u                  /* 24byte string as payload                     */
-#define PD_COMID2_CYCLE     100000u             /* default in us (100000 = 0.1 sec)             */
-#define PD_COMID2_DEST      "239.1.1.2"         /* target MC group for standard PD              */
-#define PD_COMID2_DEF_PRIO  3u                  /* default priority for standard PD             */
+#define PD_COMID_STD        10000u              /* 24byte string as payload                     */
+#define PD_COMID_STD_CYCLE  100000u             /* default in us (100000 = 0.1 sec)             */
+#define PD_COMID_STD_DEST   "239.1.1.2"         /* default target (MC group) for standard PD    */
+#define PD_COMID_STD_PRIO   3u                  /* default priority for standard PD             */
+#define PD_COMID_STD_VLAN   0u                  /* no VLAN  (ID 0) for standard PD              */
 
 #define PD_PAYLOAD_SIZE     24u                 /* fix for this sample */
 
 /* Payload definition (Timestamp as TIMEDATE64 and in ASCII) */
 typedef struct
 {
-    TIMEDATE64  sentTime;
-    CHAR8       timeString[16];
+    TIMEDATE64          sentTime;
+    UINT64              padding;                /* align string to next 16 byte boundary for easy tcpdump analysis */
+    CHAR8               timeString[16];
 } GNU_PACKED LATENCY_PACKET_T;
+
+#define PD_TSN_PAYLOAD_SIZE  sizeof(LATENCY_PACKET_T)
+#define PD_STD_PAYLOAD_SIZE  sizeof(LATENCY_PACKET_T)
 
 /* Global variable set definition */
 typedef struct fdf_context
 {
-    TRDP_APP_SESSION_T  appHandle;          /*    Our identifier to the library instance            */
-    TRDP_PUB_T          pubHandle1;         /*    Our identifier to the TSN publication             */
-    TRDP_PUB_T          pubHandle2;         /*    Our identifier to the standard PD publication     */
-    TRDP_SUB_T          subHandle1;         /*    Our identifier to the first subscription          */
-    TRDP_SUB_T          subHandle2;         /*    Our identifier to the second subscription         */
+    TRDP_APP_SESSION_T  appHandle;          /*    Our identifier to the library instance    */
+    TRDP_PUB_T          pubHandle;          /*    Our identifier to the publication         */
+    TRDP_SUB_T          subHandle;          /*    Our identifier to the subscription        */
     void                *pDataSource;
     UINT32              sourceSize;
     void                *pDataTarget;
     UINT32              targetSize;
 } FDF_APP_CONTEXT;
 
-static int      sComThreadRunning = TRUE;
+static int      gComThreadTsnRunning = TRUE;
+static int      gComThreadStdRunning = TRUE;
+
 static int      gVerbose = FALSE;
 
-UINT8           *gpOutputBuffer;
-UINT8           gExampleData[DATA_MAX] = "Hello World, pckt no. 1";
+UINT8           *gpOutputBufferTsn;
+UINT8           *gpOutputBufferStd;
+UINT8           gExampleDataTsn[DATA_MAX]  = "TSN example data";
+UINT8           gExampleDataStd[DATA_MAX]  = "Standard example data";
 
-FDF_APP_CONTEXT gAppContext = {NULL, NULL, NULL, NULL, NULL, gExampleData, PD_PAYLOAD_SIZE, NULL, 0u};
-
-CHAR8           gBuffer[32];
+FDF_APP_CONTEXT gAppContextTsn = {NULL, NULL, NULL, gExampleDataTsn, PD_TSN_PAYLOAD_SIZE, NULL, 0u};
+FDF_APP_CONTEXT gAppContextStd = {NULL, NULL, NULL, gExampleDataStd, PD_STD_PAYLOAD_SIZE, NULL, 0u};
 
 /***********************************************************************************************************************
  * PROTOTYPES
@@ -93,7 +100,8 @@ CHAR8           gBuffer[32];
 static void dbgOut (void *, TRDP_LOG_T, const CHAR8 *, const CHAR8 *, UINT16, const CHAR8 *);
 static void usage (const char *);
 static void myPDcallBack (void *, TRDP_APP_SESSION_T, const TRDP_PD_INFO_T *, UINT8 *, UINT32 );
-static void *comThread (void *arg);
+static void *comThreadTsn (void *arg);
+static void *comThreadStd (void *arg);
 
 /**********************************************************************************************************************/
 /** callback routine for TRDP logging/error output
@@ -143,13 +151,18 @@ static void dbgOut (
 static void usage (const char *appName)
 {
     printf("Usage of %s\n", appName);
-    printf("This tool receives and displays TSN PD-PDU messages from 'sendTSN' (ComId 0 and 1000).\n"
+    printf("This tool receives and displays TSN PD-PDU messages from 'sendTSN' (ComId 0 and 1000)\n"
            "Arguments are:\n"
-           "-v <vlan ID> (default 10)\n"
-           "-m <multicast group IP> (default: 239.1.1.3)\n"
-           "-c <expected cycle time> (default 10000 [us])\n"
-           "-s <expected start time> (default 250000 [us])\n"
-           "-o <own IP address> (default: default interface)\n"
+           "-O <own IP address for TSN> (default INADDR_ANY)\n"
+           "-o <own IP address for standard PD> (default INADDR_ANY)\n"
+           "-T <target TSN (multicast) IP address> (default 239.1.1.3)\n"
+           "-t <target standard (multicast) IP address> (default 239.1.1.2)\n"
+           "-V <VLAN-ID for TSN> (default 10)\n"
+           "-v <VLAN-ID for standard PD> (default 0 = no VLAN)\n"
+           "-P <priority for TSN = PCP: 0..7> (default 7)\n"
+           "-p <priority for standard PD = QoS: 0..7> (default 3)\n"
+           "-C <cycle time for TSN> (default 1000 [µs])\n"
+           "-c <cycle time for standard PD> (default 100000 [µs])\n"
            "-d debug output, be more verbose\n"
            "-h print usage\n"
            );
@@ -179,51 +192,64 @@ static void myPDcallBack (
            {
                switch (pMsg->comId)
                {
-                  case PD_COMID:    /* TSN */
-                  {
-                      LATENCY_PACKET_T      *pReceivedDS = (LATENCY_PACKET_T *) pData;
-                      VOS_TIMEVAL_T         tempTime;
-                      VOS_TIMEVAL_T         latency;
-                      static VOS_TIMEVAL_T  sLastLatency    = {0, 0};
-                      static time_t         sAvgJitter      = 0;
-                      time_t                curJitter       = 0;
-                      struct tm             *curTimeTM;
 
-                      vos_getRealTime(&latency);
-                      tempTime.tv_usec  = (INT32)vos_ntohl((UINT32)pReceivedDS->sentTime.tv_usec);
-                      tempTime.tv_sec   = vos_ntohl(pReceivedDS->sentTime.tv_sec);
-                      curTimeTM = localtime(&tempTime.tv_sec);
+                    // #################################################################################
+                    case PD_COMID_TSN:    /* TSN */
+                    {
+                        LATENCY_PACKET_T      *pReceivedDS = (LATENCY_PACKET_T *) pData;
+                        VOS_TIMEVAL_T         tempTime;
+                        VOS_TIMEVAL_T         latency;
+                        static VOS_TIMEVAL_T  sLastLatency    = {0, 0};
+                        INT64                 curJitter;
+                        static UINT64         sAvgJitterSum   = 0;
+                        static UINT32         sAvgJitterCount = 0;
+                        struct tm             *curTimeTM;
 
-                      /* Compute the latency */
-                      if (timercmp(&latency, &tempTime, >) > 0)
-                      {
-                          vos_subTime(&latency, &tempTime);
-                      }
-                      else  /* the clocks are out of sync! */
-                      {
-                          vos_printLog(VOS_LOG_USR, "Sync Error: ComID %d coming from the future (%02d:%02d:%02d.%06d)\n",
-                                       pMsg->comId,
-                                       curTimeTM->tm_hour,
-                                       curTimeTM->tm_min,
-                                       curTimeTM->tm_sec,
-                                       tempTime.tv_usec);
+                        vos_getRealTime(&latency);
+                        tempTime.tv_usec  = (INT32)vos_ntohl((UINT32)pReceivedDS->sentTime.tv_usec);
+                        tempTime.tv_sec   = vos_ntohl(pReceivedDS->sentTime.tv_sec);
+
+                        /* Compute the latency */
+                        if (timercmp(&latency, &tempTime, >) > 0)
+                        {
+                            vos_subTime(&latency, &tempTime);
+                        }
+                        else  /* the clocks are out of sync! */
+                        {
+                            curTimeTM = localtime(&tempTime.tv_sec);
+                            vos_printLog(VOS_LOG_USR, "Sync Error: ComID %d coming from the future (%02d:%02d:%02d.%06d)\n",
+                                         pMsg->comId, curTimeTM->tm_hour, curTimeTM->tm_min, curTimeTM->tm_sec, tempTime.tv_usec);
                           break;
-                      }
-                      /* compute the jitter (must be < 1s) */
-                      curJitter     = labs(sLastLatency.tv_usec - latency.tv_usec); /* curJitter = sLastLatency -
-                                                                                      current jitter */
-                      sAvgJitter    = (sAvgJitter + curJitter) / 2;
-                      sLastLatency  = latency;
+                        }
 
-                      vos_printLog(VOS_LOG_USR, "> ComID %d latency %02ld.%06d (jitter: %06ldus)\n", pMsg->comId,
-                                   latency.tv_sec, latency.tv_usec, sAvgJitter);
-
-                      break;
+                        /* compute the current jitter and average */
+                        curJitter = labs((INT64) ((sLastLatency.tv_sec - latency.tv_sec) * 1000000) + sLastLatency.tv_usec - latency.tv_usec);
+                        if (sAvgJitterCount > 0)
+                        {
+                            sAvgJitterSum += curJitter;
+                        }
+                        sLastLatency = latency;
+                        sAvgJitterCount += 1;
+                        if (sAvgJitterCount > 1000)           // reset average every 1000 packets
+                        {
+                            sAvgJitterCount = 1;
+                            sAvgJitterSum = curJitter;
+                        }
+                        vos_printLog(VOS_LOG_USR, "Receive TSN PD ComID %d, %s, latency %dµs, jitter %dµs, average (%d) %dµs\n", 
+                                   pMsg->comId, pReceivedDS->timeString, (latency.tv_sec * 1000000) + latency.tv_usec,
+                                   curJitter, sAvgJitterCount, sAvgJitterSum / sAvgJitterCount);
+                        break;
 
                   }
-                  case PD_COMID2:   /* Standard PD */
+
+                  // #################################################################################
+                  case PD_COMID_STD:   /* Standard PD */
+                      vos_printLog(VOS_LOG_USR, "Receive Standard PD ComID %d (%u byte): \"%s\"\n", pMsg->comId, dataSize, pData);
+                      break;
+
+                  // #################################################################################
                   default:
-                      vos_printLog(VOS_LOG_USR, "> ComID %d received\n", pMsg->comId);
+                      vos_printLog(VOS_LOG_DBG, "Unexpected ComID %d received (%u byte)\n", pMsg->comId, dataSize);
                       break;
                }
            }
@@ -231,27 +257,25 @@ static void myPDcallBack (
 
        case TRDP_TIMEOUT_ERR:
            /* The application can decide here if old data shall be invalidated or kept    */
-           vos_printLog(VOS_LOG_USR, "> Packet timed out (ComID %d)\n",
-                        pMsg->comId);
+           vos_printLog(VOS_LOG_WARNING, "> Packet timed out (ComID %d)\n", pMsg->comId);
            break;
+
        default:
-           vos_printLog(VOS_LOG_USR, "> Error on packet received (ComID %d), err = %d\n",
-                        pMsg->comId,
-                        pMsg->resultCode);
+           vos_printLog(VOS_LOG_ERROR, "> Error on packet received (ComID %d), err = %d\n", pMsg->comId, pMsg->resultCode);
            break;
     }
 }
 
 /**********************************************************************************************************************/
-/* Communication thread                                                                                               */
+/* Communication thread for TSN PD                                                                                    */
 /**********************************************************************************************************************/
-static void *comThread (void *arg)
+static void *comThreadTsn (void *arg)
 {
     TRDP_APP_SESSION_T appHandle = (TRDP_APP_SESSION_T) arg;
 
-    sComThreadRunning = 1;
+    gComThreadTsnRunning = 1;
 
-    while (sComThreadRunning)
+    while (gComThreadTsnRunning)
     {
         TRDP_FDS_T  rfds;
         INT32       noDesc, rv;
@@ -272,10 +296,43 @@ static void *comThread (void *arg)
         //vos_printLog(VOS_LOG_USR, "fin rv: %d, fdset: 0x%x\n", rv, rfds.fds_bits[0]);
         //vos_printLogStr(VOS_LOG_USR, "------------------------------\n");
     }
-    vos_printLogStr(VOS_LOG_INFO, "Comm thread ran out. \n");
+    vos_printLogStr(VOS_LOG_INFO, "TSN Comm thread ran out. \n");
     return NULL;
 }
 
+/**********************************************************************************************************************/
+/* Communication thread for Standard PD                                                                               */
+/**********************************************************************************************************************/
+static void *comThreadStd (void *arg)
+{
+    TRDP_APP_SESSION_T appHandle = (TRDP_APP_SESSION_T) arg;
+
+    gComThreadStdRunning = 1;
+
+    while (gComThreadStdRunning)
+    {
+        TRDP_FDS_T  rfds;
+        INT32       noDesc, rv;
+        TRDP_TIME_T tv;
+
+        FD_ZERO(&rfds);
+
+        tlc_getInterval(appHandle, &tv, &rfds, &noDesc);
+
+        //vos_printLog(VOS_LOG_USR, "noDesc: %d, fdset: 0x%x\n", noDesc, rfds.fds_bits[0]);
+
+        rv = vos_select(noDesc, &rfds, NULL, NULL, &tv);
+
+        //vos_printLog(VOS_LOG_USR, "rv    : %d, fdset: 0x%x\n", rv, rfds.fds_bits[0]);
+
+        (void) tlc_process(appHandle, &rfds, &rv);
+
+        //vos_printLog(VOS_LOG_USR, "fin rv: %d, fdset: 0x%x\n", rv, rfds.fds_bits[0]);
+        //vos_printLogStr(VOS_LOG_USR, "------------------------------\n");
+    }
+    vos_printLogStr(VOS_LOG_INFO, "Standard Comm thread ran out. \n");
+    return NULL;
+}
 
 /**********************************************************************************************************************/
 /** main entry
@@ -287,65 +344,137 @@ int main (int argc, char *argv[])
 {
     unsigned int            ip[4];
     TRDP_ERR_T              err;
+    TRDP_SEND_PARAM_T       pdConfigurationTsn  = {PD_COMID_TSN_PRIO, TRDP_PD_DEFAULT_TTL, 0u, TRUE, PD_COMID_TSN_VLAN};
+    TRDP_SEND_PARAM_T       pdConfigurationStd  = {PD_COMID_STD_PRIO, TRDP_PD_DEFAULT_TTL, 0u, FALSE, 0};
+    TRDP_PROCESS_CONFIG_T   processConfigTsn    = {"receiveTSN", "", "", PD_COMID_TSN_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_TSN_PRIO, PD_COMID_TSN_VLAN};
+    TRDP_PROCESS_CONFIG_T   processConfigStd    = {"receiveSTD", "", "", PD_COMID_STD_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_STD_PRIO, PD_COMID_STD_VLAN};
+    UINT32                  ownIPtsn   = VOS_INADDR_ANY;
+    UINT32                  ownIPstd   = VOS_INADDR_ANY;
+    UINT32                  destIPtsn  = vos_dottedIP(PD_COMID_TSN_DEST);
+    UINT32                  destIPstd  = vos_dottedIP(PD_COMID_STD_DEST);
+    VOS_THREAD_T            myComThreadTsn;
+    VOS_THREAD_T            myComThreadStd;
+    UINT32                  pdTsn_cycleTime = PD_COMID_TSN_CYCLE;
+    UINT32                  pdStd_cycleTime = PD_COMID_STD_CYCLE;
+    int                     ch;
+    CHAR8                   tempIP1[16];
+    CHAR8                   tempIP2[16];
 
-    TRDP_SEND_PARAM_T       pdConfigurationDefault  = TRDP_PD_DEFAULT_SEND_PARAM;
-    TRDP_SEND_PARAM_T       pdConfigurationTSN      = {3u, 64u, 0u, TRUE, 10};
-    TRDP_PROCESS_CONFIG_T   processConfig = {"receiveTSN", "", "", 10000, 255, TRDP_OPTION_BLOCK};
-    UINT32 ownIP    = 0u;
-    UINT32 destIP   = vos_dottedIP(PD_COMID_DEST);
-    VOS_THREAD_T            myComThread;
-    UINT32  pdTSN_cycleTime = PD_COMID_CYCLE;
-    int     ch;
-
-    while ((ch = getopt(argc, argv, "o:m:h?v:c:d")) != -1)
+    while ((ch = getopt(argc, argv, "O:o:T:t:V:v:P:p:C:c:dh?")) != -1)
     {
         switch (ch)
         {
-           case 'o':
-           {     /*  read ip    */
+           case 'O':
+           {   /* own IP for TSN PD */
                if (sscanf(optarg, "%u.%u.%u.%u",
                           &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
                {
                    usage(argv[0]);
                    exit(1);
                }
-               ownIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+               ownIPtsn = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                break;
            }
-           case 'm':
-           {     /*  read ip    */
+           case 'o':
+           {   /* own IP for standard PD */
                if (sscanf(optarg, "%u.%u.%u.%u",
                           &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
                {
                    usage(argv[0]);
                    exit(1);
                }
-               destIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+               ownIPstd = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+               break;
+           }          
+           case 'T':
+           {   /* target (multicast) IP for TSN PD */
+               if (sscanf(optarg, "%u.%u.%u.%u",
+                          &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               destIPtsn = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+               break;
+           }
+           case 't':
+           {   /* target (multicast) IP for standard PD */
+               if (sscanf(optarg, "%u.%u.%u.%u",
+                          &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               destIPstd = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+               break;
+           }
+           case 'V':
+           {   /* VLAN ID for TSN */
+               if (sscanf(optarg, "%hu", &pdConfigurationTsn.vlan) < 1)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               break;
+           }
+           case 'v':
+           {   /* VLAN ID for standard PD (0 = no VLAN) */
+               if (sscanf(optarg, "%hu", &pdConfigurationStd.vlan) < 1)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               break;
+           }
+           case 'P':
+           {   /* priority (0..7) for TSN */
+               if (sscanf(optarg, "%hhu", &pdConfigurationTsn.qos) < 1)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               processConfigTsn.vlanPrio = pdConfigurationTsn.qos;
+               break;
+           }
+           case 'p':
+           {   /* priority (0..7) for standard PD */
+               if (sscanf(optarg, "%hhu", &pdConfigurationStd.qos) < 1)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               processConfigStd.vlanPrio = pdConfigurationStd.qos;
+               break;
+           }
+           case 'C':
+           {   /* TSN cycle time (µs) */
+               if (sscanf(optarg, "%u", &pdTsn_cycleTime) < 1)
+               {
+                   usage(argv[0]);
+                   exit(1);
+               }
+               processConfigTsn.cycleTime = pdTsn_cycleTime;
                break;
            }
            case 'c':
-           {     /*  read cycle time    */
-               if (sscanf(optarg, "%u", &pdTSN_cycleTime) < 1)
+           {   /* standard PD cycle time (µs) */
+               if (sscanf(optarg, "%u", &pdStd_cycleTime) < 1)
                {
                    usage(argv[0]);
                    exit(1);
                }
+               processConfigStd.cycleTime = pdStd_cycleTime;
                break;
            }
            case 'd':
+           {   /* enable debug output */
                gVerbose = TRUE;
                break;
-           case 'v':
-               /* read vlan ID */
-               if (sscanf(optarg, "%hu", &pdConfigurationTSN.vlan) < 1)
-               {
-                   usage(argv[0]);
-                   exit(1);
-               }
-               break;
+           }
            case 'h':
            case '?':
            default:
+               /* help */
                usage(argv[0]);
                return 1;
         }
@@ -361,134 +490,171 @@ int main (int argc, char *argv[])
         return 1;
     }
 
-    /*    Open a session  */
+    vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
+    vos_printLog(VOS_LOG_USR, "     TSN cycle time:     %10uµs\n", pdTsn_cycleTime);
+    vos_printLog(VOS_LOG_USR, "Standard cycle time:     %10uµs\n", pdStd_cycleTime);
+    memcpy(tempIP1, vos_ipDotted(ownIPtsn), 16);
+    memcpy(tempIP2, vos_ipDotted(destIPtsn), 16);
+    vos_printLog(VOS_LOG_USR, "Subscribe to       TSN PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_TSN, tempIP2, tempIP1, pdConfigurationTsn.vlan, pdConfigurationTsn.qos);
+    memcpy(tempIP1, vos_ipDotted(ownIPstd), 16);
+    memcpy(tempIP2, vos_ipDotted(destIPstd), 16);
+    vos_printLog(VOS_LOG_USR, "Subscribe to  Standard PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_STD, tempIP2, tempIP1, pdConfigurationStd.vlan, pdConfigurationStd.qos);
+    struct timespec tempRealTime;
+    (void)clock_gettime(CLOCK_REALTIME, &tempRealTime);
+#ifdef CLOCK_MONOTONIC
+    struct timespec tempMonoTime;
+    (void)clock_gettime(CLOCK_MONOTONIC, &tempMonoTime);
+#endif
+    vos_printLog(VOS_LOG_USR, "CLOCK_REALTIME:  %10usec, %10uns used for TSN\n", tempRealTime.tv_sec, tempRealTime.tv_nsec);
+#ifdef CLOCK_MONOTONIC
+    vos_printLog(VOS_LOG_USR, "CLOCK_MONOTONIC: %10usec, %10uns not used, info only\n", tempMonoTime.tv_sec, tempMonoTime.tv_nsec);
+#endif    
+    vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
 
-    if (tlc_openSession(&gAppContext.appHandle,
-                        ownIP, 0u,              /* use default IP address           */
+
+
+    /* Open the TSN session with the TRDP stack */
+    if (tlc_openSession(&gAppContextTsn.appHandle,
+                        ownIPtsn, 0u,           /* use default IP address           */
                         NULL,                   /* no Marshalling                   */
                         NULL, NULL,             /* system defaults for PD and MD    */
-                        &processConfig) != TRDP_NO_ERR)
+                        &processConfigTsn) != TRDP_NO_ERR)
     {
-        vos_printLogStr(VOS_LOG_USR, "Initialization error\n");
+        vos_printLogStr(VOS_LOG_USR, "Initialization error on open TSN session\n");
         return 1;
     }
 
-    /*
-        We spawn a separate communication thread, just to demonstrate cooperation
-        of TSN and non-TSN communication over the same application session
-     */
-    err = (TRDP_ERR_T) vos_threadCreate(&myComThread, "comThread",
+    /* Open the standard session with the TRDP stack */
+    if (tlc_openSession(&gAppContextStd.appHandle,
+                        ownIPstd, 0u,           /* use default IP address           */
+                        NULL,                   /* no Marshalling                   */
+                        NULL, NULL,             /* system defaults for PD and MD    */
+                        &processConfigStd) != TRDP_NO_ERR)
+    {
+        vos_printLogStr(VOS_LOG_USR, "Initialization error on open standard session\n");
+        return 1;
+    }
+
+
+
+    /* create TSN communication thread */
+    err = (TRDP_ERR_T) vos_threadCreateSync(&myComThreadTsn, "comThreadTsn",
                                         VOS_THREAD_POLICY_OTHER,
                                         VOS_THREAD_PRIORITY_DEFAULT,
-                                        0u,         /*  interval for cyclic thread                  */
-                                        0u,         /*  stack size (default 4 x PTHREAD_STACK_MIN)  */
-                                        (VOS_THREAD_FUNC_T) comThread, gAppContext.appHandle);
+                                        0u,         /*  interval for cyclic thread      */
+                                        NULL,       /*  start time for cyclic threads   */
+                                        0u,         /*  stack size (default 4 x PTHREAD_STACK_MIN)   */
+                                        (VOS_THREAD_FUNC_T) comThreadTsn, gAppContextTsn.appHandle);
 
     if (err != TRDP_NO_ERR)
     {
-        vos_printLog(VOS_LOG_USR, "comThread could not be created (error = %d)\n", err);
+        vos_printLog(VOS_LOG_USR, "TSN comThread could not be created (error = %d)\n", err);
         tlc_terminate();
         return 1;
     }
 
-    /*    Subscribe to standard PD        */
-
-    memset(gBuffer, 0, sizeof(gBuffer));
-
-    err = tlp_subscribe( gAppContext.appHandle,     /*    our application identifier            */
-                         &gAppContext.subHandle1,   /*    our subscription identifier           */
-                         NULL,                      /*    user reference                        */
-                         myPDcallBack,              /*    callback functiom                     */
-                         0u,                        /*    serviceID = 0                         */
-                         PD_COMID2,                 /*    ComID                                 */
-                         0u,                        /*    etbTopoCnt: local consist only        */
-                         0u,                        /*    opTopoCnt                             */
-                         VOS_INADDR_ANY, VOS_INADDR_ANY, /*    Source IP filter                 */
-                         vos_dottedIP(PD_COMID2_DEST),  /*     MC Group)                        */
-                         TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB,       /*    TRDP flags      */
-                         &pdConfigurationDefault,   /*    default COM_PARAMS                   */
-                         PD_COMID2_CYCLE * 3u,      /*    Time out in us                        */
-                         TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
-                         );
+    /* create Standard communication thread */
+    err = (TRDP_ERR_T) vos_threadCreateSync(&myComThreadStd, "comThreadStd",
+                                        VOS_THREAD_POLICY_OTHER,
+                                        VOS_THREAD_PRIORITY_DEFAULT,
+                                        0u,         /*  interval for cyclic thread      */
+                                        NULL,       /*  start time for cyclic threads   */
+                                        0u,         /*  stack size (default 4 x PTHREAD_STACK_MIN)   */
+                                        (VOS_THREAD_FUNC_T) comThreadStd, gAppContextStd.appHandle);
 
     if (err != TRDP_NO_ERR)
     {
-        vos_printLogStr(VOS_LOG_ERROR, "prep pd receive error\n");
+        vos_printLog(VOS_LOG_USR, "Standard comThread could not be created (error = %d)\n", err);
         tlc_terminate();
         return 1;
     }
-    else
-    {
-        vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
-        vos_printLog(VOS_LOG_USR, "subscribed to ComId %u for destIP %s on Vlan %u IP %s TSN=%u\n",
-                     PD_COMID2,
-                     PD_COMID2_DEST,
-                     pdConfigurationDefault.vlan,
-                     vos_ipDotted(ownIP),
-                     pdConfigurationDefault.tsn);
-        vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
-    }
 
-/*    Subscribe to TSN PD        */
-    err = tlp_subscribe(gAppContext.appHandle,      /*    our application identifier                */
-                        &gAppContext.subHandle2,    /*    our subscription identifier               */
-                        NULL,                       /*    user reference                            */
-                        myPDcallBack,               /*    callback functiom                         */
-                        0u,                         /*    serviceId                                 */
-                        PD_COMID,                   /*    ComID                                     */
-                        0u,                         /*    etbTopoCnt: local consist only            */
-                        0u,                         /*    opTopoCnt                                 */
-                        VOS_INADDR_ANY,             /*    Source IP filter                          */
-                        VOS_INADDR_ANY,             /*    2nd Source IP filter                      */
-                        destIP,                     /*    MC Group to subscribe                     */
-                        TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB | TRDP_FLAGS_TSN, /* TRDP flags   */
-                        &pdConfigurationTSN,        /*    TSN (VLAN) suitable COM_PARAMS           */
-                        pdTSN_cycleTime * 3u,       /*    Time out in us                            */
-                        TRDP_TO_SET_TO_ZERO         /*    delete invalid data on timeout            */
+
+
+    /****************************************************************************/
+    /*   Subscribe to standard PD                                               */
+    /****************************************************************************/
+
+    err = tlp_subscribe(gAppContextStd.appHandle,   /*    our application identifier               */
+                        &gAppContextStd.subHandle,  /*    our subscription identifier              */
+                        NULL,                       /*    user reference                           */
+                        myPDcallBack,               /*    callback function                        */
+                        0u,                         /*    serviceID = 0                            */
+                        PD_COMID_STD,               /*    ComID                                    */
+                        0u,                         /*    etbTopoCnt: local consist only           */
+                        0u,                         /*    opTopoCnt                                */
+                        VOS_INADDR_ANY,             /*    Source IP filter                         */
+                        VOS_INADDR_ANY,             /*    2nd Source IP filter                     */
+                        destIPstd,                  /*    Standard PD (IP or MC Group)             */
+                        TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB,       /*    TRDP flags          */
+                        &pdConfigurationStd,        /*    default COM_PARAMS                       */
+                        PD_COMID_STD_CYCLE * 3u,    /*    Time out in us                           */
+                        TRDP_TO_SET_TO_ZERO         /*    delete invalid data on timeout           */
                         );
 
     if (err != TRDP_NO_ERR)
     {
-        vos_printLogStr(VOS_LOG_ERROR, "prep pd receive error\n");
+        vos_printLogStr(VOS_LOG_ERROR, "Standard PD subscribe error\n");
         tlc_terminate();
         return 1;
     }
-    else
+
+
+    /****************************************************************************/
+    /*   Subscribe to TSN PD                                                    */
+    /****************************************************************************/
+
+    err = tlp_subscribe(gAppContextTsn.appHandle,   /*    our application identifier               */
+                        &gAppContextTsn.subHandle,  /*    our subscription identifier              */
+                        NULL,                       /*    user reference                           */
+                        myPDcallBack,               /*    callback function                        */
+                        0u,                         /*    serviceId                                */
+                        PD_COMID_TSN,               /*    ComID                                    */
+                        0u,                         /*    etbTopoCnt: local consist only           */
+                        0u,                         /*    opTopoCnt                                */
+                        VOS_INADDR_ANY,             /*    Source IP filter                         */
+                        VOS_INADDR_ANY,             /*    2nd Source IP filter                     */
+                        destIPtsn,                  /*    MC Group to subscribe                    */
+                        TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB | TRDP_FLAGS_TSN, /* TRDP flags  */
+                        &pdConfigurationTsn,        /*    TSN (VLAN) suitable COM_PARAMS           */
+                        pdTsn_cycleTime * 3u,       /*    Time out in us                           */
+                        TRDP_TO_SET_TO_ZERO         /*    delete invalid data on timeout           */
+                        );
+
+    if (err != TRDP_NO_ERR)
     {
-        static CHAR8 dotted[16];
-
-        (void)snprintf(dotted, sizeof(dotted), "%u.%u.%u.%u",
-                       (unsigned int)(destIP >> 24),
-                       (unsigned int)((destIP >> 16) & 0xFF),
-                       (unsigned int)((destIP >> 8) & 0xFF),
-                       (unsigned int)(destIP & 0xFF));
-
-        vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
-        vos_printLog(VOS_LOG_USR, "subscribed to ComId %u for destIP %s on Vlan %u IP %s TSN=%u\n",
-                     PD_COMID,
-                     dotted,
-                     pdConfigurationTSN.vlan,
-                     vos_ipDotted(ownIP),
-                     pdConfigurationTSN.tsn);
-        vos_printLogStr(VOS_LOG_USR, "------------------------------------------------------------\n");
+        vos_printLogStr(VOS_LOG_ERROR, "TSN PD subscribe error\n");
+        tlc_terminate();
+        return 1;
     }
 
-    /*
-        Enter the main loop.
-     */
 
-    while (sComThreadRunning)
+
+
+    /****************************************************************************/
+    /* Enter the main loop.                                                     */
+    /****************************************************************************/
+
+    vos_printLogStr(VOS_LOG_DBG, "Enter the main loop...\n\n");
+
+    while (gComThreadStdRunning)
     {
         /* Just idle... */
-        (void) vos_threadDelay(1000000u);
+        (void) vos_threadDelay(2 * PD_COMID_STD_CYCLE);
     }
 
     /*
      *    We always clean up behind us!
      */
-    tlp_unsubscribe(gAppContext.appHandle, gAppContext.subHandle1);
-    tlp_unsubscribe(gAppContext.appHandle, gAppContext.subHandle2);
-    tlc_closeSession(gAppContext.appHandle);
+
+    gComThreadTsnRunning = FALSE;
+    gComThreadStdRunning = FALSE;
+
+    tlp_unpublish(gAppContextTsn.appHandle, gAppContextTsn.pubHandle);
+    tlp_unpublish(gAppContextStd.appHandle, gAppContextStd.pubHandle);
+    tlc_closeSession(gAppContextTsn.appHandle);
+    tlc_closeSession(gAppContextStd.appHandle);
     tlc_terminate();
+
     return 0;
 }

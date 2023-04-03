@@ -913,7 +913,7 @@ int main(int argc, char * argv[])
     memset(&proccfg, 0, sizeof(proccfg));
 
     /* Set in-test-cycle-time */
-    proccfg.cycleTime = 5000u;          // CHRIS: ECHTE Zeit gegenchecken und bei mehr als 10% Versagen Warnings ausgeben ggf. bei mehr als 30% Errors
+    proccfg.cycleTime = 5000u;
     proccfg.options = TRDP_OPTION_TRAFFIC_SHAPING;      // by now: there is no traffic shaping option for HIGH_PERF_INDEXED
 
     if (argc >= 5)

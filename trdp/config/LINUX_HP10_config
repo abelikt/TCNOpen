@@ -15,7 +15,7 @@ TARGET_VOS = posix
 TARGET_OS = LINUX
 TCPREFIX = 
 TCPOSTFIX = 
-DOXYPATH = /usr/local/bin/
+DOXYPATH = /usr/bin/
 
 # the _GNU_SOURCE is needed to get the extended poll feature for the POSIX socket
 
@@ -23,6 +23,7 @@ CFLAGS += -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -D_G
 CFLAGS += -Wno-unknown-pragmas -Wno-format -Wno-unused-label -Wno-unused-function -Wno-int-to-void-pointer-cast -Wno-self-assign
 LDFLAGS += -lrt
 
+INCPATH += -I/usr/include/uuid
 CFLAGS +=  -DHAS_UUID
 LDFLAGS += -luuid
 

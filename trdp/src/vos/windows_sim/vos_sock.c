@@ -78,7 +78,7 @@
  *  LOCALS
  */
 
-BOOL8   vosSockInitialised = FALSE;
+BOOL8   gVosSockInitialised = FALSE;
 UINT8   ifMac[VOS_MAC_SIZE] = { 1, 2, 3, 4, 5, 6 };
 CHAR    ifName[] = "SimIf";
 
@@ -616,7 +616,7 @@ EXT_DECL INT32 vos_select(
 EXT_DECL VOS_ERR_T vos_sockInit (void)
 {
 
-    vosSockInitialised = TRUE;
+    gVosSockInitialised = TRUE;
 
     return VOS_NO_ERR;
 }
@@ -629,7 +629,7 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
 EXT_DECL void vos_sockTerm (void)
 {
-    vosSockInitialised = FALSE;
+    gVosSockInitialised = FALSE;
 }
 
 
@@ -646,7 +646,7 @@ EXT_DECL void vos_sockTerm (void)
 EXT_DECL VOS_ERR_T vos_sockGetMAC (
     UINT8 pMAC[VOS_MAC_SIZE])
 {
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -681,7 +681,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
 {
     SIM_SOCKET sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }
@@ -743,7 +743,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
 {
     SIM_SOCKET sock;
 
-    if (!vosSockInitialised)
+    if (!gVosSockInitialised)
     {
         return VOS_INIT_ERR;
     }

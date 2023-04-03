@@ -17,7 +17,8 @@
  /*
  * $Id$
  *
- *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
+ *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
+ *      AÃ– 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2023-01-11: Lint warnings
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      SB 2021-02-04: Ticket #359: fixed parsing of 'service-device' elements
@@ -207,6 +208,8 @@ static void setDefaultInterfaceValues (
         pProcessConfig->cycleTime   = TRDP_PROCESS_DEFAULT_CYCLE_TIME;
         pProcessConfig->options     = TRDP_PROCESS_DEFAULT_OPTIONS | TRDP_OPTION_DEFAULT_CONFIG;
         pProcessConfig->priority    = TRDP_PROCESS_DEFAULT_PRIORITY;
+        pProcessConfig->vlanPrio    = 0u;        /* #342 update for TSN */
+        pProcessConfig->vlanId      = 0u;        /* #342 update for TSN */
     }
 
     /*  Default Pd configuration    */
@@ -305,7 +308,7 @@ static TRDP_ERR_T readTelegramDef (
     UINT32      countSdtv4SrvInstParams;
     TRDP_SRC_T  *pSrc;
     TRDP_DEST_T *pDest;
-    TRDP_SDTV4_SRV_INST_PAR_T* pSdtv4SrvInstPar;
+    TRDP_SDTV4_SRV_INST_PAR_T* pSdtv4SrvInstPar = NULL;
     XML_TOKEN_T token;
 
     /* Get the attributes */

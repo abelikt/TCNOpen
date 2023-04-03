@@ -437,7 +437,7 @@ int main (int argc, char * *argv)
     TRDP_MD_CONFIG_T        mdConfiguration = {myMDcallBack, NULL, TRDP_MD_DEFAULT_SEND_PARAM, TRDP_FLAGS_CALLBACK,
                                                 10000000, 10000000, 10000000, 10000000, 0, 0, 5};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
     int             rv = 0;
     unsigned int    ip[4];
     int             ch;

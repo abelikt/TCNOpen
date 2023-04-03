@@ -452,7 +452,9 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 
 
 /**********************************************************************************************************************/
-/** Return the current time in sec and us
+/** Return the current time in sec and µs
+ ** Be aware, that MONOTONIC time is returned, if available!
+ ** Fallback is REALTIME, with additional consideration of time zones and daylight saving time
  *
  *
  *  @param[out]     pTime           Pointer to time value

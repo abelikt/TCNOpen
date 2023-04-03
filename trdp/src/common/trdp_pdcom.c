@@ -772,10 +772,12 @@ TRDP_ERR_T  trdp_pdReceive (
         return err;
     }
 
-    /* #322 */
+    /* Ticket #322 Subscriber multicast message routing in multi-home device */
     if ((appHandle->realIP != 0u) && (srcIfAddr != 0) && (appHandle->realIP != srcIfAddr))
     {
         /* Packet does not belong to this session, ignore packet */
+        /* If you want to work with more than one local IP, you need to start a separate session for each IP */
+        vos_printLog(VOS_LOG_DBG, "Ignore PD received for IP %s which is not this sessions realIP (0x%08x)\n", vos_ipDotted(srcIfAddr), appHandle->realIP);
         return TRDP_NO_ERR;
     }
 

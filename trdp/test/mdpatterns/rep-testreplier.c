@@ -255,7 +255,7 @@ int main(int argc, char** argv)
                                         17225u,
                                         0u,
                                         20u};/*have some space for sessions*/
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_REPLIER", "", "", 0, 0, TRDP_OPTION_BLOCK};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_REPLIER", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
 
     printf("TRDP message data repetition test program REPLIER, version 0\n");
 
