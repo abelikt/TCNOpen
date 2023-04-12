@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2023-04-12: XML config for #342 VLAN use added and Lint findings fixed
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2023-01-11: Lint warnings
@@ -106,11 +107,11 @@
 #ifndef TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS
 #define TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS  0u                       /**< Default SDTv4 Safety Function Version     */
 #endif
-#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID
-#define TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID  0u                     /**< Default SDTv4 Safety Channel Identifier   */
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHAN_ID
+#define TRDP_SDTV4_DEFAULT_SAFE_CHAN_ID  0u                         /**< Default SDTv4 Safety Channel Identifier   */
 #endif
-#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS
-#define TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS  0u                   /**< Default SDTv4 Safety Channel Version      */
+#ifndef TRDP_SDTV4_DEFAULT_SAFE_CHAN_VERS
+#define TRDP_SDTV4_DEFAULT_SAFE_CHAN_VERS  0u                       /**< Default SDTv4 Safety Channel Version      */
 #endif
 
 /*******************************************************************************
@@ -630,8 +631,8 @@ static TRDP_ERR_T readTelegramDef (
                     pSrc->pSdtv4Par->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
                     pSrc->pSdtv4Par->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
                     pSrc->pSdtv4Par->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
-                    pSrc->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
-                    pSrc->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+                    pSrc->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHAN_ID;
+                    pSrc->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHAN_VERS;
 
                     while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE)
                     {
@@ -833,8 +834,8 @@ static TRDP_ERR_T readTelegramDef (
                     pDest->pSdtv4Par->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
                     pDest->pSdtv4Par->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
                     pDest->pSdtv4Par->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
-                    pDest->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
-                    pDest->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+                    pDest->pSdtv4Par->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHAN_ID;
+                    pDest->pSdtv4Par->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHAN_VERS;
 
                     while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE)
                     {
@@ -925,8 +926,8 @@ static TRDP_ERR_T readTelegramDef (
                 pSdtv4SrvInstPar->proto_var = TRDP_SDTV4_DEFAULT_PROTO_VAR;
                 pSdtv4SrvInstPar->safe_func_id = TRDP_SDTV4_DEFAULT_SAFE_FUNC_ID;
                 pSdtv4SrvInstPar->safe_func_vers = TRDP_SDTV4_DEFAULT_SAFE_FUNC_VERS;
-                pSdtv4SrvInstPar->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_ID;
-                pSdtv4SrvInstPar->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHANNGEL_VERS;
+                pSdtv4SrvInstPar->safe_channel_id = TRDP_SDTV4_DEFAULT_SAFE_CHAN_ID;
+                pSdtv4SrvInstPar->safe_channel_vers = TRDP_SDTV4_DEFAULT_SAFE_CHAN_VERS;
             }
 
             while (trdp_XMLGetAttribute(pXML, attribute, &valueInt, value) == TOK_ATTRIBUTE && pSdtv4SrvInstPar != NULL)
@@ -1879,6 +1880,14 @@ EXT_DECL TRDP_ERR_T tau_readXmlInterfaceConfig (
                                 {
                                     pProcessConfig->cycleTime = valueInt;
                                     pProcessConfig->options &= ~TRDP_OPTION_DEFAULT_CONFIG;
+                                }
+                                else if (vos_strnicmp(attribute, "vlan-prio", MAX_TOK_LEN) == 0)  /* #342 */
+                                {
+                                    pProcessConfig->vlanPrio = valueInt;
+                                }
+                                else if (vos_strnicmp(attribute, "vlan-id", MAX_TOK_LEN) == 0)    /* #342 */
+                                {
+                                    pProcessConfig->vlanId = valueInt;
                                 }
                             }
                         }

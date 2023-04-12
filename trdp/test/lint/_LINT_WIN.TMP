@@ -42,9 +42,6 @@
 --- Module:   ..\..\src\common\tau_dnr.c (C)
 
 --- Module:   ..\..\src\common\tau_tti.c (C)
-                                                   _
-        pReqCstUUID = (const TRDP_UUID_T*) &ownUUID;
-..\..\src\common\tau_tti.c(1395) : Warning 545: Suspicious use of &
 
 /// Start of Pass 2 ///
 

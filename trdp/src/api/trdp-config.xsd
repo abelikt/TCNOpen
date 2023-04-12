@@ -15,12 +15,13 @@
        #
        #  ABSTRACT      : XML Schema for TRDP configuration configuration
        #
-       #  VERSION       : 1.17.0.0
+       #  VERSION       : 1.18.0.0
        #
        #  SVN           : $Id$
        #
        #  HISTORY       :
-	   #                            1.17.0.0  Ticket #423 and #424 Splitted sdtv2 and sdtv4 parameters, added sdtv4-parameters to service instance
+	   #                            1.18.0.0  Ticket #342 VLAN support added
+       #                            1.17.0.0  Ticket #423 and #424 Splitted sdtv2 and sdtv4 parameters, added sdtv4-parameters to service instance
        #                            1.16.0.0  Ticket #349 support for parsing "dataset name" and "device type"
        #                            1.15.0.0  Added optional attributes for SDTv4 support
        #                            1.15.0.0  Added optional attribute 'name' to event, method, field and instance for service oriented interface
@@ -575,6 +576,16 @@
       <xs:attribute name="cycle-time" type="uint32" use="optional" default="10000">
         <xs:annotation>
           <xs:documentation>Cycle time of the TRDP thread/task in microseconds.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+	  <xs:attribute name="vlan-id" type="uint16" use="optional" default="0">
+        <xs:annotation>
+          <xs:documentation>VLAN ID to be used by TRDP process/session.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+	  <xs:attribute name="vlan-prio" type="uint8" use="optional" default="0">
+        <xs:annotation>
+          <xs:documentation>VLAN priority to be used by TRDP process/session.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="blocking" default="no" use="optional">
