@@ -68,13 +68,15 @@ extern "C" {
  *
  *  @param[in]      appHandle           Application handle
  *  @param[in]      ecspIpAddr          ECSP address
+ *  @param[in]      redId               redId, if redundancy needed for ECSP control publisher
  *
  *  @retval         TRDP_NO_ERR         no error
  *  @retval         TRDP_INIT_ERR       initialisation error
  *
  */
 EXT_DECL TRDP_ERR_T tau_initEcspCtrl ( TRDP_APP_SESSION_T   appHandle, 
-                                       TRDP_IP_ADDR_T       ecspIpAddr);
+                                       TRDP_IP_ADDR_T       ecspIpAddr,
+                                       UINT32               redId);
 
 
 

@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      CK 2023-04-12: Ticket #422 Include redundancy support in ECSP control
 *      SB 2021-08-05: Ticket #356 copying safetyTrail in tau_requestEcspConfirm from proper position in struct
 *     AHW 2021-08-03: Ticket #373 tau_requestEcspConfirm callback not working
 *      SB 2021-07-30: Ticket #356 Bugfix related to marshalled value used in loop condition
@@ -136,13 +137,15 @@ static void ecspConfRepMDCallback(
  *
  *  @param[in]      appHandle           Application handle
  *  @param[in]      ecspIpAddr          ECSP address
+ *  @param[in]      redId               redId, if redundancy needed for ECSP control publisher
  *
  *  @retval         TRDP_NO_ERR     no error
  *  @retval         TRDP_INIT_ERR   initialisation error
  *
  */
 EXT_DECL TRDP_ERR_T tau_initEcspCtrl ( TRDP_APP_SESSION_T   appHandle,
-                                       TRDP_IP_ADDR_T       ecspIpAddr)
+                                       TRDP_IP_ADDR_T       ecspIpAddr,
+                                       UINT32               redId)
 {
     /* session already opened, handle publish/subscribe */
     TRDP_ERR_T err;
@@ -166,7 +169,7 @@ EXT_DECL TRDP_ERR_T tau_initEcspCtrl ( TRDP_APP_SESSION_T   appHandle,
                         appHandle->realIP,          /*    default source IP                 */
                         ecspIpAddr,                 /*    where to send to                  */
                         ECSP_CTRL_CYCLE,            /*    Cycle time in us                  */
-                        0u,                         /*    not redundant                     */
+                        redId,                      /*    redundancy Id if redundnacy needed  */
                                                     /*    #356 switched to manual marshalling */
                         0u,                         /*    packet flags - UDP, no call back  */
                         NULL,                       /*    default qos and ttl               */
