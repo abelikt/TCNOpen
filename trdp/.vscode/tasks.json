@@ -76,6 +76,7 @@
             "type": "shell",
             "command": "${userHome}/sourceforge/trdp/.vscode/kontron_transmitter_qbv_configuration.sh",
             "args":[],
+			"sudo": true,
             "group":  {
                 "kind": "none"
             },
@@ -89,6 +90,7 @@
             "type": "shell",
             "command": "${userHome}/sourceforge/trdp/.vscode/kontron_receiver_qbv_configuration.sh",
             "args":[],
+			"sudo": true,
             "group":  {
                 "kind": "none"
             },

@@ -181,7 +181,7 @@ void vos_collectIpInterfaces ()
 UINT32 vos_getInterfaceList (
     VOS_IF_REC_T   *ipInterfaceList[])
 {
-    if (NULL == *ipInterfaceList)
+    if (NULL == ipInterfaceList)
     {
         return 0;
     }

@@ -1,76 +1,54 @@
 #!/bin/bash
 
 echo ""
-echo "Setup Kontron TSN: TRANSMITTER Qbv VLAN configuration"
-echo ""
 
 #--------------------------------------------------------
 
-QDISC_PORT="enp5s0"            # Queueing disciplines, see: https://tsn.readthedocs.io/qdiscs.html
-HOST_PORT="enp5s0"             # Host-PC ethernet-receive port (type i210) wired to Kontron TSN-board port enp3s0np2
-EP_PORT="enp3s0np1"            # Internal port of Kontron TSN-board 
-TSN_PORTS=("enp3s0np2" "enp3s0np3" "enp3s0np4" "enp3s0np5")   # external ports of Kontron TSN-board
+QDISC_PORT="enp3s0"         # Queueing Disciplines, siehe: https://tsn.readthedocs.io/qdiscs.html
+HOST_PORT="enp3s0"          # gesendet wird von enp3s0
+EP_PORT="enp3s0np1"
+TSN_PORTS=("enp3s0np2" "enp3s0np3" "enp3s0np4" "enp3s0np5")
 
-CPU_MASK="F"                   # Bitmask: use 4 CPU cores: 1 + 2 + 4 + 8
+CPU_MASK="F"                   # Bitmask: alle 4 Cores: 1 + 2 + 4 + 8
 
-HOST_IP="10.0.1.200/24"
-DEST_TSN_IP="10.0.10.100"      # TSN-destination-IP-address - must be converted to destination MAC-address for RAW socket transmissions
+HOST_IP="10.100.0.100/24"
 
-VLAN_ID="10"                   # VLAN used for TRDP
-VLAN_ID_BULK="20"              # VLAN used for optional bulk dummy-traffic
-VLAN_IP="10.0.10.200/24"       # IP-setup for TRDP transmitter
+VLAN_ID="10"
+VLAN_ID_BULK="20"
+VLAN_IP="10.110.0.100/24"
 
-CYCLETIME="1/1000"             # TSN cycle: 1/1000 = 1/1000 seconds    = 1ms 
-CYCLETIME_EXTENSION="0"        # TSN cycle: 0      = 0 nanoseconds
+DEST_TSN_IP="10.110.0.200"      # TSN-destination-IP-address - must be converted to destination MAC-address for RAW socket transmits
 
 #--------------------------------------------------------
-# read IEEE 802.1 Qbv schedule configuration file / configuration files
 
 SCRIPT_DIR="$(dirname "$0")"
 CONFIG_BASE="${SCRIPT_DIR}/kontron_qbv"
-CONFIG_ALL="_all_ports"        # look for CONFIG_BASE + CONFIG_ALL  =>  if available: apply this cfg to all TSN-ports
-CONFIG_SEPARATE="_port_"       # if "all" file not available        =>  apply separate cfg: one cfg for each TSN-port [2..5]
+CONFIG_ALL="_all_ports"        # suche nach CONFIG_BASE + CONFIG_ALL  =>  lade diese cfg in alle Ports
+CONFIG_SEPARATE="_port_"       # wenn kein "all" existiert            =>  lade je Port [0..3] die separate cfg
 CONFIG_FILETYPE=".cfg"
 # -> one configfile:       "kontron_qbv_all_ports.cfg"
 # -> separate configfiles: "kontron_qbv_port2.cfg" "kontron_qbv_port_3.cfg" "kontron_qbv_port_4.cfg" "kontron_qbv_port_5.cfg")
 
-#--------------------------------------------------------
-# set CPUs to performance mode
-
-echo "Set CPUs to performance mode"
-
-rt_cpufreq() {
-        local cpu_id="${1}" governor="${2}"
-        echo ${governor} > /sys/devices/system/cpu/cpu${cpu_id}/cpufreq/scaling_governor
-}
-
-rt_cpufreq_performance() {
-        local cpu_id="${1}"
-        rt_cpufreq ${cpu_id} performance
-}
-
-rt_cpufreq_performance 0
-rt_cpufreq_performance 1
-rt_cpufreq_performance 2
-rt_cpufreq_performance 3
-echo ""
+CYCLETIME="1/1000"             # 1/1000 = 1/1000 seconds    = 1ms 
+CYCLETIME_EXTENSION="0"        # 0      = 0 nanoseconds
 
 #--------------------------------------------------------
 # Configure Switch (Traffic Control Queueing Disciplines: use Multiqueue Priority)
 
-tc qdisc add dev ${QDISC_PORT} root mqprio
+# Alstom-Hardware: "RTNETLINK answers: Operation not supported"
+# tc qdisc add dev ${QDISC_PORT} root mqprio
 
 #--------------------------------------------------------
 # Configure IRQ affinity
 
-echo "Configure IRQ affinity"
-for irq in `ls -1 /sys/bus/pci/drivers/edgx-pci/*/msi_irqs`; do
-  if [ -e /proc/irq/${irq}/smp_affinity ]; then
-    echo ${CPU_MASK} > /proc/irq/${irq}/smp_affinity
-    echo "  set affinity-mask for irq ${irq} to CPU-Mask: ${CPU_MASK}"
-  fi
-done
-echo ""
+# echo "Configure IRQ affinity"
+# for irq in `ls -1 /sys/bus/pci/drivers/edgx-pci/*/msi_irqs`; do
+#   if [ -e /proc/irq/${irq}/smp_affinity ]; then
+#     echo ${CPU_MASK} > /proc/irq/${irq}/smp_affinity
+#     echo "  set affinity-mask for irq ${irq} to CPU-Mask: ${CPU_MASK}"
+#   fi
+# done
+# echo ""
 
 #--------------------------------------------------------
 # Configure Host-IP
@@ -123,12 +101,13 @@ do
   # if [ "$(cat /sys/class/net/${port}/operstate)" != "up" ]
   # then
   #   echo "  port $port is not active"
-  #	continue
+  # continue
   # fi
-  
+ 
+  # Alstom-Hardware: "RTNETLINK answers: Operation not supported"
   echo "  bridge VLAN $VLAN_ID to switch-port $port"
-  echo "  bridge VLAN $VLAN_ID_BULK to switch-port $port"
   bridge vlan add vid ${VLAN_ID} dev ${port}
+  echo "  bridge VLAN $VLAN_ID_BULK to switch-port $port"
   bridge vlan add vid ${VLAN_ID_BULK} dev ${port}
 done
 echo ""
@@ -167,12 +146,12 @@ do
     file=$CONFIG_BASE$CONFIG_SEPARATE$INDEX$CONFIG_FILETYPE
   fi
   
-  # timenow=$(cat /sys/class/net/$port/ieee8021ST/CurrentTime)
-  # mit der richtigen Zeit erscheint es sinnvoller, eine 0 geht aber wohl auch...
   timenow=0.0                   
+  timenow=$(cat /sys/class/net/$port/ieee8021ST/CurrentTime)
+  # mit der richtigen Zeit erscheint es sinnvoller, eine 0 geht aber wohl auch...
   date=$(date --date="@$timenow")
 
-  # echo "Configuration for port[$INDEX] $port, timenow = $timenow = $date, file = $file"
+  echo "Configuration for port[$INDEX] $port, timenow = $timenow = $date, file = $file"
 
   # falls vorhanden: Konfiguration einlesen und aktivieren
   if [ -f $file ]
