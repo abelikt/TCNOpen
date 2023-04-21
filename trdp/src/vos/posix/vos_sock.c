@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *     AHW 2023-01-10: Ticket #406 Socket handling: check for EAGAIN missing for Linux/Posix
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -170,28 +171,47 @@ void vos_collectIpInterfaces ()
 }
 
 /**********************************************************************************************************************/
+/** Get the ethernet / IP-interface list and list-count
+ *
+ *  @param[out]     ipInterfaceList     IP-interface-list-pointer containing IP and MAC addresses
+ * 
+ *  @retval         ipInterfaceCount    length of stored IP-interface-list
+ *
+*/
+UINT32 vos_getInterfaceList (
+    VOS_IF_REC_T   *ipInterfaceList[])
+{
+    if (NULL == *ipInterfaceList)
+    {
+        return 0;
+    }
+    *ipInterfaceList = gIpInterfaces;
+    return gIpInterfaceCount;
+}
+
+/**********************************************************************************************************************/
 /** Get the IP address from interface index (requires global data preset by vos_sockInit)
  *
- *  @param[in]      index    interface index
+ *  @param[in]      interfaceIndex    interface index
  *
  *  @retval         IP address of interface
- *  @retval         0 if index not found
+ *  @retval         0 if interfaceIndex not found
  */
-UINT32 vos_getInterfaceIP (UINT32 index)
+UINT32 vos_getInterfaceIP (UINT32 interfaceIndex)
 {
 
-    if (0 < gIpInterfaceCount)                             /* any IP interfaces stored? */
+    if (0 < gIpInterfaceCount)                                 /* any IP interfaces stored? */
     {
-        if ((0 < index) && (index < VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T) 0 != gIpInterfaceIndexToIpAddr[index]))
+        if ((0 < interfaceIndex) && (interfaceIndex < VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T) 0 != gIpInterfaceIndexToIpAddr[interfaceIndex]))
         {
-            return gIpInterfaceIndexToIpAddr[index];       /* quick return the IP address != 0.0.0.0 stored for OS interface index */
+            return gIpInterfaceIndexToIpAddr[interfaceIndex];  /* quick return the IP address != 0.0.0.0 stored for OS interface index */
         }
-        else                                               /* fallback, if requested index is invalid or empty */
+        else                                                   /* fallback, if requested index is invalid or empty */
         {
             UINT32 i;
             for (i = 0; i < gIpInterfaceCount; i++)
             {
-                if (gIpInterfaces[i].ifIndex == index)
+                if (gIpInterfaces[i].ifIndex == interfaceIndex)
                 {
                     return gIpInterfaces[i].ipAddr;
                 }
@@ -764,7 +784,7 @@ EXT_DECL VOS_ERR_T vos_sockGetMAC (
     if (gVosSockInitialised == FALSE)                       /* init creates the global interface list */
     {
         vos_printLogStr(VOS_LOG_WARNING, "Please call vos_sockInit before calling vos_sockGetMAC\n");
-        vos_sockInit();
+        (void) vos_sockInit();
     }
 
     if (0 < gIpInterfaceCount)                             /* any IP interfaces available? */

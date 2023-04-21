@@ -18,6 +18,7 @@
  *
  * $Id$
  *
+ *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-01-27: Ticket #416: Interface change for tau_getCstInfo(): test fixed
  *     AHW 2023-01-24: Ticket #416: Interface change for tau_getCstInfo(), tau_getStaticCstInfo(), tau_getVehInfo()
  *     AHW 2023-01-24: Naming #416: unified tau_getTrDir()/tau_getOpTrDir() -> tau_getTrnDir()/tau_getOpTrnDir()
@@ -981,7 +982,7 @@ static int test1()
         callbackRef.result           = FALSE;
 
         /* setup tau ECSP control on gSession1 */
-        err = tau_initEcspCtrl(gSession1.appHandle, gSession2.ifaceIP);
+        err = tau_initEcspCtrl(gSession1.appHandle, gSession2.ifaceIP, 0u);  // #430
         IF_ERROR("tau_initEcspCtrl")
 
         err = tlm_addListener(
@@ -1630,7 +1631,7 @@ static int test4()
         IF_ERROR("tlp_subscribe")
 
         /* setup tau ECSP control on gSession1 */
-        err = tau_initEcspCtrl(gSession1.appHandle, gSession2.ifaceIP);
+        err = tau_initEcspCtrl(gSession1.appHandle, gSession2.ifaceIP, 0u);   // #430
         IF_ERROR("tau_initEcspCtrl")
 
         /* send ECSP control command */

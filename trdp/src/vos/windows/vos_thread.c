@@ -18,6 +18,7 @@
 /*
 * $Id$
 *
+*      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     AHW 2023-02-21: Lint warnings
 *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - improved warning message
 *      BL 2019-12-06: Ticket #303: UUID creation does not always conform to standard
@@ -555,7 +556,7 @@ EXT_DECL void vos_getNanoTime(
 #endif
         *pTime = (((UINT64)fileTime.dwHighDateTime) << 32u) + (UINT64)fileTime.dwLowDateTime;
         /* 11644473600 is the difference between 1601 and 1970 in sec */
-        *pTime = (*pTime * 100u) - (11644473600ull * NSECS_PER_USEC * USECS_PER_MSEC * MSECS_PER_SEC);
+        *pTime = (*pTime * 100u) - (11644473600uLL * NSECS_PER_USEC * USECS_PER_MSEC * MSECS_PER_SEC);
     }
 }
 

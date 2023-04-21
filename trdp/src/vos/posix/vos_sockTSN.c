@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced
 *     AHW 2021-05-06: Ticket #322 Subscriber multicast message routing in multi-home device
@@ -198,34 +199,37 @@ EXT_DECL VOS_ERR_T vos_createVlanIF (
     CHAR8           *pIFaceName,
     VOS_IP4_ADDR_T  ipAddr)
 {
-    CHAR8   defIF[VOS_MAX_IF_NAME_SIZE] = "";
-    UINT8   emptyMac[VOS_MAC_SIZE] = { 0 };
+    CHAR8         defIF[VOS_MAX_IF_NAME_SIZE] = "";
+    UINT8         emptyMac[VOS_MAC_SIZE] = { 0 };
+    UINT32        ipInterfaceCount;
+    VOS_IF_REC_T  *ipInterfaceList = NULL;
 
-    if (gIpInterfaceCount > 0)                                  // are interfaces collected?
+    ipInterfaceCount = vos_getInterfaceList(&ipInterfaceList);  // #430
+    if (ipInterfaceCount > 0)                                   // are interfaces collected?
     {
         UINT32 i;
-        for (i = 0; i < gIpInterfaceCount; i++)                 // search collected interfaces
+        for (i = 0; i < ipInterfaceCount; i++)                  // search collected interfaces
         {
-            if (gIpInterfaces[i].ipAddr == ipAddr)              // IP match
+            if (ipInterfaceList[i].ipAddr == ipAddr)            // IP match
             {
-                strncpy(pIFaceName, gIpInterfaces[i].name, VOS_MAX_IF_NAME_SIZE);
-                if (gIpInterfaces[i].vlanId == vlanId)          // IP and VLAN match: use existing VLAN
+                strncpy(pIFaceName, ipInterfaceList[i].name, VOS_MAX_IF_NAME_SIZE);
+                if (ipInterfaceList[i].vlanId == vlanId)        // IP and VLAN match: use existing VLAN
                 {
                     return VOS_NO_ERR;
                 }
                 else
                 {
                     vos_printLog(VOS_LOG_ERROR, "IP %s already in use by interface %s with VLAN-ID %u instead of VLAN-ID %u)\n",
-                                 vos_ipDotted(ipAddr), pIFaceName, gIpInterfaces[i].vlanId, vlanId);
+                                 vos_ipDotted(ipAddr), pIFaceName, ipInterfaceList[i].vlanId, vlanId);
                     return VOS_SOCK_ERR;   // cannot use same IP for two different interfaces / VLANs on same client
                 }
             }
             else
             {
-                if ((0 == defIF[0]) && (0 == gIpInterfaces[i].vlanId) &&           // remember the first pure interface name without VLAN
-                    (memcmp(gIpInterfaces[i].mac, emptyMac, VOS_MAC_SIZE) != 0))   // skip empty MAC address interfaces (like loopback interface)
+                if ((0 == defIF[0]) && (0 == ipInterfaceList[i].vlanId) &&           // remember the first pure interface name without VLAN
+                    (memcmp(ipInterfaceList[i].mac, emptyMac, VOS_MAC_SIZE) != 0))   // skip empty MAC address interfaces (like loopback interface)
                 {
-                    strncpy(defIF, gIpInterfaces[i].name, VOS_MAX_IF_NAME_SIZE);   // use this interface, if we need to create a new VLAN interface
+                    strncpy(defIF, ipInterfaceList[i].name, VOS_MAX_IF_NAME_SIZE);   // use this interface, if we need to create a new VLAN interface
                 }
             }
         }
@@ -303,24 +307,28 @@ EXT_DECL VOS_ERR_T vos_ifnameFromVlanId (
     VOS_IP4_ADDR_T  ipAddr,
     CHAR8           *pIFaceName)
 {
-    pIFaceName[0] = 0;                                     /* clear interface name */
+    UINT32        ipInterfaceCount;
+    VOS_IF_REC_T  *ipInterfaceList = NULL;
+
+    pIFaceName[0] = 0;                                          // clear interface name
 
     if ((vlanId < 1) || (vlanId > 4094))
     {
         return VOS_PARAM_ERR;
     }
 
-    if (0 < gIpInterfaceCount)                             /* any IP interfaces stored? */
+    ipInterfaceCount = vos_getInterfaceList(&ipInterfaceList);  // #430
+    if (0 < ipInterfaceCount)                                   // any IP interfaces stored?
     {
         UINT32 i = 0u;
-        for (i = 0; i < gIpInterfaceCount; i++)            /* search intefaces for VLAN ID */
+        for (i = 0; i < ipInterfaceCount; i++)                  // search intefaces for VLAN ID
         {
-            if ((gIpInterfaces[i].vlanId == vlanId) &&
-               ((0 == ipAddr) || (ipAddr == gIpInterfaces[i].ipAddr)))
+            if ((ipInterfaceList[i].vlanId == vlanId) &&
+               ((0 == ipAddr) || (ipAddr == ipInterfaceList[i].ipAddr)))
             {
-                strncpy(pIFaceName, gIpInterfaces[i].name, VOS_MAX_IF_NAME_SIZE);
+                strncpy(pIFaceName, ipInterfaceList[i].name, VOS_MAX_IF_NAME_SIZE);
                 vos_printLog(VOS_LOG_INFO, "Matching VLAN (ID %u) interface found: %s with IP %s\n",
-                            vlanId, pIFaceName, vos_ipDotted(gIpInterfaces[i].ipAddr));
+                            vlanId, pIFaceName, vos_ipDotted(ipInterfaceList[i].ipAddr));
                 return VOS_NO_ERR;
             }
         }

@@ -4,12 +4,6 @@
 --- Module:   ..\..\src\vos\common\vos_mem.c (C)
 
 --- Module:   ..\..\src\vos\windows\vos_thread.c (C)
-                                    _
-        *pTime = (*pTime * 100u) - (11644473600ull * NSECS_PER_USEC * USECS_PER_MSEC * MSECS_PER_SEC);
-..\..\src\vos\windows\vos_thread.c(558) : Warning 620: Suspicious constant (L
-    or one?)
-..\..\src\vos\windows\vos_thread.c(558) : Warning 620: Suspicious constant (L
-    or one?)
 
 --- Module:   ..\..\src\vos\windows\vos_sock.c (C)
 
@@ -82,14 +76,3 @@
 --- Module:   ..\..\src\common\tau_dnr.c (C)
 
 --- Module:   ..\..\src\common\tau_tti.c (C)
-
---- Global Wrap-up
-
-Warning 526: Symbol '__alignof()' (line 143, file ..\..\src\common\tau_marshall.c)
-    not defined
-..\..\src\common\tau_marshall.c(143) : Info 830: Location cited in prior
-    message
-Warning 628: no argument information provided for function '__alignof()' (line
-    143, file ..\..\src\common\tau_marshall.c)
-..\..\src\common\tau_marshall.c(143) : Info 830: Location cited in prior
-    message

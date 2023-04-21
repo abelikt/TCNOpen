@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *     CWE 2023-02-27: switch semaphore-wait to use CLOCK_MONOTONIC, available since glibc 2.30 through sem_clockwait()
  *     AHW 2023-02-21: Lint warnings
@@ -80,8 +81,8 @@
  * DEFINITIONS
  */
 
-#ifndef PTHREAD_MUTEX_RECURSIVE
-#define PTHREAD_MUTEX_RECURSIVE  PTHREAD_MUTEX_RECURSIVE_NP     /*lint !e652 Does Lint ignore the #ifndef ? */
+#if ! defined(PTHREAD_MUTEX_RECURSIVE) && ! defined(__USE_UNIX98)     /*lint workaround for __USE_UNIX98: PTHREAD_MUTEX_RECURSIVE see: posix\usr\include\pthread.h */
+#define PTHREAD_MUTEX_RECURSIVE  PTHREAD_MUTEX_RECURSIVE_NP
 #endif
 
 #define         cDefaultStackSize   (4u * (PTHREAD_STACK_MIN))  /* #405 */
@@ -300,7 +301,7 @@ static int clock_nanosleep (
 #define NSECS_PER_USEC  1000u
 #define USECS_PER_MSEC  1000u
 #define MSECS_PER_SEC   1000u
-#define NSECS_PER_SEC   1000000000ull;
+#define NSECS_PER_SEC   1000000000uLL;
 
 /* This define holds the max amount os seconds to get stored in 32bit holding micro seconds        */
 /* It is the result when using the common time struct with tv_sec and tv_usec as on a 32 bit value */
@@ -604,14 +605,7 @@ EXT_DECL VOS_ERR_T vos_threadCreateSync (
     }
     else
     {
-        if (cDefaultStackSize > PTHREAD_STACK_MIN)                                            /* #405 */
-        {
-            retCode = pthread_attr_setstacksize(&threadAttrib, (size_t) cDefaultStackSize);
-        }
-        else
-        {
-            retCode = VOS_PARAM_ERR;
-        }
+        retCode = pthread_attr_setstacksize(&threadAttrib, (size_t) cDefaultStackSize);
     }
 
     if (retCode != 0)
@@ -1067,7 +1061,7 @@ EXT_DECL void vos_getNanoTime (
 
         (void) clock_gettime(CLOCK_REALTIME, &currentTime);
 
-        *pTime = (uint64_t)currentTime.tv_sec * 1000000000LLu + (uint64_t)currentTime.tv_nsec;
+        *pTime = currentTime.tv_sec * 1000000000uLL + currentTime.tv_nsec;   /*lint 571 avoid suspicious cast */
     }
 }
 
@@ -1755,7 +1749,7 @@ EXT_DECL VOS_ERR_T vos_semaTake (
         vos_getTime(&waitTimeVos);
         waitTimeSpec.tv_sec     = waitTimeVos.tv_sec;
         waitTimeSpec.tv_nsec    = waitTimeVos.tv_usec * (suseconds_t) NSECS_PER_USEC;
-#elif defined CLOCK_MONOTONIC
+#elif defined(CLOCK_MONOTONIC) && defined(sem_clockwait)        // #430 avoid lint warning about sem_clockwait
         (void) clock_gettime(CLOCK_MONOTONIC, &waitTimeSpec);   // since glibc 2.30: sem_clockwait() available for use with monotonic clock
 #else
         (void) clock_gettime(CLOCK_REALTIME, &waitTimeSpec);
@@ -1786,7 +1780,7 @@ EXT_DECL VOS_ERR_T vos_semaTake (
         /* take semaphore with specified timeout */
 #ifdef __QNXNTO__
         rc = sem_timedwait_monotonic(&sema->sem, &waitTimeSpec);
-#elif defined CLOCK_MONOTONIC
+#elif defined(CLOCK_MONOTONIC) && defined(sem_clockwait)                 // #430 avoid lint warning about sem_clockwait
         rc = sem_clockwait(&sema->sem, CLOCK_MONOTONIC, &waitTimeSpec);  // since glibc 2.30: behaves like sem_timedwait() except the time is measured against the clock specified by clockid (CLOCK_MONOTONIC or CLOCK_REALTIME)
 #else
         rc = sem_timedwait(&sema->sem, &waitTimeSpec);

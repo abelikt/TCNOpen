@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1', it is provided with the highest socket, and VOS implementation of the function will add the '+1' (if needed)
  *     AHW 2021-05-06: Ticket #322 Subscriber multicast message routing in multi-home device
@@ -199,15 +200,6 @@ typedef struct
     UINT32          ifIndex;                    /**< interface index                */
     UINT16          vlanId;                     /**< Interface VLAN ID (0=no VLAN)  */
 } VOS_IF_REC_T;
-
-
-/***********************************************************************************************************************
- *  LOCALS (for access in vos_sock.c and vos_sockTSN.c)
- */
-
-/* store the IP, VLAN and MAC addresses of local network interfaces for fast access - set once in vos_sockInit(), cleared by vos_sockTerm() */
-extern VOS_IF_REC_T    gIpInterfaces[VOS_MAX_NUM_IF];      /* IP-interface-list containing IP and MAC addresses */
-extern UINT32          gIpInterfaceCount;                  /* length of stored IP-interface-list */
 
 
 /***********************************************************************************************************************

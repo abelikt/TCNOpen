@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *      SB 2021-08-09: Lint warnings
  *      BL 2020-08-12: Warning output moved (to before aligning source pointer on return from possible recursion)
  *      SB 2019-08-15: Compiler warning (pointer compared to integer)
@@ -133,14 +134,14 @@ static INLINE void unpackedCopy64 (
 #ifdef B_ENDIAN
 {
     UINT32  size    = noOfItems * sizeof(UINT64);
-    UINT8   *pDst8  = (UINT8 *) alignePtr(*ppDst, ALIGNOF(UINT64));
+    UINT8   *pDst8  = (UINT8 *) alignePtr(*ppDst, ALIGNOF(UINT64));  /*lint -e526 -e628, violates_MISRA_Rule_120() */
     memcpy(pDst8, *ppSrc, size);
     *ppSrc  = (UINT8 *) *ppSrc + size;
     *ppDst  = (UINT8 *) pDst8 + size;
 }
 #else
 {
-    UINT8   *pDst8  = (UINT8 *) alignePtr(*ppDst, ALIGNOF(UINT64));
+    UINT8   *pDst8  = (UINT8 *) alignePtr(*ppDst, ALIGNOF(UINT64));  /*lint -e526 -e628, violates_MISRA_Rule_120() */
     UINT8   *pSrc8  = *ppSrc;
     while (noOfItems--)
     {
@@ -175,7 +176,7 @@ static INLINE void packedCopy64 (
     UINT8   * *ppDst,
     UINT32  noOfItems)
 {
-    UINT64 *pSrc64 = (UINT64 *) alignePtr(*ppSrc, ALIGNOF(UINT64));
+    UINT64 *pSrc64 = (UINT64 *) alignePtr(*ppSrc, ALIGNOF(UINT64));  
     while (noOfItems--)
     {
         *(*ppDst)++ = (UINT8) (*pSrc64 >> 56u);
