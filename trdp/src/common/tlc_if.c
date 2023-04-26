@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-04-25: Ticket #431 MC sending on multihoming interface
 *     CWE 2023-01-27: Log compile-options and vos-version upon tlc_init()
 *     AHW 2023-01-11: Lint warnigs
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -1253,6 +1254,8 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
         ret = (TRDP_ERR_T) vos_mutexLock(appHandle->mutex);
         if (ret == TRDP_NO_ERR)
         {
+            vos_printLogStr(VOS_LOG_DBG, "tlc_reinitSession()\n");
+
             /*    Walk over the registered PDs */
             for (iterPD = appHandle->pRcvQueue; iterPD != NULL; iterPD = iterPD->pNext)
             {
@@ -1263,6 +1266,24 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
                     ret = (TRDP_ERR_T) vos_sockJoinMC(appHandle->ifacePD[iterPD->socketIdx].sock,
                                                       iterPD->addr.mcGroup,
                                                       appHandle->realIP);
+                }
+            }
+
+            /* HPN #431 - update the outgoing interface for publishers */
+            for (iterPD = appHandle->pSndQueue; iterPD != NULL; iterPD = iterPD->pNext)
+            {
+                /* Multicast sender shall be bound to an interface */
+                if (   (iterPD->socketIdx < TRDP_MAX_PD_SOCKET_CNT)     /* to make the VC compiler happy */
+                    && (appHandle->ifacePD[iterPD->socketIdx].bindAddr != 0)
+                    && !vos_isMulticast(appHandle->ifacePD[iterPD->socketIdx].bindAddr))
+                {
+                    ret = (TRDP_ERR_T)vos_sockSetMulticastIf(appHandle->ifacePD[iterPD->socketIdx].sock, appHandle->ifacePD[iterPD->socketIdx].bindAddr);
+
+                    if (ret != TRDP_NO_ERR)
+                    {
+                        vos_printLog(VOS_LOG_ERROR, "vos_sockSetMulticastIf() for UDP send failed! (Err: %d)\n", ret);
+                        /* continue for the other sockets anyway */
+                    }
                 }
             }
 #if MD_SUPPORT
