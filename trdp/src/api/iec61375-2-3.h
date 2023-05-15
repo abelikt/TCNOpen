@@ -15,6 +15,7 @@
  /*
  * $Id$
  *
+ *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      BL 2020-02-26: Ticket #320 Wrong ETB_CTRL_TO_US value
  *      BL 2020-02-26: Ticket #319 Protocol Version is defined twice
@@ -209,37 +210,27 @@
 /** Reserved in Annex D & E                                                                                         */
 #define TRDP_COMID_ECHO                     10u
 
-/* There is an ambiguity regarding statistics comIds between Table A.2 and Annex D.3
- (ComId definitions do not match, Join-Statistics not present in D.3 i.e. */
+/* ComIds according statistics definition in Table A.2  */
 
-#define TRDP_STATISTICS_PULL_COMID          31u                                     /**< reserved in Table A.2      */
-
-/* defines from Table A.2:  */
-#define TRDP_STATISTICS_REQUEST_COMID       32u
-#define TRDP_GLOBAL_STATISTICS_COMID        35u
-#define TRDP_SUBS_STATISTICS_COMID          36u
-#define TRDP_PUB_STATISTICS_COMID           37u
-#define TRDP_RED_STATISTICS_COMID           38u
-#define TRDP_JOIN_STATISTICS_COMID          39u
-#define TRDP_UDP_LIST_STATISTICS_COMID      40u
-#define TRDP_TCP_LIST_STATISTICS_COMID      41u
-
-/* defines as deducted from D.3.2:  */
-
-#define TRDP_GLOBAL_STATS_REQUEST_COMID     30u
-#define TRDP_GLOBAL_STATS_REPLY_COMID       31u                                     /**< reserved in D.3            */
+#define TRDP_GLOB_STATS_REQUEST_COMID       30u
+#define TRDP_GLOB_STATS_COMID               31u
 #define TRDP_SUBS_STATS_REQUEST_COMID       32u
-#define TRDP_SUBS_STATS_REPLY_COMID         33u
+#define TRDP_SUBS_STATS_COMID               33u
 #define TRDP_PUB_STATS_REQUEST_COMID        34u
-#define TRDP_PUB_STATS_REPLY_COMID          35u
+#define TRDP_PUB_STATS_COMID                35u
 #define TRDP_RED_STATS_REQUEST_COMID        36u
-#define TRDP_RED_STATS_REPLY_COMID          37u
-#define TRDP_UDP_LIST_STATS_REQUEST_COMID   38u
-#define TRDP_UDP_LIST_STATS_REPLY_COMID     39u
-#define TRDP_TCP_LIST_STATS_REQUEST_COMID   40u
-#define TRDP_TCP_LIST_STATS_REPLY_COMID     41u
+#define TRDP_RED_STATS_COMID                37u
+#define TRDP_JOIN_STATS_REQUEST_COMID       38u
+#define TRDP_JOIN_STATS_COMID               39u
+#define TRDP_MEM_STATS_REQUEST_COMID        40u
+#define TRDP_MEM_STATS_COMID                41u
+#define TRDP_UDP_LIST_STATS_REQUEST_COMID   42u
+#define TRDP_UDP_LIST_STATS_COMID           43u
+#define TRDP_TCP_LIST_STATS_REQUEST_COMID   44u
+#define TRDP_TCP_LIST_STATS_COMID           45u
 
-/* end of variant */
+
+/* ComIds according test definition in Table A.2  */
 
 #define TRDP_CONFTEST_COMID                 80u
 #define TRDP_CONFTEST_STATUS_COMID          81u
