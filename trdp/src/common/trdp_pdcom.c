@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
 *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - prepared debug code for logging pdReceive and pdSend packets
 *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
 *     CWE 2023-01-09: Ticket #395 PD subscriber statistics when publisher start earlier
