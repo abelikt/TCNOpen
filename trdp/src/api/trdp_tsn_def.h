@@ -47,11 +47,6 @@ extern "C" {
 #define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL,\
                                                 0u, TRDP_PD_DEFAULT_TSN, 0u}
 
-/**  PD packet properties    */
-#define TRDP_MIN_PD2_HEADER_SIZE            sizeof(PD2_HEADER_T)        /**< TSN header size with FCS               */
-#define TRDP_MAX_PD2_DATA_SIZE              1458u                       /**< PD2 data                               */
-#define TRDP_MAX_PD2_PACKET_SIZE             (TRDP_MAX_PD2_DATA_SIZE + TRDP_MIN_PD2_HEADER_SIZE)
-
 /** New Message Types for TRDP Version 2 TSN-PDU (preliminary)    */
 #define TRDP_MSG_TSN_PD                     0x01u                   /**< TSN non safe PD Data                       */
 #define TRDP_MSG_TSN_PD_SDT                 0x02u                   /**< TSN safe PD Data                           */

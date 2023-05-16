@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     AHW 2023-02-21: Lint warnings
 *     AHW 2023-02-20: Ticket #420 Infinite loop in tlp_get() on unrecoverable errors
 *      A� 2023-01-13: Ticket #412 Added tlp_republishService
@@ -565,7 +566,7 @@ EXT_DECL TRDP_ERR_T tlp_publish (
                     interval    = 0u;       /* force zero interval */
                     sockType    = TRDP_SOCK_PD_TSN;
                     pNewElement->privFlags  |= TRDP_IS_TSN;
-                    pNewElement->grossSize  = trdp_packetSizePD2(dataSize);
+                    pNewElement->grossSize  = trdp_packetSizePD(dataSize);
                 }
                 else
                 {
@@ -1050,7 +1051,7 @@ EXT_DECL TRDP_ERR_T tlp_putImmediate (
         (pElement->pktFlags & TRDP_FLAGS_TSN_MSDT))
     {
         /* For TSN telegrams, we do not take the mutex but send directly! */
-        PD2_PACKET_T *pPacket = (PD2_PACKET_T *)(pElement->pFrame);
+        PD_PACKET_T *pPacket = (PD_PACKET_T *)(pElement->pFrame);
         memcpy(pPacket->data, pData, dataSize);
         return trdp_pdSendImmediateTSN(appHandle, pElement, pTxTime);
     }

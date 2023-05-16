@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      BL 2020-07-10: Ticket #321 Move TRDP_TIMER_GRANULARITY to public API
  *      CK 2020-04-06: Ticket #318 Added pointer to list of seqCnt used per comId for PD Requests in TRDP_SESSION_T
@@ -68,7 +69,7 @@
 #define TRDP_VERSION    2
 #define TRDP_RELEASE    2
 #define TRDP_UPDATE     23
-#define TRDP_EVOLUTION  91              /* Evolution > 0 denotes trunk! */
+#define TRDP_EVOLUTION  92              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
@@ -271,28 +272,6 @@ typedef struct
     PD_HEADER_T frameHead;                      /**< Packet    header in network byte order                 */
     UINT8       data[TRDP_MAX_PD_DATA_SIZE];    /**< data ready to be sent or received                      */
 } GNU_PACKED PD_PACKET_T;
-
-#ifdef TSN_SUPPORT
-/** TRDP TSN process data header - network order and alignment    */
-typedef struct
-{
-    UINT32  sequenceCounter;                    /**< Unique counter (autom incremented)                     */
-    UINT8   protocolVersion;                    /**< fix value for compatibility (= 2)                      */
-    UINT8   msgType;                            /**< MsgType: 0x01 (non-safe), 0x02 (Safe Data),
-                                                          0x03 (for multiple SDTv4 frame), others reserved  */
-    UINT16  datasetLength;                      /**< length of the data to transmit 0...1432                */
-    UINT32  comId;                              /**< set by user: unique id                                 */
-    UINT32  reserved;                           /**< reserved for ServiceID/InstanceID support              */
-    UINT32  frameCheckSum;                      /**< CRC32 of header                                        */
-} GNU_PACKED PD2_HEADER_T;
-
-typedef struct
-{
-    PD2_HEADER_T    frameHead;                      /**< Packet header in network byte order                */
-    UINT8           data[TRDP_MAX_PD2_DATA_SIZE];   /**< data ready to be sent or received                  */
-} GNU_PACKED PD2_PACKET_T;
-
-#endif /* TSN_SUPPORT*/
 
 #if MD_SUPPORT
 /** TRDP MD packet    */

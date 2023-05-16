@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *      BL 2020-08-07: Ticket #317 Bug in trdp_indexedFindSubAddr() (HIGH_PERFORMANCE)
@@ -370,35 +371,6 @@ UINT32 trdp_packetSizePD (
 
     return packetSize;
 }
-
-#ifdef TSN_SUPPORT
-/**********************************************************************************************************************/
-/** Get the packet size from the raw data size
- *
- *  @param[in]      dataSize            net data size (without padding)
- *
- *  @retval         packet size         the size of the complete packet to
- *                                      be sent or received
- */
-UINT32 trdp_packetSizePD2 (
-    UINT32 dataSize)
-{
-    UINT32 packetSize = sizeof(PD2_HEADER_T) + dataSize;
-
-    if (0 == dataSize)
-    {
-        /* Packet consists of header only  */
-        return sizeof(PD2_HEADER_T);
-    }
-    /*  padding to 4 */
-    if ((dataSize & 0x3) > 0)
-    {
-        packetSize += 4 - dataSize % 4;
-    }
-
-    return packetSize;
-}
-#endif
 
 /**********************************************************************************************************************/
 /** Get the packet size from the raw data size
