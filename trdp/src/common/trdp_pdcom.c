@@ -149,10 +149,10 @@ void    trdp_pdInit (
     if (pPacket->privFlags & TRDP_IS_TSN)
     {
         pPacket->pFrame->frameHead.sequenceCounter = 0u;
-        pPacket->pFrame->frameHead.protocolVersion = TRDP_VER_TSN_PROTO;
-        pPacket->pFrame->frameHead.msgType         = (UINT8) (type & 0xFF);
+        pPacket->pFrame->frameHead.protocolVersion = vos_htons(TRDP_VER_TSN_PROTO);
+        pPacket->pFrame->frameHead.msgType         = vos_htons((UINT16)type);
         pPacket->pFrame->frameHead.comId           = vos_htonl(pPacket->addr.comId);
-        pPacket->pFrame->frameHead.datasetLength   = vos_htons((UINT16) pPacket->dataSize);
+        pPacket->pFrame->frameHead.datasetLength   = vos_htonl(pPacket->dataSize);
         pPacket->pFrame->frameHead.reserved        = vos_htonl(serviceId);
         pPacket->pFrame->frameHead.etbTopoCnt      = 0; /* not used for TSN */
         pPacket->pFrame->frameHead.opTrnTopoCnt    = 0; /* not used for TSN */
@@ -923,7 +923,7 @@ TRDP_ERR_T  trdp_pdReceive (
 #ifdef TSN_SUPPORT
             if (TRUE == isTSN)
             {
-                pExistingElement->dataSize = vos_ntohs(pNewFrameHead->datasetLength);
+                pExistingElement->dataSize = vos_ntohl(pNewFrameHead->datasetLength);
                 pExistingElement->grossSize = trdp_packetSizePD(pExistingElement->dataSize);
                 informUser = TRUE;
             }
@@ -1090,7 +1090,7 @@ TRDP_ERR_T  trdp_pdReceive (
                                                appHandle,
                                                &theMessage,
                                                pExistingElement->pFrame->data,
-                                               (UINT32) vos_ntohl(pExistingElement->pFrame->frameHead.datasetLength));
+                                               vos_ntohl(pExistingElement->pFrame->frameHead.datasetLength));
             }
             else
 #endif
@@ -1450,7 +1450,7 @@ TRDP_ERR_T trdp_pdCheck (
                 err = TRDP_WIRE_ERR;
             }
             /*  Check size  */
-            else if (vos_ntohs(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE)
+            else if (vos_ntohl(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE)
             {
                 vos_printLog(VOS_LOG_INFO, "PDframe datalength error, received %04x\n", pPacket->msgType);
                 err = TRDP_WIRE_ERR;
