@@ -16,6 +16,8 @@
  *
  *
  * $Id$
+ * 
+ *      PL 2023-05-19: Ticket #434 Code adaption due to TSN header version 2 removal.
  *
  */
 
@@ -47,13 +49,11 @@ extern "C" {
 #define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL,\
                                                 0u, TRDP_PD_DEFAULT_TSN, 0u}
 
-/** New Message Types for TRDP Version 2 TSN-PDU (preliminary)    */
-#define TRDP_MSG_TSN_PD                     0x01u                   /**< TSN non safe PD Data                       */
-#define TRDP_MSG_TSN_PD_SDT                 0x02u                   /**< TSN safe PD Data                           */
-#define TRDP_MSG_TSN_PD_MSDT                0x03u                   /**< TSN multiple SDT PD Data                   */
-#define TRDP_MSG_TSN_PD_RES                 0x04u                   /**< TSN reserved                               */
-
-#define TRDP_VER_TSN_PROTO                  0x02u                   /**< Protocol version for TSN                   */
+/** New Message Types for TRDP TSN-PDU (preliminary)    */
+#define TRDP_MSG_TSN_PD                     0x5464u                   /**< TSN Td non safe PD Data                       */
+#define TRDP_MSG_TSN_PD_SDT                 0x5473u                   /**< TSN Ts safe PD Data                           */
+#define TRDP_MSG_TSN_PD_MSDT                0x546du                   /**< TSN Tm multiple SDT PD Data                   */
+#define TRDP_MSG_TSN_PD_RES                 0x5472u                   /**< TSN Tr reserved                               */
 
 #ifdef __cplusplus
 }

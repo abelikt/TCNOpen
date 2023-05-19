@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-05-19: Ticket #434 Code adaption due to TSN header version 2 removal.
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
 *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - prepared debug code for logging pdReceive and pdSend packets
@@ -149,7 +150,7 @@ void    trdp_pdInit (
     if (pPacket->privFlags & TRDP_IS_TSN)
     {
         pPacket->pFrame->frameHead.sequenceCounter = 0u;
-        pPacket->pFrame->frameHead.protocolVersion = vos_htons(TRDP_VER_TSN_PROTO);
+        pPacket->pFrame->frameHead.protocolVersion = vos_htons(TRDP_PROTO_VER);
         pPacket->pFrame->frameHead.msgType         = vos_htons((UINT16)type);
         pPacket->pFrame->frameHead.comId           = vos_htonl(pPacket->addr.comId);
         pPacket->pFrame->frameHead.datasetLength   = vos_htonl(pPacket->dataSize);
@@ -1418,85 +1419,64 @@ TRDP_ERR_T trdp_pdCheck (
     UINT32          myCRC;
     TRDP_ERR_T      err = TRDP_NO_ERR;
 
-#ifdef TSN_SUPPORT
-    /*  Check for TSN small header first    */
-    if (pPacket->protocolVersion == 0x2)
+    /* TRDP (non-TSN) */
+    *pIsTSN = FALSE;
+    /*  Check size    */
+    if ((packetSize < TRDP_MIN_PD_HEADER_SIZE) ||
+        (packetSize > TRDP_MAX_PD_PACKET_SIZE))
     {
-        *pIsTSN = TRUE;
-        if ((packetSize < TRDP_MIN_PD_HEADER_SIZE) ||
-            (packetSize > TRDP_MAX_PD_PACKET_SIZE))
-        {
-            vos_printLog(VOS_LOG_INFO, "PDframe size error (%u))\n", packetSize);
-            err = TRDP_WIRE_ERR;
-        }
-        else
-        {
-            /*    Check Header CRC (FCS)  */
-            myCRC = vos_crc32(INITFCS, (UINT8 *) pPacket, sizeof(PD_HEADER_T) - SIZE_OF_FCS);
-
-            if (pPacket->frameCheckSum != MAKE_LE(myCRC))
-            {
-                vos_printLog(VOS_LOG_INFO, "PDframe crc error (%08x != %08x))\n", pPacket->frameCheckSum,
-                             MAKE_LE(myCRC));
-                err = TRDP_CRC_ERR;
-            }
-            /*  Check type  */
-            else if ((pPacket->msgType != TRDP_MSG_TSN_PD) &&
-                     (pPacket->msgType != TRDP_MSG_TSN_PD_SDT) &&
-                     (pPacket->msgType != TRDP_MSG_TSN_PD_MSDT) &&
-                     (pPacket->msgType != TRDP_MSG_TSN_PD_RES))
-            {
-                vos_printLog(VOS_LOG_INFO, "PDframe type error, received %02x\n", pPacket->msgType);
-                err = TRDP_WIRE_ERR;
-            }
-            /*  Check size  */
-            else if (vos_ntohl(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE)
-            {
-                vos_printLog(VOS_LOG_INFO, "PDframe datalength error, received %04x\n", pPacket->msgType);
-                err = TRDP_WIRE_ERR;
-            }
-        }
+        vos_printLog(VOS_LOG_INFO, "PDframe size error (%u))\n", packetSize);
+        err = TRDP_WIRE_ERR;
     }
     else
-#endif
-    {   /* Version 1 TRDP (non-TSN) */
-        *pIsTSN = FALSE;
-        /*  Check size    */
-        if ((packetSize < TRDP_MIN_PD_HEADER_SIZE) ||
-            (packetSize > TRDP_MAX_PD_PACKET_SIZE))
+    {
+        /*    Check Header CRC (FCS)  */
+        myCRC = vos_crc32(INITFCS, (UINT8 *) pPacket, sizeof(PD_HEADER_T) - SIZE_OF_FCS);
+
+        if (pPacket->frameCheckSum != MAKE_LE(myCRC))
         {
-            vos_printLog(VOS_LOG_INFO, "PDframe size error (%u))\n", packetSize);
+            vos_printLog(VOS_LOG_INFO, "PDframe crc error (%08x != %08x))\n", pPacket->frameCheckSum, MAKE_LE(myCRC));
+            err = TRDP_CRC_ERR;
+        }
+        /*  Check protocol version  */
+        else if (((vos_ntohs(pPacket->protocolVersion) & TRDP_PROTOCOL_VERSION_CHECK_MASK)
+                    != (TRDP_PROTO_VER & TRDP_PROTOCOL_VERSION_CHECK_MASK)) ||
+                    (vos_ntohl(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE))
+        {
+            vos_printLog(VOS_LOG_INFO, "PDframe protocol error (%04x != %04x))\n",
+                            vos_ntohs(pPacket->protocolVersion),
+                            TRDP_PROTO_VER);
             err = TRDP_WIRE_ERR;
         }
-        else
+        /*  Check type  */
+        else if ((vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PD) &&
+                    (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PP) &&
+                    (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PR) &&
+                    (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PE))
         {
-            /*    Check Header CRC (FCS)  */
-            myCRC = vos_crc32(INITFCS, (UINT8 *) pPacket, sizeof(PD_HEADER_T) - SIZE_OF_FCS);
-
-            if (pPacket->frameCheckSum != MAKE_LE(myCRC))
-            {
-                vos_printLog(VOS_LOG_INFO, "PDframe crc error (%08x != %08x))\n", pPacket->frameCheckSum, MAKE_LE(myCRC));
-                err = TRDP_CRC_ERR;
-            }
-            /*  Check protocol version  */
-            else if (((vos_ntohs(pPacket->protocolVersion) & TRDP_PROTOCOL_VERSION_CHECK_MASK)
-                      != (TRDP_PROTO_VER & TRDP_PROTOCOL_VERSION_CHECK_MASK)) ||
-                     (vos_ntohl(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE))
-            {
-                vos_printLog(VOS_LOG_INFO, "PDframe protocol error (%04x != %04x))\n",
-                             vos_ntohs(pPacket->protocolVersion),
-                             TRDP_PROTO_VER);
-                err = TRDP_WIRE_ERR;
-            }
-            /*  Check type  */
-            else if ((vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PD) &&
-                     (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PP) &&
-                     (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PR) &&
-                     (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_PE))
+#ifdef TSN_SUPPORT
+            if ((vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_TSN_PD) &&
+            (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_TSN_PD_SDT) &&
+            (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_TSN_PD_MSDT) &&
+            (vos_ntohs(pPacket->msgType) != (UINT16) TRDP_MSG_TSN_PD_RES))
             {
                 vos_printLog(VOS_LOG_INFO, "PDframe type error, received %04x\n", vos_ntohs(pPacket->msgType));
                 err = TRDP_WIRE_ERR;
             }
+            else
+            {
+                *pIsTSN = TRUE;
+            }
+#else
+            vos_printLog(VOS_LOG_INFO, "PDframe type error, received %04x\n", vos_ntohs(pPacket->msgType));
+            err = TRDP_WIRE_ERR;
+#endif
+        }
+        /*  Check size  */
+        else if (vos_ntohl(pPacket->datasetLength) > TRDP_MAX_PD_DATA_SIZE)
+        {
+            vos_printLog(VOS_LOG_INFO, "PDframe datalength error, received %04x\n", pPacket->msgType);
+            err = TRDP_WIRE_ERR;
         }
     }
     return err;
