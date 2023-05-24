@@ -50,10 +50,7 @@ extern "C" {
                                                 0u, TRDP_PD_DEFAULT_TSN, 0u}
 
 /** New Message Types for TRDP TSN-PDU (preliminary)    */
-#define TRDP_MSG_TSN_PD                     0x5464u                   /**< TSN Td non safe PD Data                       */
-#define TRDP_MSG_TSN_PD_SDT                 0x5473u                   /**< TSN Ts safe PD Data                           */
-#define TRDP_MSG_TSN_PD_MSDT                0x546du                   /**< TSN Tm multiple SDT PD Data                   */
-#define TRDP_MSG_TSN_PD_RES                 0x5472u                   /**< TSN Tr reserved                               */
+#define TRDP_MSG_PT                     0x5074u                   /**< TSN PD Data "Pt"                      */
 
 #ifdef __cplusplus
 }

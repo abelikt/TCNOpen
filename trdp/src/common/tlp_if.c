@@ -545,23 +545,15 @@ EXT_DECL TRDP_ERR_T tlp_publish (
                      */
                     pNewElement->grossSize = trdp_packetSizePD(dataSize);
                 }
-                else if ((pNewElement->pktFlags & (TRDP_FLAGS_TSN | TRDP_FLAGS_TSN_SDT | TRDP_FLAGS_TSN_MSDT)))
+                else if (pNewElement->pktFlags & TRDP_FLAGS_TSN)
                 {
                     if (pCurrentSendParams->tsn == FALSE)
                     {
                         ret = TRDP_PARAM_ERR;
                     }
-                    if (pNewElement->pktFlags & TRDP_FLAGS_TSN_SDT)
-                    {
-                        msgType = TRDP_MSG_TSN_PD_SDT;
-                    }
-                    else if (pNewElement->pktFlags & TRDP_FLAGS_TSN_MSDT)
-                    {
-                        msgType = TRDP_MSG_TSN_PD_MSDT;
-                    }
                     else
                     {
-                        msgType = TRDP_MSG_TSN_PD;
+                        msgType = TRDP_MSG_PT;
                     }
                     interval    = 0u;       /* force zero interval */
                     sockType    = TRDP_SOCK_PD_TSN;
@@ -977,9 +969,7 @@ EXT_DECL TRDP_ERR_T tlp_put (
     }
 
 #ifdef TSN_SUPPORT
-    if ((pElement->pktFlags & TRDP_FLAGS_TSN) ||
-        (pElement->pktFlags & TRDP_FLAGS_TSN_SDT) ||
-        (pElement->pktFlags & TRDP_FLAGS_TSN_MSDT))
+    if (pElement->pktFlags & TRDP_FLAGS_TSN)
     {
         /* For TSN telegrams, use tlp_putImmediate! */
         vos_printLogStr(VOS_LOG_ERROR, "For TSN telegrams, use tlp_putImmediate()!\n");
@@ -1046,9 +1036,7 @@ EXT_DECL TRDP_ERR_T tlp_putImmediate (
     }
 
 #ifdef TSN_SUPPORT
-    if ((pElement->pktFlags & TRDP_FLAGS_TSN) ||
-        (pElement->pktFlags & TRDP_FLAGS_TSN_SDT) ||
-        (pElement->pktFlags & TRDP_FLAGS_TSN_MSDT))
+    if (pElement->pktFlags & TRDP_FLAGS_TSN)
     {
         /* For TSN telegrams, we do not take the mutex but send directly! */
         PD_PACKET_T *pPacket = (PD_PACKET_T *)(pElement->pFrame);
@@ -1436,7 +1424,7 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
         subHandle.opTrnTopoCnt  = opTrnTopoCnt; /* Set topocounts now  */
         subHandle.etbTopoCnt    = etbTopoCnt;
 
-        if (pktFlags & (TRDP_FLAGS_TSN | TRDP_FLAGS_TSN_SDT | TRDP_FLAGS_TSN_MSDT))
+        if (pktFlags & (TRDP_FLAGS_TSN))
         {
             usage = TRDP_SOCK_PD_TSN;
         }
