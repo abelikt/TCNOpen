@@ -743,7 +743,7 @@ EXT_DECL TRDP_ERR_T tlc_configSession (
             pSession->pdDefault.timeout = pPdDefault->timeout;
         }
 
-        if ((pSession->pdDefault.toBehavior == TRDP_TO_DEFAULT) &&
+        if ((pSession->pdDefault.toBehavior == TRDP_TO_SET_TO_ZERO) &&
             (pPdDefault->toBehavior != TRDP_TO_DEFAULT))
         {
             pSession->pdDefault.toBehavior = pPdDefault->toBehavior;
