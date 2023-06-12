@@ -463,8 +463,8 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
     const TRDP_MD_CONFIG_T          *pMdDefault,
     const TRDP_PROCESS_CONFIG_T     *pProcessConfig)
 {
-    TRDP_ERR_T      ret         = TRDP_NO_ERR;
-    TRDP_SESSION_PT pSession    = NULL;
+    TRDP_ERR_T      ret             = TRDP_NO_ERR;
+    TRDP_SESSION_PT pSession        = NULL;
     TRDP_PUB_T      dummyPubHndl    = NULL;
     TRDP_SUB_T      dummySubHandle  = NULL;
 
@@ -512,19 +512,19 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
     pSession->pdDefault.sendParam.ttl   = TRDP_PD_DEFAULT_TTL;
 
 #if MD_SUPPORT
-    pSession->mdDefault.pfCbFunction    = NULL;
-    pSession->mdDefault.pRefCon         = NULL;
-    pSession->mdDefault.confirmTimeout  = TRDP_MD_DEFAULT_CONFIRM_TIMEOUT;
-    pSession->mdDefault.connectTimeout  = TRDP_MD_DEFAULT_CONNECTION_TIMEOUT;
-    pSession->mdDefault.replyTimeout    = TRDP_MD_DEFAULT_REPLY_TIMEOUT;
-    pSession->mdDefault.flags               = TRDP_FLAGS_NONE;
-    pSession->mdDefault.udpPort             = TRDP_MD_UDP_PORT;
-    pSession->mdDefault.tcpPort             = TRDP_MD_TCP_PORT;
-    pSession->mdDefault.sendParam.qos       = TRDP_MD_DEFAULT_QOS;
-    pSession->mdDefault.sendParam.ttl       = TRDP_MD_DEFAULT_TTL;
-    pSession->mdDefault.sendParam.retries   = TRDP_MD_DEFAULT_RETRIES;
-    pSession->mdDefault.maxNumSessions      = TRDP_MD_MAX_NUM_SESSIONS;
-    pSession->tcpFd.listen_sd               = VOS_INVALID_SOCKET;
+    pSession->mdDefault.pfCbFunction      = NULL;
+    pSession->mdDefault.pRefCon           = NULL;
+    pSession->mdDefault.confirmTimeout    = TRDP_MD_DEFAULT_CONFIRM_TIMEOUT;
+    pSession->mdDefault.connectTimeout    = TRDP_MD_DEFAULT_CONNECTION_TIMEOUT;
+    pSession->mdDefault.replyTimeout      = TRDP_MD_DEFAULT_REPLY_TIMEOUT;
+    pSession->mdDefault.flags             = TRDP_FLAGS_NONE;
+    pSession->mdDefault.udpPort           = TRDP_MD_UDP_PORT;
+    pSession->mdDefault.tcpPort           = TRDP_MD_TCP_PORT;
+    pSession->mdDefault.sendParam.qos     = TRDP_MD_DEFAULT_QOS;
+    pSession->mdDefault.sendParam.ttl     = TRDP_MD_DEFAULT_TTL;
+    pSession->mdDefault.sendParam.retries = TRDP_MD_DEFAULT_RETRIES;
+    pSession->mdDefault.maxNumSessions    = TRDP_MD_MAX_NUM_SESSIONS;
+    pSession->tcpFd.listen_sd             = VOS_INVALID_SOCKET;
 
 #endif
 
@@ -696,7 +696,7 @@ EXT_DECL TRDP_ERR_T tlc_configSession (
 
     if (pProcessConfig != NULL)
     {
-        pSession->option = pProcessConfig->options;
+        pSession->option                = pProcessConfig->options;
         pSession->stats.processCycle    = pProcessConfig->cycleTime;
         pSession->stats.processPrio     = pProcessConfig->priority;
         vos_strncpy(pSession->stats.hostName, pProcessConfig->hostName, TRDP_MAX_LABEL_LEN - 1);
@@ -865,10 +865,10 @@ EXT_DECL TRDP_ERR_T tlc_configSession (
 
     /* Set some statistic defaults here */
     {
-        pSession->stats.udpMd.defQos    = pSession->mdDefault.sendParam.qos;
-        pSession->stats.tcpMd.defQos    = pSession->mdDefault.sendParam.qos;
-        pSession->stats.udpMd.defTtl    = pSession->mdDefault.sendParam.ttl;
-        pSession->stats.tcpMd.defTtl    = pSession->mdDefault.sendParam.ttl;
+        pSession->stats.udpMd.defQos            = pSession->mdDefault.sendParam.qos;
+        pSession->stats.tcpMd.defQos            = pSession->mdDefault.sendParam.qos;
+        pSession->stats.udpMd.defTtl            = pSession->mdDefault.sendParam.ttl;
+        pSession->stats.tcpMd.defTtl            = pSession->mdDefault.sendParam.ttl;
         pSession->stats.udpMd.defConfirmTimeout = pSession->mdDefault.confirmTimeout;
         pSession->stats.tcpMd.defConfirmTimeout = pSession->mdDefault.confirmTimeout;
         pSession->stats.udpMd.defReplyTimeout   = pSession->mdDefault.replyTimeout;

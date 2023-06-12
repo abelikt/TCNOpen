@@ -15,6 +15,7 @@
  /*
  * $Id$
  *
+ *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      BL 2020-02-26: Ticket #320 Wrong ETB_CTRL_TO_US value
@@ -123,7 +124,7 @@
 #define TRDP_PD_DEFAULT_QOS                 5u
 #define TRDP_PD_DEFAULT_TTL                 64u
 #define TRDP_PD_DEFAULT_TIMEOUT             100000u                     /**< [us] 100ms default PD timeout          */
-#define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL, 0u, 0u, 0u}
+#define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL, 0u, 0u}
 
 /**  Default TRDP process options    */
 #define TRDP_PROCESS_DEFAULT_CYCLE_TIME     10000u                      /**< [us] 10ms cycle time for TRDP process  */
@@ -162,6 +163,7 @@
 
 /** Message Types    */
 
+#define TRDP_MSG_PT                         0x5074u                 /**< 'Pt' PD Data TSN                           */
 #define TRDP_MSG_PD                         0x5064u                 /**< 'Pd' PD Data                               */
 #define TRDP_MSG_PP                         0x5070u                 /**< 'Pp' PD Data (Pull Reply)                  */
 #define TRDP_MSG_PR                         0x5072u                 /**< 'Pr' PD Request                            */

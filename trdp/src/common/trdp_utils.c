@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -959,7 +960,7 @@ void trdp_initSockets (
  *  @param[in]      params          parameters to use
  *  @param[in]      srcIP           IP to bind to (0 = any address)
  *  @param[in]      mcGroup         MC group to join (0 = do not join)
- *  @param[in]      type            type determines port to bind to (PD, MD/UDP, MD/TCP)
+ *  @param[in]      type            type determines port to bind to (PD TSN, PD, MD/UDP, MD/TCP)
  *  @param[in]      options         blocking/nonblocking
  *  @param[in]      rcvMostly       primarily used for receiving (tbd: bind on sender, too?)
  *  @param[out]     useSocket       socket to use, do not open a new one
@@ -1020,7 +1021,6 @@ TRDP_ERR_T  trdp_requestSocket (
                  && (iface[lIndex].type == type)
                  && ((rcvMostly) || (iface[lIndex].sendParam.qos == params->qos))
                  && ((rcvMostly) || (iface[lIndex].sendParam.ttl == params->ttl))
-                 && (iface[lIndex].sendParam.tsn == params->tsn)
                  && (iface[lIndex].sendParam.vlan == params->vlan)
                  && (iface[lIndex].rcvMostly == rcvMostly)
                  && ((type != TRDP_SOCK_MD_TCP)
@@ -1173,6 +1173,7 @@ TRDP_ERR_T  trdp_requestSocket (
         sock_options.no_udp_crc     = ((type != TRDP_SOCK_MD_TCP) && (options & TRDP_OPTION_NO_UDP_CHK)) ? 1 : 0;
         sock_options.vlanId         = params->vlan;
         sock_options.ifName[0]      = 0;
+
         switch (type)
         {
 #ifdef TSN_SUPPORT

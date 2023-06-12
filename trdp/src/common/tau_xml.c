@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *     AHW 2023-04-12: XML config for #342 VLAN use added and Lint findings fixed
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
@@ -223,7 +224,6 @@ static void setDefaultInterfaceValues (
         pPdConfig->sendParam.qos        = TRDP_PD_DEFAULT_QOS;
         pPdConfig->sendParam.ttl        = TRDP_PD_DEFAULT_TTL;
         pPdConfig->sendParam.retries    = 0u;
-        pPdConfig->sendParam.tsn        = 0u;
         pPdConfig->sendParam.vlan       = 0u;
         pPdConfig->timeout              = TRDP_PD_DEFAULT_TIMEOUT;
         pPdConfig->toBehavior           = TRDP_TO_SET_TO_ZERO;
@@ -241,7 +241,6 @@ static void setDefaultInterfaceValues (
         pMdConfig->sendParam.qos        = TRDP_MD_DEFAULT_QOS;
         pMdConfig->sendParam.retries    = TRDP_MD_DEFAULT_RETRIES;
         pMdConfig->sendParam.ttl        = TRDP_MD_DEFAULT_TTL;
-        pMdConfig->sendParam.tsn        = 0u;
         pMdConfig->sendParam.vlan       = 0u;
         pMdConfig->tcpPort              = TRDP_MD_TCP_PORT;
         pMdConfig->udpPort              = TRDP_MD_UDP_PORT;
@@ -2202,13 +2201,6 @@ EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
                             else if (vos_strnicmp(attribute, "vlan", MAX_TOK_LEN) == 0)
                             {
                                 (*ppComPar)[i].sendParam.vlan = (UINT16) valueInt;
-                            }
-                            else if (vos_strnicmp(attribute, "tsn", MAX_TOK_LEN) == 0)
-                            {
-                                if (vos_strnicmp("on", value, TRDP_MAX_LABEL_LEN) == 0)
-                                {
-                                    (*ppComPar)[i].sendParam.tsn = TRUE;
-                                }
                             }
                             else if (vos_strnicmp(attribute, "retries", MAX_TOK_LEN) == 0)
                             {

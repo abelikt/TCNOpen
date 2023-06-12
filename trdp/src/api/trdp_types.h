@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - Comments adapted for base 2 cycle time support
  *     AHW 2023-01-11: Lint warnigs
@@ -325,7 +326,6 @@ typedef struct
     UINT8   qos;        /**< Quality of service (default should be 2 for PD and 2 for MD, TSN priority >= 3)    */
     UINT8   ttl;        /**< Time to live (default should be 64)                                                */
     UINT8   retries;    /**< MD Retries from XML file                                                           */
-    BOOL8   tsn;        /**< if TRUE, do not schedule packet but use TSN socket                                 */
     UINT16  vlan;       /**< VLAN Id to be used                                                                 */
 } TRDP_COM_PARAM_T, TRDP_SEND_PARAM_T;
 
@@ -656,7 +656,7 @@ typedef struct
 {
     TRDP_PD_CALLBACK_T  pfCbFunction;           /**< Pointer to PD callback function            */
     void                *pRefCon;               /**< Pointer to user context for call back      */
-    TRDP_SEND_PARAM_T   sendParam;              /**< Default send parameters                    */
+    TRDP_COM_PARAM_T   sendParam;              /**< Default send parameters                    */
     TRDP_FLAGS_T        flags;                  /**< Default flags for PD packets               */
     UINT32              timeout;                /**< Default timeout in us                      */
     TRDP_TO_BEHAVIOR_T  toBehavior;             /**< Default timeout behavior                  */

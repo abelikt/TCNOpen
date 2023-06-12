@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     AHW 2023-02-21: Lint warnings
 *     AHW 2023-02-20: Ticket #420 Infinite loop in tlp_get() on unrecoverable errors
@@ -526,10 +527,6 @@ EXT_DECL TRDP_ERR_T tlp_publish (
             }
             else
             {
-                const TRDP_SEND_PARAM_T *pCurrentSendParams = (pSendParam != NULL) ?
-                    pSendParam :
-                    &appHandle->pdDefault.sendParam;
-
                 pNewElement->pktFlags = (pktFlags == TRDP_FLAGS_DEFAULT) ? appHandle->pdDefault.flags : pktFlags;
 
                 /* mark data as invalid, data will be set valid with tlp_put */
@@ -537,47 +534,27 @@ EXT_DECL TRDP_ERR_T tlp_publish (
                 pNewElement->dataSize   = dataSize;
 
 #ifdef TSN_SUPPORT
-                /* check for TSN and select the right message and socket type */
-                if (pCurrentSendParams->tsn == FALSE)
+                /* check for TSN and select the right message type and socket type #435 */
+                if (pNewElement->pktFlags & TRDP_FLAGS_TSN)
                 {
-                    /*
-                     Compute the overal packet size
-                     */
-                    pNewElement->grossSize = trdp_packetSizePD(dataSize);
-                }
-                else if (pNewElement->pktFlags & TRDP_FLAGS_TSN)
-                {
-                    if (pCurrentSendParams->tsn == FALSE)
-                    {
-                        ret = TRDP_PARAM_ERR;
-                    }
-                    else
-                    {
-                        msgType = TRDP_MSG_PT;
-                    }
+                    msgType     = TRDP_MSG_PT;
                     interval    = 0u;       /* force zero interval */
                     sockType    = TRDP_SOCK_PD_TSN;
                     pNewElement->privFlags  |= TRDP_IS_TSN;
-                    pNewElement->grossSize  = trdp_packetSizePD(dataSize);
                 }
-                else
-                {
-                    vos_printLogStr(VOS_LOG_ERROR, "Publish: Wrong send parameters for TSN!\n");
-                    ret = TRDP_PARAM_ERR;
-                }
-#else
+#endif
                 /*
                  Compute the overal packet size
                  */
                 pNewElement->grossSize = trdp_packetSizePD(dataSize);
-#endif
+
                 if (ret == TRDP_NO_ERR)
                 {
                     /*    Get a socket    */
                     ret = trdp_requestSocket(
                             appHandle->ifacePD,
                             appHandle->pdDefault.port,
-                            pCurrentSendParams,
+                            &appHandle->pdDefault.sendParam, /* #435 */
                             srcIpAddr,
                             0u,
                             sockType,
