@@ -1,6 +1,6 @@
 /**********************************************************************************************************************/
 /**
- * @file            trdp-md-test.c
+ * @file            trdp-md-test-vlan.c
  *
  * @brief           Test application for TRDP MD
  *
@@ -14,16 +14,10 @@
  *          If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *          Copyright UniControls, a.s., 2013. All rights reserved.
  *
- * $Id: trdp-md-test.c 2376 2023-02-16 14:48:01Z chris-wetzler $
+ * $Id: trdp-md-test-vlan.c 2376 2023-02-16 14:48:01Z chris-wetzler $
  *
- *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
- *     CWE 2023-01-27: Ticket #417 Multicast-N tests always failed due to unknown number of expected multicast repliers. Expected number can now be set as param
- *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
- *      AÖ 2019-12-17: Ticket #308 Add vos Sim function to API
- *      AÖ 2019-11-11: Ticket #290 Add support for Virtualization on Windows
- *      BL 2018-06-20: Ticket #184 Building with VS 2015: WIN64 and Windows threads (SOCKET instead of INT32)
- *      BL 2017-11-28: Ticket #180 Filtering rules for DestinationURI does not follow the standard
- *      BL 2017-06-30: Compiler warnings, local prototypes added
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
+ *                     Copied from trdp-md-test.c revision 2376
  */
 
 #include <stdio.h>

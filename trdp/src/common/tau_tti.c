@@ -26,6 +26,7 @@
 /*
 * $Id$
 *
+*      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-02-27: tau_getCstFctInfo interface change to fit to tau_getVehInfo() and tau_getCstInfo() 
 *     AHW 2023-02-21: Lint warnings
 *  AO/AHW 2023-02-03: Ticket #416: Bug fixing and code refactoring

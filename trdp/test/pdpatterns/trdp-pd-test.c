@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *      AÖ 2020-05-04: Ticket #330 Extend TRDP_PDTest with TSN support
  *      AÖ 2019-11-11: Ticket #290 Add support for Virtualization on Windows

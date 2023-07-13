@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-02-21: Lint warnigs
  *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
  *     CWE 2023-01-09: Ticket #393 Incorrect behaviour if MD timeout occurs

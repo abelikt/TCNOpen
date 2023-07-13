@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      BL 2019-06-13: 'quiet' parameter to supress screen output (for performance measurements)
  *      BL 2019-06-12: Ticket #228 TRDP_XMLPDTest.exe multicast issuer (use type (source/sink) if available)

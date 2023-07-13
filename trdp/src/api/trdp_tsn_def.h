@@ -17,6 +17,7 @@
  *
  * $Id$
  * 
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *      PL 2023-05-19: Ticket #434 Code adaption due to TSN header version 2 removal.
  *

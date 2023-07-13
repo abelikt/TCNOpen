@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      BL 2019-06-13: 'quiet' parameter to supress screen output (for performance measurements)
  *      BL 2019-06-12: Ticket #228 TRDP_XMLPDTest.exe multicast issuer (use type (source/sink) if available)
  *      BL 2018-03-06: Ticket #101 Optional callback function on PD send

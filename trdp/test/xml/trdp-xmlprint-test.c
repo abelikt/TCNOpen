@@ -21,6 +21,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      A� 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
  *      BL 2020-07-16: Ticket #334 dirent.h not part of delivery

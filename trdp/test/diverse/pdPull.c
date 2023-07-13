@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      SB 2021-08.09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
  *      SB 2021-08-09: Compiler warnings

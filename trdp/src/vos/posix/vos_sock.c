@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *     AHW 2023-01-10: Ticket #406 Socket handling: check for EAGAIN missing for Linux/Posix

@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *      BL 2020-08-07: Ticket #317 Bug in trdp_indeedFindSubAddr() (HIGH_PERFORMANCE)

@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      SB 2021-08-09: Compiler warnings
  *      BL 2018-03-06: Ticket #101 Optional callback function on PD send
  *      BL 2017-06-30: Compiler warnings, local prototypes added

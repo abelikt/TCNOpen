@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  */
 
 #ifndef TAU_LDLADDER_H_

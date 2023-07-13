@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
