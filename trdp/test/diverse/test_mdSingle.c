@@ -347,9 +347,9 @@ int main (int argc, char *argv[])
     unsigned int ip[4];
     TRDP_MD_CONFIG_T        mdConfiguration =
     {mdCallback, &sSessionData,
-     {0u, 64u, 0u, 0, 0u}, TRDP_FLAGS_CALLBACK, 1000000u, 1000000u, 1000000u, 1000000u, 17225u, 17225u, 10};
+     {0u, 64u, 0u}, TRDP_FLAGS_CALLBACK, 1000000u, 1000000u, 1000000u, 1000000u, 17225u, 17225u, 10};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     VOS_IF_REC_T            interfaces[MAX_IF];
     BOOL8           lastRun = FALSE;
     TRDP_ERR_T      err     = TRDP_NO_ERR;

@@ -631,7 +631,7 @@ static int test1 ()
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
                           gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
                           TEST1_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, TEST1_DATA_LEN);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, TEST1_DATA_LEN);
 
         IF_ERROR("tlp_publish");
 
@@ -640,7 +640,6 @@ static int test1 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST1_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 
@@ -757,7 +756,7 @@ static int test2 ()
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
                           gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
                           TEST2_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, 0u);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, 0u);
 
         IF_ERROR("tlp_publish");
 
@@ -766,7 +765,6 @@ static int test2 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_CALLBACK,
-                            NULL,                      /*    default interface                    */
                             TEST2_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 
@@ -820,7 +818,6 @@ static int test3 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TRDP_INFINITE_TIMEOUT, TRDP_TO_DEFAULT);
 
 
@@ -894,7 +891,6 @@ static int test4 ()
                                 0u, 0u,
                                 gDestMC,                            /* MC group */
                                 TRDP_FLAGS_NONE,
-                                NULL,                      /*    default interface                    */
                                 0, TRDP_TO_DEFAULT);
 
 
@@ -904,7 +900,7 @@ static int test4 ()
                               0u,
                               gDestMC,                              /* Destination */
                               0u,
-                              0u, TRDP_FLAGS_DEFAULT, NULL, (UINT8 *) TEST4_DATA, TEST4_DATA_LEN);
+                              0u, TRDP_FLAGS_DEFAULT, (UINT8 *) TEST4_DATA, TEST4_DATA_LEN);
 
             IF_ERROR("tlp_publish");
 
@@ -915,7 +911,6 @@ static int test4 ()
                                 0u, 0u,                                 /* Source */
                                 gDestMC,                            /* Destination */
                                 TRDP_FLAGS_DEFAULT,
-                                NULL,                      /*    default interface                    */
                                 TEST4_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 
@@ -923,7 +918,7 @@ static int test4 ()
 
             err = tlp_request(gSession2.appHandle, subHandle, 0u,
                               TEST4_COMID, 0u, 0u, gSession2.ifaceIP, gSession1.ifaceIP,
-                              0u, TRDP_FLAGS_NONE, NULL, NULL, 0u, TEST4_COMID, gDestMC);
+                              0u, TRDP_FLAGS_NONE, NULL, 0u, TEST4_COMID, gDestMC);
 
             IF_ERROR("tlp_request");
 
@@ -1243,7 +1238,6 @@ static int test8 ()
                             0u, 0u,
                             gDestMC,                            /* MC group */
                             TRDP_FLAGS_NONE,
-                            NULL,                      /*    default interface                    */
                             0, TRDP_TO_DEFAULT);
 
 
@@ -1253,7 +1247,7 @@ static int test8 ()
                           0u,
                           gDestMC,                              /* Destination */
                           0u,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, (UINT8 *) TEST8_DATA, TEST8_DATA_LEN);
+                          0u, TRDP_FLAGS_DEFAULT, (UINT8 *) TEST8_DATA, TEST8_DATA_LEN);
 
         IF_ERROR("tlp_publish");
 
@@ -1340,7 +1334,7 @@ static int test9 ()
                               0u,
                               gSession2.ifaceIP,                              /* Destination */
                               TEST9_INTERVAL,
-                              0u, TRDP_FLAGS_DEFAULT, NULL, (UINT8 *) TEST9_DATA, TEST9_DATA_LEN);
+                              0u, TRDP_FLAGS_DEFAULT, (UINT8 *) TEST9_DATA, TEST9_DATA_LEN);
 
             IF_ERROR("tlp_publish");
             err = tlp_subscribe(gSession2.appHandle, &subHandle[i], NULL, NULL, 0u,
@@ -1348,7 +1342,6 @@ static int test9 ()
                                 gSession1.ifaceIP,
                                 0u, 0u,                        /* MC group */
                                 TRDP_FLAGS_NONE,
-                                NULL,                      /*    default interface                    */
                                 TEST9_TIMEOUT, TRDP_TO_DEFAULT);
 
 
@@ -1485,7 +1478,7 @@ static int test11 ()
                           TEST11_COMID_1000, 0u, 0u,
                           0u,
                           TEST11_COMID_1000_DEST,
-                          0u, 0u, TRDP_FLAGS_DEFAULT, NULL,
+                          0u, 0u, TRDP_FLAGS_DEFAULT,
                           (UINT8 *)TEST11_DATA, 12u);
 
 
@@ -1497,7 +1490,6 @@ static int test11 ()
                             0u, 0u, /* gSession2.ifaceIP,                  / * Source * / */
                             TEST11_COMID_1000_DEST,                  /* Destination */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             0u, TRDP_TO_DEFAULT);
 
 
@@ -1508,7 +1500,6 @@ static int test11 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             TEST11_COMID_2000_DEST,                  /* Destination */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             0u, TRDP_TO_DEFAULT);
 
 
@@ -1519,7 +1510,6 @@ static int test11 ()
                             0u, 0u, /* TEST11_COMID_1000_SRC,             / * Source filter* / */
                             0u,                                     /* Destination unicast */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             0u, TRDP_TO_DEFAULT);
 
 
@@ -1527,7 +1517,7 @@ static int test11 ()
 
         err = tlp_request(gSession1.appHandle, subHandle2, 0u, TEST11_COMID_1000, 0u, 0u,
                           0u,
-                          TEST11_COMID_1000_DEST, 0u, TRDP_FLAGS_NONE, NULL, NULL, 0u,
+                          TEST11_COMID_1000_DEST, 0u, TRDP_FLAGS_NONE, NULL, 0u,
                           TEST11_COMID_1000, TEST11_COMID_1000_SRC);
 
         IF_ERROR("tlp_request");
@@ -1603,7 +1593,7 @@ static int test12 ()
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
                           TEST12_MCDEST1,                           /* Destination */
                           TEST12_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, TEST12_DATA_LEN);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, TEST12_DATA_LEN);
 
         IF_ERROR("tlp_publish");
 
@@ -1612,7 +1602,6 @@ static int test12 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             TEST12_MCDEST1, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST12_INTERVAL * 3, TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe1");
@@ -1621,7 +1610,6 @@ static int test12 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             TEST12_MCDEST2, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST12_INTERVAL * 3, TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe2");
@@ -1630,7 +1618,6 @@ static int test12 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             TEST12_MCDEST3, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST12_INTERVAL * 3, TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe3");
@@ -1639,7 +1626,6 @@ static int test12 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             TEST12_MCDEST2, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST12_INTERVAL * 3, TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe4");
@@ -1759,7 +1745,7 @@ static int test13 ()
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
                           gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
                           TEST13_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, TEST13_DATA_LEN);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, TEST13_DATA_LEN);
 
         IF_ERROR("tlp_publish");
 
@@ -1768,7 +1754,6 @@ static int test13 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST13_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 
@@ -1893,7 +1878,7 @@ static int test14 ()
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
                           gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
                           TEST14_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, 0u);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, 0u);
 
         IF_ERROR("tlp_publish");
 
@@ -1902,7 +1887,6 @@ static int test14 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB,
-                            NULL,                      /*    default interface                    */
                             TEST14_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 

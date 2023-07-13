@@ -260,7 +260,7 @@ int main (int argc, char * *argv)
                                                (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_MARSHALL), 10000000,
                                                TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
 
     int rv = 0;
     unsigned int            ip[4];
@@ -364,7 +364,6 @@ int main (int argc, char * *argv)
                          VOS_INADDR_ANY,                /*    Source IP filter                       */
                          replyIP,                       /*    Default destination    (or MC Group)   */
                          TRDP_FLAGS_DEFAULT,            /*    packet flags */
-                         NULL,                          /*    default interface                    */
                          PD_COMID1_TIMEOUT,             /*    Time out in us                         */
                          TRDP_TO_SET_TO_ZERO);          /*    delete invalid data    on timeout      */
 
@@ -387,7 +386,6 @@ int main (int argc, char * *argv)
                       0,
                       TRDP_FLAGS_NONE,
                       0,
-                      NULL,
                       0,
                       TRDP_GLOB_STATS_COMID,
                       replyIP);

@@ -341,7 +341,6 @@ static void setup_ports()
                 p->cycle,           /* cycle period   */
                 0,                  /* redundancy     */
                 TRDP_FLAGS_NONE,    /* flags          */
-                NULL,               /* default send parameters */
                 p->data,            /* data           */
                 p->size);           /* data size      */
 
@@ -363,7 +362,6 @@ static void setup_ports()
                 p->dst,             /* destination address */
                 0,                  /* redundancy     */
                 TRDP_FLAGS_NONE,    /* flags          */
-                NULL,               /* default send parameters */
                 p->data,            /* data           */
                 p->size,            /* data size      */
                 p->repid,           /* reply comid    */
@@ -389,7 +387,6 @@ static void setup_ports()
                 VOS_INADDR_ANY,
                 p->dst,             /* destination address    */
                 TRDP_FLAGS_NONE,    /* No flags set     */
-                NULL,                   /*    default interface */
                 p->timeout,             /* timeout [usec]   */
                 TRDP_TO_SET_TO_ZERO);   /* timeout behavior */
 
@@ -760,7 +757,7 @@ static void process_data()
             }
 
             p->err = tlp_request(apph, ports[p->link].sh, 0u, p->comid, 0u, 0u,
-                p->src, p->dst, 0, TRDP_FLAGS_NONE, NULL, p->data, p->size,
+                p->src, p->dst, 0, TRDP_FLAGS_NONE, p->data, p->size,
                 p->repid, p->rep);
         }
 

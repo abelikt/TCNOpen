@@ -117,14 +117,14 @@
 #define TRDP_MD_DEFAULT_QOS                 3u
 #define TRDP_MD_DEFAULT_TTL                 64u
 #define TRDP_MD_DEFAULT_RETRIES             2u
-#define TRDP_MD_DEFAULT_SEND_PARAM          {TRDP_MD_DEFAULT_QOS, TRDP_MD_DEFAULT_TTL, TRDP_MD_DEFAULT_RETRIES, 0u, 0u}
+#define TRDP_MD_DEFAULT_SEND_PARAM          {TRDP_MD_DEFAULT_QOS, TRDP_MD_DEFAULT_TTL, TRDP_MD_DEFAULT_RETRIES} /* #435 */
 #define TRDP_MD_MAX_NUM_SESSIONS            1000u
 
 /**  Default PD communication parameters   */
 #define TRDP_PD_DEFAULT_QOS                 5u
 #define TRDP_PD_DEFAULT_TTL                 64u
 #define TRDP_PD_DEFAULT_TIMEOUT             100000u                     /**< [us] 100ms default PD timeout          */
-#define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL, 0u, 0u}
+#define TRDP_PD_DEFAULT_SEND_PARAM          {TRDP_PD_DEFAULT_QOS, TRDP_PD_DEFAULT_TTL, 0u}
 
 /**  Default TRDP process options    */
 #define TRDP_PROCESS_DEFAULT_CYCLE_TIME     10000u                      /**< [us] 10ms cycle time for TRDP process  */

@@ -196,7 +196,7 @@ int main (int argc, char * *argv)
                                                (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_MARSHALL), 10000000u,
                                                TRDP_TO_SET_TO_ZERO, 0u};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0u, 0u, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0u, 0u, TRDP_OPTION_BLOCK, 0u};
 
     int     rv      = 0;
     unsigned int     ip[4];
@@ -309,7 +309,6 @@ int main (int argc, char * *argv)
                         VOS_INADDR_ANY, VOS_INADDR_ANY, /*    Source IP filter                       */
                         replyIP,                       /*    Default destination    (or MC Group)   */
                         TRDP_FLAGS_DEFAULT,            /*    packet flags */
-                        NULL,
                         0u,                            /*    Time out in us                         */
                         TRDP_TO_SET_TO_ZERO);          /*    delete invalid data    on timeout      */
 
@@ -322,7 +321,7 @@ int main (int argc, char * *argv)
 
     /*    Request PD        */
     err = tlp_request(appHandle, subHandle, 0u, gComID, 0u, 0u, VOS_INADDR_ANY, destIP,
-                      0u, TRDP_FLAGS_NONE, 0u, NULL, 0u, gComID, replyIP);
+                      0u, TRDP_FLAGS_NONE, NULL, 0u, gComID, replyIP);
 
     if (err != TRDP_NO_ERR)
     {
@@ -431,7 +430,6 @@ int main (int argc, char * *argv)
                               destIP,
                               0u,
                               TRDP_FLAGS_NONE,
-                              0u,
                               NULL,
                               0u,
                               gComID,

@@ -125,6 +125,7 @@ VOS_IP4_ADDR_T  gIpInterfaceIndexToIpAddr[VOS_MAX_NUM_IF]   = { 0 };    /* resol
  */
 
 void vos_collectIpInterfaces ();
+UINT32 vos_getInterfaceList (VOS_IF_REC_T *ipInterfaceList[]);
 UINT32 vos_getInterfaceIP (UINT32 ifIndex);
 BOOL8 vos_getMacAddress (UINT8 *pMacAddr, const char  *pIfName);
 
@@ -405,33 +406,6 @@ EXT_DECL VOS_ERR_T vos_sockSetBuffer (VOS_SOCK_T sock)
     vos_printLog(VOS_LOG_INFO, "Recv buffer limit = %d\n", optval);
 
     return VOS_NO_ERR;
-}
-
-/**********************************************************************************************************************/
-/** Get the MAC address for a named interface.
- *
- *  @param[in]      pIfName    pointer to interface name
- *
- *  @retval         IP address of interface
- *  @retval         0 if index not found
- */
-EXT_DECL UINT32 vos_getIpAddress (
-    const char  *pIfName)
-{
-
-    if (0 < gIpInterfaceCount)                             /* any IP interfaces stored? */
-    {
-        UINT32 i;
-        for (i = 0; i < gIpInterfaceCount; i++)
-        {
-            if (strncmp(pIfName, gIpInterfaces[i].name, VOS_MAX_IF_NAME_SIZE) == 0)
-            {
-                return gIpInterfaces[i].ipAddr;
-            }
-        }
-    }
-
-    return 0u;
 }
 
 /**********************************************************************************************************************/
@@ -727,6 +701,48 @@ EXT_DECL BOOL8 vos_netIfUp (
         freeifaddrs(pAddrs);
     }
     return linkState;
+}
+
+
+/**********************************************************************************************************************/
+/** Get the interface name for a given VLAN ID (and an optionally given IP address)
+ *
+ *  @param[in]      vlanId          vlan ID to find
+ *  @param[in]      ipAddr          IP to find (0 = match any)
+ *
+ *  @retval         VOS_NO_ERR      if found
+ *  @retval         VOS_INIT_ERR    vos_sockInit needs to be called first
+ *  @retval         VOS_PARAM_ERR   vlan 1..4094 allowed (0=no VLAN, 4095=wildcard)
+ */
+EXT_DECL VOS_ERR_T vos_ifnameFromVlanId (
+    UINT16          vlanId,
+    VOS_IP4_ADDR_T  ipAddr)
+{
+    UINT32        ipInterfaceCount;
+    VOS_IF_REC_T  *ipInterfaceList = NULL;
+
+    if ((vlanId < 1) || (vlanId > 4094))
+    {
+        return VOS_PARAM_ERR;
+    }
+
+    ipInterfaceCount = vos_getInterfaceList(&ipInterfaceList);  // #430
+    if (0 < ipInterfaceCount)                                   // any IP interfaces stored?
+    {
+        UINT32 i = 0u;
+        for (i = 0; i < ipInterfaceCount; i++)                  // search intefaces for VLAN ID
+        {
+            if ((ipInterfaceList[i].vlanId == vlanId) &&
+               ((0 == ipAddr) || (ipAddr == ipInterfaceList[i].ipAddr)))
+            {
+                vos_printLog(VOS_LOG_INFO, "Matching VLAN (ID %u) interface found: %s with IP %s\n",
+                            vlanId, ipInterfaceList[i].name, vos_ipDotted(ipInterfaceList[i].ipAddr));
+                return VOS_NO_ERR;
+            }
+        }
+    }
+
+    return VOS_INIT_ERR;
 }
 
 
@@ -1045,16 +1061,7 @@ EXT_DECL VOS_ERR_T vos_sockSetOptions (
                 STRING_ERR(buff);
                 vos_printLog(VOS_LOG_WARNING, "setsockopt() SO_PRIORITY failed (Err: %s)\n", buff);
             }
-            {
-                struct vlan_ioctl_args vlan_args;
-                vlan_args.cmd = SET_VLAN_EGRESS_PRIORITY_CMD;
-                vlan_args.u.skb_priority    = sockOptValue;
-                vlan_args.vlan_qos          = pOptions->qos;
-                vlan_args.u.name_type       = VLAN_NAME_TYPE_RAW_PLUS_VID;
-                strcpy(vlan_args.device1, pOptions->ifName);
 
-                (void) ioctl(sock, SIOCSIFVLAN, &vlan_args);
-            }
 #endif
         }
         if (pOptions->ttl > 0)

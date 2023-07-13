@@ -93,8 +93,6 @@ struct VOS_SHRD
 
 /**********************************************************************************************************************/
 
-UINT32      vos_getInterfaceList (VOS_IF_REC_T *ipInterfaceList[]);
-
 VOS_ERR_T   vos_mutexLocalCreate (struct VOS_MUTEX *pMutex);
 
 void        vos_mutexLocalDelete (struct VOS_MUTEX *pMutex);

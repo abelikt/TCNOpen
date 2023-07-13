@@ -137,7 +137,7 @@ typedef struct PUBLISH_TELEGRAM
     TRDP_IP_ADDR_T          srcIpAddr;                              /* own IP address, 0 - srcIP will be set by the
                                                                       stack */
     TRDP_IP_ADDR_T          dstIpAddr;                              /* where to send the packet to */
-    TRDP_SEND_PARAM_T       *pSendParam;                                /* optional pointer to send parameter, NULL -
+    TRDP_COM_PARAM_T       *pSendParam;                                /* optional pointer to send parameter, NULL -
                                                                           default parameters are used */
     struct PUBLISH_TELEGRAM *pNextPublishTelegram;              /* pointer to next Publish Telegram or NULL */
 } PUBLISH_TELEGRAM_T;
@@ -182,7 +182,7 @@ typedef struct PD_REQUEST_TELEGRAM
                                                                       stack */
     TRDP_IP_ADDR_T              dstIpAddr;                          /* where to send the packet to */
     TRDP_IP_ADDR_T              replyIpAddr;                        /* IP for reply (Pull request Ip) */
-    TRDP_SEND_PARAM_T           *pSendParam;                            /* optional pointer to send parameter, NULL -
+    TRDP_COM_PARAM_T           *pSendParam;                            /* optional pointer to send parameter, NULL -
                                                                           default parameters are used */
     TRDP_TIME_T                 requestSendTime;                    /* next Request Send Timing */
     struct PD_REQUEST_TELEGRAM  *pNextPdRequestTelegram;        /* pointer to next PD Request Telegram or NULL */
@@ -207,7 +207,7 @@ typedef struct CALLER_TELEGRAM
     UINT32                      comId;                                  /* comId */
     UINT32                      topoCount;                              /* valid topocount, 0 for local consist */
     UINT32                      numReplies;                         /* number of expected replies, 0 if unknown */
-    TRDP_SEND_PARAM_T           *pSendParam;                            /* Pointer to send parameters, NULL to use
+    TRDP_COM_PARAM_T           *pSendParam;                            /* Pointer to send parameters, NULL to use
                                                                           default send parameters */
     TRDP_SRC_T                  *pSource;                               /* Source Parameter (id, SDT, URI) */
     TRDP_DEST_T                 *pDestination;                  /* Destination Parameter (id, SDT, URI) */
@@ -233,7 +233,7 @@ typedef struct REPLIER_TELEGRAM
     UINT32                      comId;                                  /* comId */
     UINT32                      topoCount;                              /* valid topocount, 0 for local consist */
     UINT32                      numReplies;                         /* number of expected replies, 0 if unknown */
-    TRDP_SEND_PARAM_T           *pSendParam;                            /* Pointer to send parameters, NULL to use
+    TRDP_COM_PARAM_T           *pSendParam;                            /* Pointer to send parameters, NULL to use
                                                                           default send parameters */
     TRDP_SRC_T                  *pSource;                               /* Source Parameter (id, SDT, URI) */
     TRDP_DEST_T                 *pDestination;                  /* Destination Parameter (id, SDT, URI) */

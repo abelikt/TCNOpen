@@ -111,10 +111,18 @@
 BOOL8   gVosSockInitialised = FALSE;
 UINT8   mac[VOS_MAC_SIZE];
 
+/* store the IP, VLAN and MAC addresses of local network interfaces for fast access - set once in vos_sockInit(), cleared by vos_sockTerm() */
+VOS_IF_REC_T    gIpInterfaces[VOS_MAX_NUM_IF] = { 0 };    /* IP-interface-list containing IP and MAC addresses */
+UINT32          gIpInterfaceCount = 0u;       /* length of stored IP-interface-list */
+
+VOS_IP4_ADDR_T  gIpInterfaceIndexToIpAddr[VOS_MAX_NUM_IF] = { 0 };    /* resolves OS-interface-index to IP address */
+
 
 /***********************************************************************************************************************
  * LOCAL FUNCTIONS
  */
+
+UINT32      vos_getInterfaceList(VOS_IF_REC_T* ipInterfaceList[]);
 
 /**********************************************************************************************************************/
 /** Receive a message including sender address information.
@@ -357,6 +365,25 @@ EXT_DECL BOOL8 vos_isMulticast (
 }
 
 /**********************************************************************************************************************/
+/** Get the ethernet / IP-interface list and list-count
+ *
+ *  @param[out]     ipInterfaceList     IP-interface-list-pointer containing IP and MAC addresses
+ *
+ *  @retval         ipInterfaceCount    length of stored IP-interface-list
+ *
+*/
+UINT32 vos_getInterfaceList(
+    VOS_IF_REC_T* ipInterfaceList[])
+{
+    if (NULL == ipInterfaceList)
+    {
+        return 0;
+    }
+    *ipInterfaceList = gIpInterfaces;
+    return gIpInterfaceCount;
+}
+
+/**********************************************************************************************************************/
 /** Get a list of interface addresses
  *  The caller has to provide an array of interface records to be filled.
  *
@@ -594,6 +621,48 @@ UINT32 vos_getInterfaceIP (UINT32 index)
 
     return 0u;
 }
+
+/**********************************************************************************************************************/
+/** Get the interface name for a given VLAN ID (and an optionally given IP address)
+ *
+ *  @param[in]      vlanId          vlan ID to find
+ *  @param[in]      ipAddr          IP to find (0 = match any)
+ *
+ *  @retval         VOS_NO_ERR      if found
+ *  @retval         VOS_INIT_ERR    vos_sockInit needs to be called first
+ *  @retval         VOS_PARAM_ERR   vlan 1..4094 allowed (0=no VLAN, 4095=wildcard)
+ */
+EXT_DECL VOS_ERR_T vos_ifnameFromVlanId(
+    UINT16          vlanId,
+    VOS_IP4_ADDR_T  ipAddr)
+{
+    UINT32        ipInterfaceCount;
+    VOS_IF_REC_T* ipInterfaceList = NULL;
+
+    if ((vlanId < 1) || (vlanId > 4094))
+    {
+        return VOS_PARAM_ERR;
+    }
+
+    ipInterfaceCount = vos_getInterfaceList(&ipInterfaceList);  // #430
+    if (0 < ipInterfaceCount)                                   // any IP interfaces stored?
+    {
+        UINT32 i = 0u;
+        for (i = 0; i < ipInterfaceCount; i++)                  // search intefaces for VLAN ID
+        {
+            if ((ipInterfaceList[i].vlanId == vlanId) &&
+                ((0 == ipAddr) || (ipAddr == ipInterfaceList[i].ipAddr)))
+            {
+                vos_printLog(VOS_LOG_INFO, "Matching VLAN (ID %u) interface found: %s with IP %s\n",
+                    vlanId, ipInterfaceList[i].name, vos_ipDotted(ipInterfaceList[i].ipAddr));
+                return VOS_NO_ERR;
+            }
+        }
+    }
+
+    return VOS_INIT_ERR;
+}
+
 
 /**********************************************************************************************************************/
 /** Initialize the socket library.

@@ -69,7 +69,7 @@
 #define TRDP_VERSION    2
 #define TRDP_RELEASE    2
 #define TRDP_UPDATE     23
-#define TRDP_EVOLUTION  98              /* Evolution > 0 denotes trunk! */
+#define TRDP_EVOLUTION  99              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
@@ -220,7 +220,7 @@ typedef struct TRDP_SOCKETS
     VOS_SOCK_T          sock;                            /**< vos socket descriptor to use                */
     TRDP_IP_ADDR_T      bindAddr;                        /**< Defines the interface to use                */
     TRDP_IP_ADDR_T      srcAddr;                         /**< Defines the source interface to use         */
-    TRDP_SEND_PARAM_T   sendParam;                       /**< Send parameters                             */
+    TRDP_COM_PARAM_T   sendParam;                       /**< Send parameters                              */
     TRDP_SOCK_TYPE_T    type;                            /**< Usage of this socket                        */
     BOOL8               rcvMostly;                       /**< Used for receiving                          */
     INT16               usage;                           /**< No. of current users of this socket         */

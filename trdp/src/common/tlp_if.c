@@ -447,7 +447,6 @@ EXT_DECL TRDP_ERR_T tlp_getRedundant (
  *  @param[in]      redId               0 - Non-redundant, > 0 valid redundancy group
  *  @param[in]      pktFlags            OPTION:
  *                                      TRDP_FLAGS_DEFAULT, TRDP_FLAGS_NONE, TRDP_FLAGS_MARSHALL, TRDP_FLAGS_CALLBACK
- *  @param[in]      pSendParam          optional pointer to send parameter, NULL - default parameters are used
  *  @param[in]      pData               optional pointer to data packet / dataset, NULL if sending starts later with tlp_put()
  *  @param[in]      dataSize            size of data packet >= 0 and <= TRDP_MAX_PD_DATA_SIZE
  *
@@ -470,7 +469,6 @@ EXT_DECL TRDP_ERR_T tlp_publish (
     UINT32                  interval,
     UINT32                  redId,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize)
 {
@@ -1056,7 +1054,6 @@ EXT_DECL TRDP_ERR_T tlp_putImmediate (
  *  @param[in]      redId               0 - Non-redundant, > 0 valid redundancy group
  *  @param[in]      pktFlags            OPTION:
  *                                      TRDP_FLAGS_DEFAULT, TRDP_FLAGS_NONE, TRDP_FLAGS_MARSHALL, TRDP_FLAGS_CALLBACK
- *  @param[in]      pSendParam          optional pointer to send parameter, NULL - default parameters are used
  *  @param[in]      pData               pointer to packet data / dataset
  *  @param[in]      dataSize            size of packet data
  *  @param[in]      replyComId          comId of reply (default comID of subscription)
@@ -1079,7 +1076,6 @@ EXT_DECL TRDP_ERR_T tlp_request (
     TRDP_IP_ADDR_T          destIpAddr,
     UINT32                  redId,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     UINT32                  replyComId,
@@ -1165,8 +1161,8 @@ EXT_DECL TRDP_ERR_T tlp_request (
             {
                 /*    Get a socket    */
                 ret = trdp_requestSocket(appHandle->ifacePD,
-                                         appHandle->pdDefault.port,
-                                         (pSendParam != NULL) ? pSendParam : &appHandle->pdDefault.sendParam,
+                                         appHandle->pdDefault.port,                                         
+                                         &appHandle->pdDefault.sendParam, /* #435 */
                                          srcIpAddr,
                                          0u,
                                          TRDP_SOCK_PD,
@@ -1311,7 +1307,6 @@ EXT_DECL TRDP_ERR_T tlp_request (
  *  @param[in]      destIpAddr          IP address to join
  *  @param[in]      pktFlags            OPTION:
  *                                      TRDP_FLAGS_DEFAULT, TRDP_FLAGS_NONE, TRDP_FLAGS_MARSHALL, TRDP_FLAGS_CALLBACK
- *  @param[in]      pRecParams          optional pointer to send parameter, NULL - default parameters are used
  *  @param[in]      timeout             timeout (>= 10ms) in usec
  *  @param[in]      toBehavior          timeout behavior
  *
@@ -1333,7 +1328,6 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
     TRDP_IP_ADDR_T          srcIpAddr2,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_COM_PARAM_T  *pRecParams,
     UINT32                  timeout,
     TRDP_TO_BEHAVIOR_T      toBehavior)
 {
@@ -1408,7 +1402,7 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
         /*    Find a (new) socket    */
         ret = trdp_requestSocket(appHandle->ifacePD,
                                  appHandle->pdDefault.port,
-                                 (pRecParams != NULL) ? pRecParams : &appHandle->pdDefault.sendParam,
+                                 &appHandle->pdDefault.sendParam, /* '435 */
                                  appHandle->realIP,
                                  subHandle.mcGroup,
                                  usage,

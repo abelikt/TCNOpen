@@ -229,7 +229,7 @@ EXT_DECL TRDP_ERR_T tlm_notify (
     TRDP_IP_ADDR_T          srcIpAddr,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -315,7 +315,7 @@ EXT_DECL TRDP_ERR_T tlm_request (
     TRDP_FLAGS_T            pktFlags,
     UINT32                  numReplies,
     UINT32                  replyTimeout,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -800,7 +800,7 @@ EXT_DECL TRDP_ERR_T tlm_reply (
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI)
@@ -857,7 +857,7 @@ EXT_DECL TRDP_ERR_T tlm_replyQuery (
     UINT32                  comId,
     UINT32                  userStatus,
     UINT32                  confirmTimeout,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI)
@@ -921,7 +921,7 @@ EXT_DECL TRDP_ERR_T tlm_confirm (
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT16                  userStatus,
-    const TRDP_SEND_PARAM_T *pSendParam)
+    const TRDP_COM_PARAM_T *pSendParam)
 {
     if ( !trdp_isValidSession(appHandle))
     {

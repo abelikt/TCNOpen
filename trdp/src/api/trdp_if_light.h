@@ -17,7 +17,7 @@
 /*
 * $Id$
 *
-*      AÖ 2023-01-13: Ticket #412 Added tlp_republishService
+*      Aï¿½ 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced
 *      BL 2020-09-08: Ticket #343 userStatus parameter size in tlm_reply and tlm_replyQuery
 *      BL 2020-08-05: tlc_freeBuffer() declaration removed, it was never defined!
@@ -162,7 +162,6 @@ EXT_DECL TRDP_ERR_T tlp_publish (
     UINT32                  interval,
     UINT32                  redId,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize);
 
@@ -226,7 +225,6 @@ EXT_DECL TRDP_ERR_T tlp_request (
     TRDP_IP_ADDR_T          destIpAddr,
     UINT32                  redId,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     UINT32                  replyComId,
@@ -245,7 +243,6 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
     TRDP_IP_ADDR_T          srcIpAddr2,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_COM_PARAM_T  *pRecParams,
     UINT32                  timeout,
     TRDP_TO_BEHAVIOR_T      toBehavior);
 
@@ -295,7 +292,7 @@ EXT_DECL TRDP_ERR_T tlm_notify (
     TRDP_IP_ADDR_T          srcIpAddr,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -315,7 +312,7 @@ EXT_DECL TRDP_ERR_T tlm_request (
     TRDP_FLAGS_T            pktFlags,
     UINT32                  numReplies,
     UINT32                  replyTimeout,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -326,7 +323,7 @@ EXT_DECL TRDP_ERR_T tlm_confirm (
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT16                  userStatus,
-    const TRDP_SEND_PARAM_T *pSendParam);
+    const TRDP_COM_PARAM_T *pSendParam);
 
 
 EXT_DECL TRDP_ERR_T tlm_abortSession (
@@ -369,7 +366,7 @@ EXT_DECL TRDP_ERR_T tlm_reply (
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI);
@@ -380,7 +377,7 @@ EXT_DECL TRDP_ERR_T tlm_replyQuery (
     UINT32                  comId,
     UINT32                  userStatus,
     UINT32                  confirmTimeout,
-    const TRDP_SEND_PARAM_T *pSendParam,
+    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI);

@@ -1514,7 +1514,6 @@ EXT_DECL TRDP_ERR_T tau_initTTIaccess (
                       VOS_INADDR_ANY, VOS_INADDR_ANY,
                       vos_dottedIP(TTDB_STATUS_DEST_IP),
                       (TRDP_FLAGS_T) (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB),
-                      NULL,                      /*    default interface                    */
                       TTDB_STATUS_TO_US,
                       TRDP_TO_SET_TO_ZERO) != TRDP_NO_ERR)
     {
@@ -1531,7 +1530,6 @@ EXT_DECL TRDP_ERR_T tau_initTTIaccess (
                       VOS_INADDR_ANY, VOS_INADDR_ANY,
                       vos_dottedIP(TTDB_STATUS_DEST_IP_ETB0),
                       (TRDP_FLAGS_T) (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB),
-                      NULL,                      /*    default interface                    */
                       TTDB_STATUS_TO_US,
                       TRDP_TO_SET_TO_ZERO) != TRDP_NO_ERR)
     {

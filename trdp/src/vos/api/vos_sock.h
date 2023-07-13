@@ -184,9 +184,7 @@ typedef struct
     BOOL8   no_udp_crc;     /**< supress udp crc computation                        */
     BOOL8   txTime;         /**< use transmit time on send, if available            */
     BOOL8   raw;            /**< use raw socket, not for receiver!                  */
-    UINT16  vlanId;
-    CHAR8   ifName[VOS_MAX_IF_NAME_SIZE]; /**< interface name if available          */
-} VOS_SOCK_OPT_T;
+} VOS_SOCK_OPT_T;  /* #435 */
 
 typedef fd_set VOS_FDS_T;
 
@@ -213,17 +211,6 @@ typedef struct
 EXT_DECL void vos_reCollectIpInterfaces ();
 
 /**********************************************************************************************************************/
-/** Get the MAC address for a named interface.
- *
- *  @param[in]      pIfName    pointer to interface name
- *
- *  @retval         IP address of interface
- *  @retval         0 if index not found
- */
-EXT_DECL UINT32 vos_getIpAddress (
-    const char  *pIfName);
-
-    /**********************************************************************************************************************/
 /** Byte swapping 2 Bytes.
  *
  *  @param[in]          val             Initial value.
@@ -713,6 +700,20 @@ EXT_DECL VOS_IP4_ADDR_T vos_determineBindAddr ( VOS_IP4_ADDR_T  srcIP,
                                                 VOS_IP4_ADDR_T  rcvMostly);
 
 /**********************************************************************************************************************/
+/** Get the interface name for a given VLAN ID (and IP address, if given)
+ *
+ *  @param[in]      vlanId          vlan ID to find
+ *  @param[in]      ipAddr          IP to find (0 = match any)
+ *
+ *  @retval         VOS_NO_ERR      if found
+ *  @retval         VOS_INIT_ERR    vos_sockInit needs to be called first
+ *  @retval         VOS_PARAM_ERR   vlan 1..4094 allowed (0=no VLAN, 4095=wildcard)
+ */
+EXT_DECL VOS_ERR_T vos_ifnameFromVlanId(
+    UINT16          vlanId,
+    VOS_IP4_ADDR_T  ipAddr);
+
+/**********************************************************************************************************************/
 /**********************************************************************************************************************/
 
 #ifdef TSN_SUPPORT
@@ -720,47 +721,6 @@ EXT_DECL VOS_IP4_ADDR_T vos_determineBindAddr ( VOS_IP4_ADDR_T  srcIP,
 /*
     Extension for TSN & VLAN support
 */
-
-/**********************************************************************************************************************/
-/** Get the interface name for a given VLAN ID (and IP address, if given)
- *
- *  @param[in]      vlanId          vlan ID to find
- *  @param[in]      ipAddr          IP to find (0 = match any)
- *  @param[in]      pIFaceName      found interface
- *
- *  @retval         VOS_NO_ERR      if found
- *  @retval         VOS_INIT_ERR    vos_sockInit needs to be called first
- *  @retval         VOS_PARAM_ERR   vlan 1..4094 allowed (0=no VLAN, 4095=wildcard)
- */
-EXT_DECL VOS_ERR_T vos_ifnameFromVlanId (
-    UINT16          vlanId,
-    VOS_IP4_ADDR_T  ipAddr,
-    CHAR8           *pIFaceName);
-
-/**********************************************************************************************************************/
-/** Create a suitable interface for the supplied VLAN ID.
- *  Prepare the Ethernet PCP / IP QoS mapping for each priority as 1:1 for ingress and egress
- *  This is quite slow and works on systems with a command shell only, but is only called on initialization!
- *
- *  @param[in]      vlanId          socket descriptor
- *  @param[out]     pIFaceName      name of vlan interface
- *  @param[in]      ipAddr          IP address
- *
- *  @retval         VOS_NO_ERR       no error
- *  @retval         VOS_SOCK_ERR     failed
- */
-
-EXT_DECL VOS_ERR_T vos_createVlanIF (
-    UINT16          vlanId,
-    CHAR8           *pIFaceName,
-    VOS_IP4_ADDR_T  ipAddr);
-
-/**********************************************************************************************************************/
-/** Use after creating or deleting a network interface: to update the stored IP, VLAN and MAC addresses of local network interfaces
- *
-*/
-
-EXT_DECL void vos_reCollectIpInterfaces ();
 
 /**********************************************************************************************************************/
 /** Create a TSN socket.
@@ -838,26 +798,6 @@ EXT_DECL VOS_ERR_T vos_sockReceiveTSN (
     UINT16     *pSrcIPPort,
     UINT32     *pDstIPAddr,
     BOOL8      peek);
-
-/**********************************************************************************************************************/
-/** Bind a socket to an interface instead of IP address and port.
- *  Devices which do not support the SO_BINDTODEVICE option try to find its address in the device list and
- *  use the assigned IP address to bind.
- *
- *  @param[in]      sock            socket descriptor
- *  @param[in,out]  iFace           interface to bind to
- *  @param[in]      doBind          if false, return IP addr only
- *
- *  @retval         VOS_NO_ERR      no error
- *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
- *  @retval         VOS_IO_ERR      Input/Output error
- *  @retval         VOS_MEM_ERR     resource error
- */
-
-EXT_DECL VOS_ERR_T vos_sockBind2IF (
-    VOS_SOCK_T      sock,
-    VOS_IF_REC_T    *iFace,
-    BOOL8           doBind);
 
 /**********************************************************************************************************************/
 /** Debug output main socket options

@@ -46,14 +46,12 @@
 #define PD_COMID_TSN        1000u               /* 24byte string as payload                     */
 #define PD_COMID_TSN_CYCLE  1000u               /* default in us (1000 = 0.001 sec)             */
 #define PD_COMID_TSN_DEST   "239.1.1.3"         /* default target (MC group) for TSN PD         */
-#define PD_COMID_TSN_PRIO   7u                  /* default priority for TSN PD                  */
 #define PD_COMID_TSN_VLAN   10u                 /* default VLAN ID for TSN PD                   */
 
 /* Standard PD sample definition */
 #define PD_COMID_STD        10000u              /* 24byte string as payload                     */
 #define PD_COMID_STD_CYCLE  100000u             /* default in us (100000 = 0.1 sec)             */
 #define PD_COMID_STD_DEST   "239.1.1.2"         /* default target (MC group) for standard PD    */
-#define PD_COMID_STD_PRIO   3u                  /* default priority for standard PD             */
 #define PD_COMID_STD_VLAN   0u                  /* no VLAN  (ID 0) for standard PD              */
 
 #define PD_PAYLOAD_SIZE     24u                 /* fix for this sample */
@@ -344,10 +342,22 @@ int main (int argc, char *argv[])
 {
     unsigned int            ip[4];
     TRDP_ERR_T              err;
-    TRDP_SEND_PARAM_T       pdConfigurationTsn  = {PD_COMID_TSN_PRIO, TRDP_PD_DEFAULT_TTL, 0u, TRUE, PD_COMID_TSN_VLAN};
-    TRDP_SEND_PARAM_T       pdConfigurationStd  = {PD_COMID_STD_PRIO, TRDP_PD_DEFAULT_TTL, 0u, FALSE, 0};
-    TRDP_PROCESS_CONFIG_T   processConfigTsn    = {"receiveTSN", "", "", PD_COMID_TSN_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_TSN_PRIO, PD_COMID_TSN_VLAN};
-    TRDP_PROCESS_CONFIG_T   processConfigStd    = {"receiveSTD", "", "", PD_COMID_STD_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_STD_PRIO, PD_COMID_STD_VLAN};
+    TRDP_PD_CONFIG_T pdConfigTsn = {NULL,
+                                    NULL,
+                                    {TRDP_PD_DEFAULT_TSN_PRIORITY, TRDP_PD_DEFAULT_TTL, 0u}, 
+                                    TRDP_FLAGS_TSN, 
+                                    TRDP_PD_DEFAULT_TIMEOUT, 
+                                    TRDP_TO_DEFAULT, 
+                                    TRDP_PD_UDP_PORT};
+    TRDP_PD_CONFIG_T pdConfigStd = {NULL,
+                                    NULL, 
+                                    TRDP_PD_DEFAULT_SEND_PARAM, 
+                                    TRDP_FLAGS_DEFAULT, 
+                                    TRDP_PD_DEFAULT_TIMEOUT, 
+                                    TRDP_TO_DEFAULT, 
+                                    TRDP_PD_UDP_PORT};
+    TRDP_PROCESS_CONFIG_T   processConfigTsn    = {"receiveTSN", "", "", PD_COMID_TSN_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_TSN_VLAN};
+    TRDP_PROCESS_CONFIG_T   processConfigStd    = {"receiveSTD", "", "", PD_COMID_STD_CYCLE, 255, TRDP_OPTION_BLOCK, PD_COMID_STD_VLAN};
     UINT32                  ownIPtsn   = VOS_INADDR_ANY;
     UINT32                  ownIPstd   = VOS_INADDR_ANY;
     UINT32                  destIPtsn  = vos_dottedIP(PD_COMID_TSN_DEST);
@@ -410,7 +420,7 @@ int main (int argc, char *argv[])
            }
            case 'V':
            {   /* VLAN ID for TSN */
-               if (sscanf(optarg, "%hu", &pdConfigurationTsn.vlan) < 1)
+               if (sscanf(optarg, "%hu", &processConfigTsn.vlanId) < 1)
                {
                    usage(argv[0]);
                    exit(1);
@@ -419,7 +429,7 @@ int main (int argc, char *argv[])
            }
            case 'v':
            {   /* VLAN ID for standard PD (0 = no VLAN) */
-               if (sscanf(optarg, "%hu", &pdConfigurationStd.vlan) < 1)
+               if (sscanf(optarg, "%hu", &processConfigStd.vlanId) < 1)
                {
                    usage(argv[0]);
                    exit(1);
@@ -428,22 +438,20 @@ int main (int argc, char *argv[])
            }
            case 'P':
            {   /* priority (0..7) for TSN */
-               if (sscanf(optarg, "%hhu", &pdConfigurationTsn.qos) < 1)
+               if (sscanf(optarg, "%hhu", &pdConfigTsn.sendParam.qos) < 1)
                {
                    usage(argv[0]);
                    exit(1);
                }
-               processConfigTsn.vlanPrio = pdConfigurationTsn.qos;
                break;
            }
            case 'p':
            {   /* priority (0..7) for standard PD */
-               if (sscanf(optarg, "%hhu", &pdConfigurationStd.qos) < 1)
+               if (sscanf(optarg, "%hhu", &pdConfigStd.sendParam.qos) < 1)
                {
                    usage(argv[0]);
                    exit(1);
                }
-               processConfigStd.vlanPrio = pdConfigurationStd.qos;
                break;
            }
            case 'C':
@@ -495,10 +503,10 @@ int main (int argc, char *argv[])
     vos_printLog(VOS_LOG_USR, "Standard cycle time:     %10uµs\n", pdStd_cycleTime);
     memcpy(tempIP1, vos_ipDotted(ownIPtsn), 16);
     memcpy(tempIP2, vos_ipDotted(destIPtsn), 16);
-    vos_printLog(VOS_LOG_USR, "Subscribe to       TSN PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_TSN, tempIP2, tempIP1, pdConfigurationTsn.vlan, pdConfigurationTsn.qos);
+    vos_printLog(VOS_LOG_USR, "Subscribe to       TSN PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_TSN, tempIP2, tempIP1, processConfigTsn.vlanId, pdConfigTsn.sendParam.qos);
     memcpy(tempIP1, vos_ipDotted(ownIPstd), 16);
     memcpy(tempIP2, vos_ipDotted(destIPstd), 16);
-    vos_printLog(VOS_LOG_USR, "Subscribe to  Standard PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_STD, tempIP2, tempIP1, pdConfigurationStd.vlan, pdConfigurationStd.qos);
+    vos_printLog(VOS_LOG_USR, "Subscribe to  Standard PD (%5u) from IP %s to IP %s, VLAN %u, prio %u\n", PD_COMID_STD, tempIP2, tempIP1, processConfigStd.vlanId, pdConfigStd.sendParam.qos);
     struct timespec tempRealTime;
     (void)clock_gettime(CLOCK_REALTIME, &tempRealTime);
 #ifdef CLOCK_MONOTONIC
@@ -517,7 +525,7 @@ int main (int argc, char *argv[])
     if (tlc_openSession(&gAppContextTsn.appHandle,
                         ownIPtsn, 0u,           /* use default IP address           */
                         NULL,                   /* no Marshalling                   */
-                        NULL, NULL,             /* system defaults for PD and MD    */
+                        &pdConfigTsn, NULL,             /* system defaults for PD and MD    */
                         &processConfigTsn) != TRDP_NO_ERR)
     {
         vos_printLogStr(VOS_LOG_USR, "Initialization error on open TSN session\n");
@@ -528,7 +536,7 @@ int main (int argc, char *argv[])
     if (tlc_openSession(&gAppContextStd.appHandle,
                         ownIPstd, 0u,           /* use default IP address           */
                         NULL,                   /* no Marshalling                   */
-                        NULL, NULL,             /* system defaults for PD and MD    */
+                        &pdConfigStd, NULL,             /* system defaults for PD and MD    */
                         &processConfigStd) != TRDP_NO_ERR)
     {
         vos_printLogStr(VOS_LOG_USR, "Initialization error on open standard session\n");
@@ -587,7 +595,6 @@ int main (int argc, char *argv[])
                         VOS_INADDR_ANY,             /*    2nd Source IP filter                     */
                         destIPstd,                  /*    Standard PD (IP or MC Group)             */
                         TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB,       /*    TRDP flags          */
-                        &pdConfigurationStd,        /*    default COM_PARAMS                       */
                         PD_COMID_STD_CYCLE * 3u,    /*    Time out in us                           */
                         TRDP_TO_SET_TO_ZERO         /*    delete invalid data on timeout           */
                         );
@@ -616,7 +623,6 @@ int main (int argc, char *argv[])
                         VOS_INADDR_ANY,             /*    2nd Source IP filter                     */
                         destIPtsn,                  /*    MC Group to subscribe                    */
                         TRDP_FLAGS_CALLBACK | TRDP_FLAGS_FORCE_CB | TRDP_FLAGS_TSN, /* TRDP flags  */
-                        &pdConfigurationTsn,        /*    TSN (VLAN) suitable COM_PARAMS           */
                         pdTsn_cycleTime * 3u,       /*    Time out in us                           */
                         TRDP_TO_SET_TO_ZERO         /*    delete invalid data on timeout           */
                         );

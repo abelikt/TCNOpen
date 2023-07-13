@@ -436,7 +436,6 @@ int main(int argc, char *argv[])
                             VOS_INADDR_ANY,
                             mcIpAddress, /*    Default destination    (or MC Group) */
                             0,
-                            NULL,                 /*    default interface                    */
                             PD_CYCLE * 3,         /*    Time out in us                       */
                             TRDP_TO_SET_TO_ZERO); /*  delete invalid data    on timeout      */
 
@@ -458,7 +457,6 @@ int main(int argc, char *argv[])
                             VOS_INADDR_ANY,
                             mcIpAddress, /*    Default destination    (or MC Group) */
                             0,
-                            NULL,                 /*    default interface                    */
                             PD_CYCLE * 3,         /*    Time out in us                       */
                             TRDP_TO_SET_TO_ZERO); /*  delete invalid data    on timeout      */
 
@@ -517,7 +515,6 @@ int main(int argc, char *argv[])
             PD_CYCLE,
             0u,
             TRDP_FLAGS_DEFAULT,
-            NULL,
             (UINT8 *)session1.expectedData.buffer,
             session1.expectedData.size);
         if (err != TRDP_NO_ERR)
@@ -538,7 +535,6 @@ int main(int argc, char *argv[])
             PD_CYCLE,
             0u,
             TRDP_FLAGS_DEFAULT,
-            NULL,
             (UINT8 *)session2.expectedData.buffer,
             session2.expectedData.size);
         if (err != TRDP_NO_ERR)

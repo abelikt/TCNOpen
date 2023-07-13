@@ -130,7 +130,8 @@ void printSocketUsage (
         vos_printLog(VOS_LOG_DBG, "iface[%d].bindAddr = %x = %s\n", lIndex, iface[lIndex].bindAddr, vos_ipDotted(iface[lIndex].bindAddr));
         vos_printLog(VOS_LOG_DBG, "iface[%d].type = %s \n", lIndex, (iface[lIndex].type == TRDP_SOCK_PD ? "PD_UDP" :
                                                                      (iface[lIndex].type == TRDP_SOCK_MD_UDP ? "MD_UDP" :
-                                                                      (iface[lIndex].type == TRDP_SOCK_MD_TCP ? "MD_TCP" : "PD_TSN"))));
+                                                                      (iface[lIndex].type == TRDP_SOCK_MD_TCP ? "MD_TCP" :
+                                                                      (iface[lIndex].type == TRDP_SOCK_PD_TSN ? "PD_TSN" : "TRDP_SOCK_INVAL")))));
         vos_printLog(VOS_LOG_DBG,
                      "iface[%d].sendParam.qos = %u, ttl = %u\n",
                      lIndex,
@@ -973,7 +974,7 @@ void trdp_initSockets (
 TRDP_ERR_T  trdp_requestSocket (
     TRDP_SOCKETS_T          iface[],
     UINT16                  port,
-    const TRDP_SEND_PARAM_T *params,
+    const TRDP_COM_PARAM_T *params,
     TRDP_IP_ADDR_T          srcIP,
     TRDP_IP_ADDR_T          mcGroup,
     TRDP_SOCK_TYPE_T        type,
@@ -1021,7 +1022,6 @@ TRDP_ERR_T  trdp_requestSocket (
                  && (iface[lIndex].type == type)
                  && ((rcvMostly) || (iface[lIndex].sendParam.qos == params->qos))
                  && ((rcvMostly) || (iface[lIndex].sendParam.ttl == params->ttl))
-                 && (iface[lIndex].sendParam.vlan == params->vlan)
                  && (iface[lIndex].rcvMostly == rcvMostly)
                  && ((type != TRDP_SOCK_MD_TCP)
                      || ((type == TRDP_SOCK_MD_TCP) && (iface[lIndex].tcpParams.cornerIp == cornerIp) &&
@@ -1171,19 +1171,11 @@ TRDP_ERR_T  trdp_requestSocket (
         sock_options.ttl_multicast  = (type != TRDP_SOCK_MD_TCP) ? params->ttl : 0;
         sock_options.no_mc_loop     = ((type != TRDP_SOCK_MD_TCP) && (options & TRDP_OPTION_NO_MC_LOOP_BACK)) ? 1 : 0;
         sock_options.no_udp_crc     = ((type != TRDP_SOCK_MD_TCP) && (options & TRDP_OPTION_NO_UDP_CHK)) ? 1 : 0;
-        sock_options.vlanId         = params->vlan;
-        sock_options.ifName[0]      = 0;
 
         switch (type)
         {
 #ifdef TSN_SUPPORT
             case TRDP_SOCK_PD_TSN:
-                if (0 == sock_options.vlanId)
-                {
-                    vos_printLogStr(VOS_LOG_ERROR, "vos_sockOpenTSN failed! Requested VLAN-ID must not be 0\n");
-                    return TRDP_PARAM_ERR;
-                }
-
                 sock_options.no_udp_crc = 1;    /* To speed up UDP header generation */
                 sock_options.txTime     = 1;
 
@@ -1203,71 +1195,9 @@ TRDP_ERR_T  trdp_requestSocket (
                 {
                     iface[lIndex].usage = 1;
                     *pIndex = lIndex;
-#ifndef SIM
-                    /* This socket should bind to the (virtual) interface with the VLAN ID supplied by 'pOptions'.
 
-                       a1) Try to find an interface matching the requested VLAN-ID and IP.
-                       a2) If not: try to find an interface matching the requested VLAN-ID but having a different ip address.
-                       
-                       b) Construct the possible interface name according to the targets conventions.
-                          The way how to do that depends on the network implementation of the target system!
-                           - Linux: ethx.y - where x is the physical parent interface ordinal y is the VLAN ID
-                           - BSD (QNX, Darwin): vlanx - where x is the virtual interface ordinal (VLAN ID is not in name)
 
-                        Flow:  a) Traverse the available interfaces
-                                  if we can match one of the above schemes, take its name and bind the socket
-                               b) if we couldn't match, we do plan B and try to create one and repeat a)
-                     */
-
-                    VOS_IF_REC_T tempIF = { 0 };
-
-                    /* a1) We try to bind to a vlan-enabled interface matching requested VLAN-ID and IP address */
-                    if (vos_ifnameFromVlanId(sock_options.vlanId, srcIP, (CHAR8 *) sock_options.ifName) == VOS_NO_ERR)
-                    {
-                        tempIF.ipAddr = srcIP;
-                    }
-
-                    /* a2) We try to bind to a vlan-enabled interface matching requested VLAN-ID, but having a different IP address */
-                    if ((0 == tempIF.ipAddr) && 
-                        (vos_ifnameFromVlanId(sock_options.vlanId, 0, (CHAR8 *) sock_options.ifName) == VOS_NO_ERR))
-                    {
-                        tempIF.ipAddr = vos_getIpAddress (sock_options.ifName);    // try to resolve IP address from VLAN ID
-                    }
-
-                    if (0 == tempIF.ipAddr)
-                    {
-                        VOS_IP4_ADDR_T rndIP = srcIP;
-                        if (0 == rndIP)
-                        {
-                            /* We need a unique IP address!
-                                !!! Note !!!
-                                This is a temporary solution, only for the PoC!
-                                Finally, there must be another way of determining the TSN interface.
-                            */
-                            rndIP = 0x0a400000u + (unsigned) (sock_options.vlanId << 8u) + (trdp_getOwnIP() & 0xFF);
-                        }
-                        /* try creating new VLAN interface via system call on Linux */
-                        if ((vos_createVlanIF(sock_options.vlanId, tempIF.name, rndIP) != VOS_NO_ERR) ||
-                            (vos_ifnameFromVlanId(sock_options.vlanId, rndIP, (CHAR8 *) sock_options.ifName) != VOS_NO_ERR))
-                        {
-                            /* OK, we have to give up here - plan B failed */
-                            vos_printLog(VOS_LOG_ERROR,
-                                            "Creating TSN Socket failed, VLAN interface (ID %u) not available!\n", sock_options.vlanId);
-                            err     = TRDP_SOCK_ERR;
-                            *pIndex = TRDP_INVALID_SOCKET_INDEX;
-                            break;
-                        }
-                        tempIF.ipAddr = rndIP;
-                    }
-
-                    strncpy(tempIF.name, sock_options.ifName, VOS_MAX_IF_NAME_SIZE);
-
-                    /* Try binding to the specified interface, if possible (RAW IP transmitter only) */
-
-                    (void) vos_sockBind2IF(iface[lIndex].sock, &tempIF, sock_options.raw);
-
-                    iface[lIndex].bindAddr = tempIF.ipAddr;
-#endif
+                    iface[lIndex].bindAddr = bindAddr;
                     /* In case we didn't bind, we force it again */
                     if (rcvMostly)
                     {

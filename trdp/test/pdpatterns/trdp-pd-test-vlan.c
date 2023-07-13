@@ -14,7 +14,7 @@
  *          If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *          Copyright UniControls, 2013. All rights reserved.
  *
- * $Id$
+ * $Id: trdp-pd-test.c 2376 2023-02-16 14:48:01Z chris-wetzler $
  *
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *      AÖ 2020-05-04: Ticket #330 Extend TRDP_PDTest with TSN support
@@ -955,6 +955,7 @@ int main(int argc, char * argv[])
     proccfg.vlanId = 1;
     pdcfg.sendParam.qos = TRDP_PD_DEFAULT_TSN_PRIORITY;
 #else
+    proccfg.vlanId = 10;
     pdcfg.sendParam.qos = 5;
 #endif
 

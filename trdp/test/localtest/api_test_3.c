@@ -372,7 +372,7 @@ static TRDP_APP_SESSION_T test_init (
     pSession->threadIdRxPD  = 0;
     pSession->threadIdTxPD  = 0;
     pSession->threadIdMD    = 0;
-    TRDP_PROCESS_CONFIG_T procConf = {"Test", "me", "", cycleTime, 0, TRDP_OPTION_NONE, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T procConf = {"Test", "me", "", cycleTime, 0, TRDP_OPTION_NONE, 0u};
 
     /* Initialise only once! */
     if (dbgout != NULL)
@@ -799,7 +799,7 @@ static int test3 ()
                           TEST3_COMID_1, 0u, 0u,
                           0u,
                           gSession2.ifaceIP,
-                          0u, 0u, TRDP_FLAGS_DEFAULT, NULL,
+                          0u, 0u, TRDP_FLAGS_DEFAULT,
                           (UINT8 *)TEST3_DATA, TEST3_DATA_LEN);
 
 
@@ -811,7 +811,6 @@ static int test3 ()
                             0u, 0u,                             /* Source * / */
                             0u,                                 /* Destination */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                               /*  default */
                             0u, TRDP_TO_DEFAULT);
 
 
@@ -824,7 +823,6 @@ static int test3 ()
                             0u, 0u,                             /* Source           */
                             0u,                                 /* Destination      */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                               /*    default interface                    */
                             0u, TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe2");
@@ -862,7 +860,7 @@ static int test3 ()
                             gSession1.ifaceIP,      /* destIpAddr */
                             0u,                     /* redId */
                             TRDP_FLAGS_NONE,        /* TRDP_FLAGS_MARSHALL, TRDP_FLAGS_CALLBACK */
-                            NULL, NULL, 0u,         /* pSendParam, pData, dataSize */
+                            NULL, 0u,               /* pData, dataSize */
                             TEST3_COMID_1,          /* comId of reply (default comID of subscription) */
                             0u);                    /* replyIpAddr  */
 
@@ -1050,7 +1048,7 @@ static int test6 ()
                           0u, /* gSession1.ifaceIP,                     / * Source * / */
                           gSession2.ifaceIP, /* gDestMC,                / * Destination * / */
                           TEST6_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, NULL, TEST6_PUBLISH_SIZE);
+                          0u, TRDP_FLAGS_DEFAULT, NULL, TEST6_PUBLISH_SIZE);
 
         IF_ERROR("tlp_publish");
 
@@ -1059,7 +1057,6 @@ static int test6 ()
                             0u, 0u, /* gSession1.ifaceIP,               / * Source * / */
                             0u, /* gDestMC,                             / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                                       /*    default interface                    */
                             TEST6_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 

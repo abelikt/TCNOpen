@@ -583,11 +583,6 @@
           <xs:documentation>VLAN ID to be used by TRDP process/session.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
-	  <xs:attribute name="vlan-prio" type="uint8" use="optional" default="0">
-        <xs:annotation>
-          <xs:documentation>VLAN priority to be used by TRDP process/session.</xs:documentation>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="blocking" default="no" use="optional">
         <xs:simpleType>
           <xs:restriction base="xs:string">
@@ -789,28 +784,6 @@
             <xs:maxInclusive value="5"/>
           </xs:restriction>
         </xs:simpleType>
-      </xs:attribute>
-      <xs:attribute name="tsn" default="off" use="optional">
-          <xs:annotation>
-              <xs:documentation>if set, enable TSN scheduling.</xs:documentation>
-          </xs:annotation>
-          <xs:simpleType>
-              <xs:restriction base="xs:string">
-                  <xs:enumeration value="on"/>
-                  <xs:enumeration value="off"/>
-              </xs:restriction>
-          </xs:simpleType>
-      </xs:attribute>
-      <xs:attribute name="vlan" default="0" use="optional">
-          <xs:annotation>
-              <xs:documentation>VLAN ID to be used (12 Bit).</xs:documentation>
-          </xs:annotation>
-          <xs:simpleType>
-              <xs:restriction base="uint32">
-                  <xs:minInclusive value="0"/>
-                  <xs:maxInclusive value="4094"/>
-              </xs:restriction>
-          </xs:simpleType>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

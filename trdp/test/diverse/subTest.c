@@ -161,7 +161,7 @@ int main (int argc, char *argv[])
                                                TRDP_FLAGS_CALLBACK, 10000000,
                                                TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
 
     UINT32                  ownIP = 0;
     int                     rv = 0;
@@ -243,7 +243,6 @@ int main (int argc, char *argv[])
                          VOS_INADDR_ANY,
                          vos_dottedIP(PD_COMID_MC), /*    Default destination    (or MC Group) */
                          0,
-                         NULL,                      /*    default interface                    */
                          PD_COMID1_CYCLE * 3,       /*    Time out in us                       */
                          TRDP_TO_SET_TO_ZERO);      /*  delete invalid data    on timeout      */
 
@@ -265,7 +264,6 @@ int main (int argc, char *argv[])
                          VOS_INADDR_ANY,
                          vos_dottedIP(PD_COMID_MC), /* Default destination (or MC Group)         */
                          0,
-                         NULL,                      /*    default interface                    */
                          PD_COMID2_CYCLE * 3,       /*    Time out in us                       */
                          TRDP_TO_SET_TO_ZERO);      /*  delete invalid data    on timeout      */
 

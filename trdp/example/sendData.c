@@ -119,7 +119,7 @@ int main (int argc, char *argv[])
     TRDP_PD_CONFIG_T        pdConfiguration =
                         {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000000u, TRDP_TO_SET_TO_ZERO, 0u};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_BLOCK, 0u};
     UINT32                  ownIP   = 0u;
     int                     rv      = 0;
     UINT32                  destIP  = 0u;
@@ -254,7 +254,6 @@ int main (int argc, char *argv[])
                         interval,                   /*    Cycle time in us              */
                         0,                          /*    not redundant                 */
                         TRDP_FLAGS_NONE,            /*    Use callback for errors       */
-                        NULL,                       /*    default qos and ttl           */
                         gData,                      /*    initial data                  */
                         dataSize                    /*    data size                     */
                         );

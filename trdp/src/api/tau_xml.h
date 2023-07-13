@@ -19,7 +19,7 @@
  /*
  * $Id$
  *
- *      AÖ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
+ *      Aï¿½ 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *      AR 2020-05-08: Added attribute 'name' to event, method, field and instance structures used for service oriented interface
  *      SB 2020-01-27: Added parsing for dummyService flag to Service definitions and MD option for events
  *     CKH 2019-10-11: Ticket #2: TRDPXML: Support of mapped devices missing (XLS #64)
@@ -186,7 +186,7 @@ typedef struct
 typedef struct
 {
     UINT32              id;       /**< communication parameter identifier */
-    TRDP_SEND_PARAM_T   sendParam; /**< Send parameter (TTL, QoS) */
+    TRDP_COM_PARAM_T   sendParam; /**< Send parameter (TTL, QoS) */
 } TRDP_COM_PAR_T;
 
 typedef struct

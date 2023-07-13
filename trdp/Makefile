@@ -135,7 +135,7 @@ endif
 TARGETS = outdir libtrdp
 
 ifneq ($(TARGET_OS),VXWORKS)
-	TARGETS += example test pdtest mdtest xml marshall
+	TARGETS += example test pdtest mdtest xml vlan marshall
 else
 	TARGETS += vtests
 endif
@@ -147,7 +147,7 @@ ifeq ($(SOA_SUPPORT),1)
 endif
 
 ifeq ($(TSN_SUPPORT),1)
-	TARGETS += tsn
+	TARGETS += tsn vlan
 	# Additional sources for TSN support
 	VOS_OBJS += vos_sockTSN.o
 	CFLAGS += -DTSN_SUPPORT
@@ -200,6 +200,8 @@ vtests:		outdir $(OUTDIR)/vtest
 xml:		outdir $(OUTDIR)/trdp-xmlprint-test $(OUTDIR)/trdp-xmlpd-test
 
 highperf:	outdir $(OUTDIR)/trdp-xmlpd-test-fast $(OUTDIR)/localtest2 $(OUTDIR)/trdp-pd-test-fast
+
+vlan:		outdir $(OUTDIR)/trdp-md-test-vlan $(OUTDIR)/trdp-pd-test-vlan
 
 marshall:	$(OUTDIR)/test_marshalling
 
@@ -373,8 +375,16 @@ $(OUTDIR)/trdp-pd-test: $(OUTDIR)/libtrdp.a
 			@$(STRIP) $@
 
 $(OUTDIR)/trdp-pd-test-fast: $(OUTDIR)/libtrdp.a
-			@$(ECHO) ' ### Building PD test application $(@F)'
+			@$(ECHO) ' ### Building PD test fast application $(@F)'
 			$(CC) test/pdpatterns/trdp-pd-test-fast.c \
+			    -ltrdp \
+			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
+			    -o $@
+			@$(STRIP) $@
+
+$(OUTDIR)/trdp-pd-test-vlan: $(OUTDIR)/libtrdp.a
+			@$(ECHO) ' ### Building PD test vlan application $(@F)'
+			$(CC) test/pdpatterns/trdp-pd-test-vlan.c \
 			    -ltrdp \
 			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
 			    -o $@
@@ -389,8 +399,16 @@ $(OUTDIR)/trdp-md-test: $(OUTDIR)/libtrdp.a
 			@$(STRIP) $@
 
 $(OUTDIR)/trdp-md-test-fast: $(OUTDIR)/libtrdp.a
-			@$(ECHO) ' ### Building MD test application $(@F)'
+			@$(ECHO) ' ### Building MD test fast application $(@F)'
 			$(CC) test/mdpatterns/trdp-md-test-fast.c \
+			    -ltrdp \
+			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
+			    -o $@
+			@$(STRIP) $@
+
+$(OUTDIR)/trdp-md-test-vlan: $(OUTDIR)/libtrdp.a
+			@$(ECHO) ' ### Building MD test vlan application $(@F)'
+			$(CC) test/mdpatterns/trdp-md-test-vlan.c \
 			    -ltrdp \
 			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
 			    -o $@
@@ -633,6 +651,7 @@ help:
 	@$(ECHO) "  * make libtrdpap # build the static library including xml parsing, marshalling, dnr and tti" >&2
 	@$(ECHO) "  * make xml       # build the xml test applications" >&2
 	@$(ECHO) "  * make highperf  # build test applications for high performance (separate PD/MD threads)" >&2
+	@$(ECHO) "  * make vlan  	 # build test applications for vlan interface" >&2
 	@$(ECHO) "  * make install   # requires INSTALLDIR to be set and copies the libtrdpap.a lib there" >&2
 	@$(ECHO) " " >&2
 	@$(ECHO) "Static analysis (currently in prototype state) " >&2

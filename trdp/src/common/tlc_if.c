@@ -567,6 +567,26 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
     pSession->stats.ownIpAddr       = ownIpAddr;
     pSession->stats.leaderIpAddr    = leaderIpAddr;
 
+    /* Check the vlan interface #435 */
+    if (0 != pProcessConfig->vlanId)
+    {
+#ifndef SIM
+        /* This socket should bind to the (virtual) interface with the VLAN ID supplied by 'pOptions'.
+
+            Try to find an interface matching the requested VLAN-ID and IP.
+            
+            Flow:  Traverse the available interfaces.
+                   If we can match one of the above schemes, bind the socket to the IP address
+        */
+
+        if (vos_ifnameFromVlanId(pProcessConfig->vlanId, ownIpAddr) != VOS_NO_ERR)
+        {
+                vos_printLog(VOS_LOG_ERROR,
+                                "Creating TSN Socket failed, VLAN interface (ID %u) not available!\n", pProcessConfig->vlanId);
+                return TRDP_PARAM_ERR;
+        }
+    }
+#endif
     /*  Get a buffer to receive PD   */
     pSession->pNewFrame = (PD_PACKET_T *) vos_memAlloc(TRDP_MAX_PD_PACKET_SIZE);
     if (pSession->pNewFrame == NULL)
@@ -588,8 +608,6 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
     else
     {
         unsigned int        retries;
-        /* Define standard send parameters to prvent pdpublish to use tsn in case... */
-        TRDP_SEND_PARAM_T   defaultParams = TRDP_PD_DEFAULT_SEND_PARAM;
 
         pSession->pNext = sSession;
         sSession        = pSession;
@@ -610,7 +628,6 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
                               0u,                       /*    Cycle time in ms              */
                               0u,                       /*    not redundant                 */
                               TRDP_FLAGS_NONE,          /*    No callbacks                  */
-                              &defaultParams,           /*    default qos and ttl           */
                               NULL,                     /*    initial data                  */
                               sizeof(TRDP_STATISTICS_T));
             if ((ret == TRDP_SOCK_ERR) &&
@@ -644,7 +661,6 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
                                     0u, 0u,                 /*    Source IP filters                  */
                                     0u,                     /*    Default destination (or MC Group) */
                                     TRDP_FLAGS_NONE,        /*    packet flags                      */
-                                    NULL,                   /*    default interface                    */
                                     TRDP_INFINITE_TIMEOUT,  /*    Time out in us                    */
                                     TRDP_TO_DEFAULT);       /*    delete invalid data on timeout    */
             }

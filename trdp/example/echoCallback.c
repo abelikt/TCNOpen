@@ -278,7 +278,7 @@ int main (int argc, char * *argv)
                                                 0u, 0u, 0u, 0u, 0u, 0u, 0u};
 
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_BLOCK, 0u};
     int                     rv = 0;
     unsigned int            ip[4];
     UINT32                  destIP = 0;
@@ -435,7 +435,6 @@ int main (int argc, char * *argv)
                          VOS_INADDR_ANY,            /*     */
                          destIP,                    /*    Default destination IP (or MC Group) */
                          TRDP_FLAGS_DEFAULT,        /*   */
-                         NULL,                      /*    default interface                    */
                          PD_COMID1_TIMEOUT,         /*    Time out in us                       */
                          TRDP_TO_SET_TO_ZERO);      /*    delete invalid data    on timeout    */
 
@@ -460,7 +459,6 @@ int main (int argc, char * *argv)
                         PD_COMID1_CYCLE,            /*    Cycle time in ms              */
                         0u,                         /*    not redundant                 */
                         TRDP_FLAGS_CALLBACK,        /*    Use callback for errors       */
-                        NULL,                       /*    default qos and ttl           */
                         (UINT8 *)gBuffer,           /*    initial data                  */
                         GBUFFER_SIZE                /*    data size                     */
                         );                          /*    no ladder                     */

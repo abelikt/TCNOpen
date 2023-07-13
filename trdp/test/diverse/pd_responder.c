@@ -231,7 +231,7 @@ int main (int argc, char * *argv)
     TRDP_PD_CONFIG_T        pdConfiguration = {myPDcallBack, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_CALLBACK,
                                                10000000, TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     int     rv = 0;
     unsigned int     ip[4];
     int     ch,i;
@@ -349,7 +349,6 @@ int main (int argc, char * *argv)
                             VOS_INADDR_ANY,
                             gSubPackets[i].addr,        /*    Default destination    (or MC Group) */
                             TRDP_FLAGS_CALLBACK,        /*    packet flags                         */
-                            NULL,                       /*    default interface                    */
                             gSubPackets[i].time,        /*    Time out in us                       */
                             TRDP_TO_SET_TO_ZERO);       /*    delete invalid data on timeout       */
 
@@ -374,7 +373,6 @@ int main (int argc, char * *argv)
                           gPubPackets[i].time,          /*    Cycle time in ms              */
                           0,                            /*    not redundant                 */
                           TRDP_FLAGS_CALLBACK,          /*    Use callback for errors       */
-                          NULL,                         /*    default qos and ttl           */
                           gPubPackets[i].dataSize ? gPubPackets[i].data : NULL,      /*    initial data */
                           gPubPackets[i].dataSize       /*    data size                     */
                           );                            /*    no ladder                     */

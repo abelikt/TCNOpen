@@ -54,8 +54,8 @@ static void printProcessConfig(TRDP_PROCESS_CONFIG_T  * pProcessConfig)
         if (pProcessConfig->options & procOptions[i])
             printf(" %s", strProcOptions[i]);
     printf("\n");
-    printf("    VLAN-ID: %u, VLAN-Priority: %u\n",
-           pProcessConfig->vlanId, pProcessConfig->vlanPrio);
+    printf("    VLAN-ID: %u\n",
+           pProcessConfig->vlanId);
 }
 
 static void printMemConfig(TRDP_MEM_CONFIG_T * pMemConfig)

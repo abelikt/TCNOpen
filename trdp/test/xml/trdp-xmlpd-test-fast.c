@@ -601,7 +601,6 @@ static TRDP_ERR_T publishTelegram(UINT32 ifcIdx, TRDP_EXCHG_PAR_T * pExchgPar)
 {
     UINT32 i;
     TRDP_DATASET_T * pDatasetDesc = NULL;
-    TRDP_SEND_PARAM_T *pSendParam = NULL;
     UINT32 interval = 0;
     TRDP_FLAGS_T flags;
     UINT32 redId = 0;
@@ -616,21 +615,6 @@ static TRDP_ERR_T publishTelegram(UINT32 ifcIdx, TRDP_EXCHG_PAR_T * pExchgPar)
     if (!pDatasetDesc)
     {
         printf("Unknown datasetId %u for comID %u\n", pExchgPar->datasetId, pExchgPar->comId);
-        return TRDP_PARAM_ERR;
-    }
-
-    /*  Get communication parameters  */
-    if (pExchgPar->comParId == 1)
-        pSendParam = &aSessionCfg[ifcIdx].pdConfig.sendParam;
-    else if (pExchgPar->comParId == 2)
-        pSendParam = &aSessionCfg[ifcIdx].mdConfig.sendParam;
-    else
-        for (i = 0; i < numComPar; i++)
-            if (pComPar[i].id == pExchgPar->comParId)
-                pSendParam = &pComPar[i].sendParam;
-    if (!pSendParam)
-    {
-        printf("Unknown comParId %u for comID %u\n", pExchgPar->comParId, pExchgPar->comId);
         return TRDP_PARAM_ERR;
     }
 
@@ -709,7 +693,7 @@ static TRDP_ERR_T publishTelegram(UINT32 ifcIdx, TRDP_EXCHG_PAR_T * pExchgPar)
         result = tlp_publish(
             pPubTlg->sessionhandle, &pPubTlg->pubHandle, NULL, NULL, 0u,
             pExchgPar->comId, 
-            0, 0, 0, destIP, interval, redId, flags, pSendParam, 
+            0, 0, 0, destIP, interval, redId, flags, 
             (UINT8 *)pPubTlg->dataset.buffer, pPubTlg->dataset.size);
         if (result != TRDP_NO_ERR)
         {
@@ -810,7 +794,6 @@ static TRDP_ERR_T subscribeTelegram(UINT32 ifcIdx, TRDP_EXCHG_PAR_T * pExchgPar)
                                pSubTlg->sessionhandle, &pSubTlg->subHandle, pSubTlg, NULL,
                                pExchgPar->serviceId, pExchgPar->comId,
                                0u, 0u, 0u, 0u, destMCIP, flags,
-                               NULL,                      /*    default interface                    */
                                timeout, toBehav);
         if (result != TRDP_NO_ERR)
         {
@@ -880,7 +863,6 @@ static TRDP_ERR_T subscribeTelegram(UINT32 ifcIdx, TRDP_EXCHG_PAR_T * pExchgPar)
             result = tlp_subscribe(
                 pSubTlg->sessionhandle, &pSubTlg->subHandle, pSubTlg, NULL, pExchgPar->serviceId, pExchgPar->comId,
                 0, 0, srcIP1, srcIP2, destMCIP, flags,
-                NULL,                      /*    default interface                    */
                 timeout, toBehav);
             if (result != TRDP_NO_ERR)
             {
@@ -941,6 +923,7 @@ static TRDP_ERR_T configureTelegrams(UINT32 ifcIdx, UINT32 numExchgPar, TRDP_EXC
 static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
 {
     UINT32 i;
+    UINT32 j;
     TRDP_ERR_T result;
 
     if (numIfConfig > MAX_SESSIONS)
@@ -973,6 +956,21 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
         /*  Check for minimum cycle time    */
         if (aSessionCfg[i].processConfig.cycleTime < minCycleTime)
             minCycleTime = aSessionCfg[i].processConfig.cycleTime;
+
+        /*  Get communication parameters  */
+        if (pExchgPar->comParId == 2)
+            aSessionCfg[i].pdConfig.sendParam = aSessionCfg[i].mdConfig.sendParam;
+        else if(pExchgPar->comParId != 1)
+        {
+            for (j = 0; j < numComPar; j++)
+                if (pComPar[j].id == pExchgPar->comParId)
+                    aSessionCfg[i].pdConfig.sendParam = pComPar[j].sendParam;
+        }
+        if (!(&aSessionCfg[i].pdConfig.sendParam))
+        {
+            printf("Unknown comParId %u for comID %u\n", pExchgPar->comParId, pExchgPar->comId);
+            return TRDP_PARAM_ERR;
+        }
 
         /*  Open session for the interface  */
         result = tlc_openSession(

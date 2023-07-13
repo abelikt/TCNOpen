@@ -157,7 +157,7 @@ int main (int argc, char *argv[])
     TRDP_ERR_T          err;
     TRDP_PD_CONFIG_T    pdConfiguration = {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000u, TRDP_TO_SET_TO_ZERO, TRDP_PD_UDP_PORT};
     TRDP_MEM_CONFIG_T   dynamicConfig = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK | TRDP_OPTION_TRAFFIC_SHAPING, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK | TRDP_OPTION_TRAFFIC_SHAPING, 0u};
     
     int                 rv = 0;
     UINT32              destIP = 0u;
@@ -264,7 +264,6 @@ int main (int argc, char *argv[])
                           gPD[i].cycle,               /*    Cycle time in us                */
                           0,                          /*    not redundant                   */
                           TRDP_FLAGS_NONE,            /*    Use callback for errors         */
-                          NULL,                       /*    default qos and ttl             */
                           (UINT8 *)outputBuffer,      /*    initial data                    */
                           gPD[i].size);               /*    no ladder                       */
         

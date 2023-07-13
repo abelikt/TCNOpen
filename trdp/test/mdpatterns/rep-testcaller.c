@@ -314,7 +314,7 @@ int main(int argc, char** argv)
                                         0, 
                                         5};
 
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_CALLER", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_CALLER", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
 
     printf("TRDP message data repetition test program CALLER, version 0\n");
 

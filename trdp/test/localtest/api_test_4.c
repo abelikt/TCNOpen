@@ -1308,7 +1308,7 @@ static int test3()
             VOS_INADDR_ANY, vos_dottedIP(TTDB_STATUS_DEST_IP_ETB0),
             TTDB_STATUS_CYCLE,
             0u,
-            TRDP_FLAGS_DEFAULT, NULL,
+            TRDP_FLAGS_DEFAULT,
             (UINT8 *)&gPd100Payload, sizeof(gPd100Payload));
         IF_ERROR("tlp_publish");
 
@@ -1612,7 +1612,6 @@ static int test4()
             500000u, /* 0.5 s */
             0u,
             TRDP_FLAGS_DEFAULT,
-            NULL,
             (UINT8 *)&ecspStat, sizeof(ecspStat));
         IF_ERROR("tlp_publish")
 
@@ -1625,7 +1624,6 @@ static int test4()
             0u, 0u,
             VOS_INADDR_ANY, VOS_INADDR_ANY, VOS_INADDR_ANY,
             TRDP_FLAGS_DEFAULT,
-            NULL,
             5000000u, /* 5s */
             TRDP_TO_KEEP_LAST_VALUE);
         IF_ERROR("tlp_subscribe")
@@ -1742,7 +1740,7 @@ static int test5()
             0u, TEST_5_COM_ID,
             0u, 0u,
             gSession1.ifaceIP, VOS_INADDR_ANY, gSession2.ifaceIP,
-            TRDP_FLAGS_DEFAULT, NULL,
+            TRDP_FLAGS_DEFAULT,
             30000u,
             TRDP_TO_SET_TO_ZERO);
         IF_ERROR("tlp_subscribe")
@@ -1755,7 +1753,7 @@ static int test5()
             VOS_INADDR_ANY, gSession2.ifaceIP,
             10000u, /* 10ms */
             0u,
-            TRDP_FLAGS_DEFAULT, NULL,
+            TRDP_FLAGS_DEFAULT,
             buffer, 0u);
         IF_ERROR("tlp_publish")
 
@@ -1823,7 +1821,7 @@ static int test6 ()
                           gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
                           TEST6_INTERVAL,
                           5u, /* redId */
-						  TRDP_FLAGS_DEFAULT, NULL, NULL, TEST6_DATA_LEN);
+						  TRDP_FLAGS_DEFAULT, NULL, TEST6_DATA_LEN);
 
         IF_ERROR("tlp_publish");
 
@@ -1832,7 +1830,6 @@ static int test6 ()
                             0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            NULL,                      /*    default interface                    */
                             TEST6_INTERVAL * 3, TRDP_TO_DEFAULT);
 
 

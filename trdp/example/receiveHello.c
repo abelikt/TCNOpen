@@ -125,7 +125,7 @@ int main (int argc, char *argv[])
     TRDP_PD_CONFIG_T        pdConfiguration =
     {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000000u, TRDP_TO_SET_TO_ZERO, 0u};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0, TRDP_OPTION_NONE, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0, TRDP_OPTION_NONE, 0u};
     UINT32  ownIP   = 0u;
     UINT32  dstIP   = 0u;
     int     rv      = 0;
@@ -218,7 +218,6 @@ int main (int argc, char *argv[])
                          VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
                          dstIP,                     /*    Default destination    (or MC Group)  */
                          TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-                         NULL,                      /*    default interface                    */
                          PD_COMID_CYCLE * 3,        /*    Time out in us                        */
                          TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
                          );

@@ -147,7 +147,6 @@ static void publishPD(
                           pdData->time,                 /*    Cycle time in us              */
                           0u,                           /*    not redundant                 */
                           TRDP_FLAGS_CALLBACK,          /*    Use callback for errors       */
-                          NULL,                         /*    default qos and ttl           */
                           pdData->dataSize ? pdData->data : NULL,      /*    initial data   */
                           pdData->dataSize              /*    data size                     */
                           );
@@ -189,7 +188,6 @@ static void subscribePD(
                             pdData->addr, 0u,               /*    Source to expect packets from     */
                             0u,                             /*    Default destination (or MC Group) */
                             TRDP_FLAGS_CALLBACK,            /*    packet flags                      */
-                            NULL,                           /*    default interface                    */
                             pdData->time,                   /*    Time out in us                    */
                             TRDP_TO_SET_TO_ZERO);           /*    delete invalid data on timeout    */
         
@@ -437,7 +435,7 @@ int main (int argc, char * *argv)
     TRDP_MD_CONFIG_T        mdConfiguration = {myMDcallBack, NULL, TRDP_MD_DEFAULT_SEND_PARAM, TRDP_FLAGS_CALLBACK,
                                                 10000000, 10000000, 10000000, 10000000, 0, 0, 5};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     int             rv = 0;
     unsigned int    ip[4];
     int             ch;

@@ -113,7 +113,7 @@ int main (int argc, char * *argv)
     TRDP_PD_CONFIG_T        pdConfiguration = {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE,
                                                10000000u, TRDP_TO_SET_TO_ZERO, 0u};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0u}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_NONE, 0u, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", TRDP_PROCESS_DEFAULT_CYCLE_TIME, 0u, TRDP_OPTION_NONE, 0u};
 
     TRDP_PD_INFO_T          myPDInfo;
     UINT32  receivedSize;
@@ -156,7 +156,6 @@ int main (int argc, char * *argv)
                          VOS_INADDR_ANY,            /*    source IP 1                          */
                          VOS_INADDR_ANY,            /*    Default destination IP (or MC Group) */
                          TRDP_FLAGS_DEFAULT,        /*    Flags                                */
-                         NULL,                      /*    default interface                    */
                          PD_COMID1_TIMEOUT,         /*    Time out in us                       */
                          TRDP_TO_SET_TO_ZERO);      /*    delete invalid data on timeout       */
 
@@ -182,7 +181,6 @@ int main (int argc, char * *argv)
                         PD_COMID2_CYCLE,            /*    Cycle time in us                  */
                         0u,                         /*    not redundant                     */
                         TRDP_FLAGS_NONE,            /*    Don't use callback for errors     */
-                        NULL,                       /*    default qos and ttl               */
                         (UINT8 *)gBuffer,           /*    initial data                      */
                         sizeof(gBuffer)             /*    data size                         */
                         );

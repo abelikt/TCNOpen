@@ -88,34 +88,6 @@ EXT_DECL VOS_ERR_T vos_sockOpenTSN (
     VOS_ERR_T res = vos_sockOpenUDP(pSock, pOptions);
     SIM_SOCKET simSock;
 
-    if (res != VOS_NO_ERR)
-    {
-        return res;
-    }
-
-    simSock = socketToSimSocket(*pSock);
-
-    if (pOptions)
-    {
-        if (pOptions->vlanId > 0)
-        {
-            //If SimTecc support VLANs as string
-            char optValue[MAX_NAME_LEN];
-            sprintf(optValue, "%s.%d", cVlanPrefix, pOptions->vlanId);
-
-            if (SimSetSockOpt(simSock, SOL_SOCKET, SO_BINDTODEVICE, optValue, sizeof(optValue)) == SOCKET_ERROR)
-            {
-                int err = GetLastError();
-
-                err = err;
-                vos_printLog(VOS_LOG_ERROR, "setsockopt() SO_BINDTODEVICE  failed on %s  (Err: %d)\n", optValue, err);
-                res = VOS_SOCK_ERR;
-
-                (void)SimCloseSocket(simSock);
-            }
-        }
-    }
-
     return res;
 }
 

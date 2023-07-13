@@ -320,14 +320,13 @@ typedef struct
 } TRDP_MD_INFO_T;
 
 
-/**    Quality/type of service, time to live , no. of retries, TSN flag and VLAN ID   */
+/**    Quality/type of service, time to live , no. of retries   */
 typedef struct
 {
     UINT8   qos;        /**< Quality of service (default should be 2 for PD and 2 for MD, TSN priority >= 3)    */
     UINT8   ttl;        /**< Time to live (default should be 64)                                                */
     UINT8   retries;    /**< MD Retries from XML file                                                           */
-    UINT16  vlan;       /**< VLAN Id to be used                                                                 */
-} TRDP_COM_PARAM_T, TRDP_SEND_PARAM_T;
+} TRDP_COM_PARAM_T;
 
 
 /**********************************************************************************************************************/
@@ -688,7 +687,7 @@ typedef struct
 {
     TRDP_MD_CALLBACK_T  pfCbFunction;           /**< Pointer to MD callback function            */
     void                *pRefCon;               /**< Pointer to user context for call back      */
-    TRDP_SEND_PARAM_T   sendParam;              /**< Default send parameters                    */
+    TRDP_COM_PARAM_T   sendParam;              /**< Default send parameters                    */
     TRDP_FLAGS_T        flags;                  /**< Default flags for MD packets               */
     UINT32              replyTimeout;           /**< Default reply timeout in us                */
     UINT32              confirmTimeout;         /**< Default confirmation timeout in us         */
@@ -749,7 +748,6 @@ typedef struct
     UINT32              cycleTime;      /**< TRDP main process cycle time in us  */
     UINT32              priority;       /**< TRDP main process priority (0-255, 0=default, 255=highest)   */
     TRDP_OPTION_T       options;        /**< TRDP options */
-    UINT8               vlanPrio;       /**< 0..7 VLAN priority: ingress-/egress-qos-map matches IP QoS   */
     UINT16              vlanId;         /**< 0=no VLAN, 1=reserved, 2..4094=VLAN-ID, 4095=wildcard match  */
 } TRDP_PROCESS_CONFIG_T;
 

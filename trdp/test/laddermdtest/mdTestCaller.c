@@ -290,7 +290,7 @@ VOS_THREAD_FUNC_T MDCaller (
 	TRDP_FLAGS_T mdOptionFlag = 0;
 	UINT32 mdNoOfRepliers = 0;
 	UINT32 mdReplyTimeout = 0;
-	TRDP_SEND_PARAM_T *pMdSendParam = NULL;
+	TRDP_COM_PARAM_T *pMdSendParam = NULL;
 	TRDP_URI_USER_T mdSourceURI = {0};
 	TRDP_URI_USER_T mdDestURI = {0};
 	UINT32 mdIncrementMessageSize = 0;

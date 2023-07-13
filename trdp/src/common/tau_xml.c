@@ -210,7 +210,6 @@ static void setDefaultInterfaceValues (
         pProcessConfig->cycleTime   = TRDP_PROCESS_DEFAULT_CYCLE_TIME;
         pProcessConfig->options     = TRDP_PROCESS_DEFAULT_OPTIONS | TRDP_OPTION_DEFAULT_CONFIG;
         pProcessConfig->priority    = TRDP_PROCESS_DEFAULT_PRIORITY;
-        pProcessConfig->vlanPrio    = 0u;        /* #342 update for TSN */
         pProcessConfig->vlanId      = 0u;        /* #342 update for TSN */
     }
 
@@ -224,7 +223,6 @@ static void setDefaultInterfaceValues (
         pPdConfig->sendParam.qos        = TRDP_PD_DEFAULT_QOS;
         pPdConfig->sendParam.ttl        = TRDP_PD_DEFAULT_TTL;
         pPdConfig->sendParam.retries    = 0u;
-        pPdConfig->sendParam.vlan       = 0u;
         pPdConfig->timeout              = TRDP_PD_DEFAULT_TIMEOUT;
         pPdConfig->toBehavior           = TRDP_TO_SET_TO_ZERO;
     }
@@ -241,7 +239,6 @@ static void setDefaultInterfaceValues (
         pMdConfig->sendParam.qos        = TRDP_MD_DEFAULT_QOS;
         pMdConfig->sendParam.retries    = TRDP_MD_DEFAULT_RETRIES;
         pMdConfig->sendParam.ttl        = TRDP_MD_DEFAULT_TTL;
-        pMdConfig->sendParam.vlan       = 0u;
         pMdConfig->tcpPort              = TRDP_MD_TCP_PORT;
         pMdConfig->udpPort              = TRDP_MD_UDP_PORT;
         pMdConfig->maxNumSessions       = TRDP_MD_MAX_NUM_SESSIONS;
@@ -1880,10 +1877,6 @@ EXT_DECL TRDP_ERR_T tau_readXmlInterfaceConfig (
                                     pProcessConfig->cycleTime = valueInt;
                                     pProcessConfig->options &= ~TRDP_OPTION_DEFAULT_CONFIG;
                                 }
-                                else if (vos_strnicmp(attribute, "vlan-prio", MAX_TOK_LEN) == 0)  /* #342 */
-                                {
-                                    pProcessConfig->vlanPrio = valueInt;
-                                }
                                 else if (vos_strnicmp(attribute, "vlan-id", MAX_TOK_LEN) == 0)    /* #342 */
                                 {
                                     pProcessConfig->vlanId = valueInt;
@@ -2197,10 +2190,6 @@ EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
                             else if (vos_strnicmp(attribute, "ttl", MAX_TOK_LEN) == 0)
                             {
                                 (*ppComPar)[i].sendParam.ttl = (UINT8) valueInt;
-                            }
-                            else if (vos_strnicmp(attribute, "vlan", MAX_TOK_LEN) == 0)
-                            {
-                                (*ppComPar)[i].sendParam.vlan = (UINT16) valueInt;
                             }
                             else if (vos_strnicmp(attribute, "retries", MAX_TOK_LEN) == 0)
                             {

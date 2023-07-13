@@ -36,7 +36,7 @@ extern "C" {
 
 
 /**  Default PD communication parameters   */
-#define TRDP_PD_DEFAULT_TSN_PRIORITY        3u                          /**< matching new proposed priority classes */
+#define TRDP_PD_DEFAULT_TSN_PRIORITY        7u       /* #435*/                   /**< matching new proposed priority classes */
 
 #ifdef __cplusplus
 }
