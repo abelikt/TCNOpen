@@ -28,3 +28,6 @@ CFLAGS += -Wall -Wno-unknown-pragmas -Wno-format -fstrength-reduce -fno-builtin 
 CFLAGS += -pthread -fPIC -D_GNU_SOURCE -DPOSIX -mfloat-abi=hard
 
 LDFLAGS += -lrt -mfloat-abi=hard
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

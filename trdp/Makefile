@@ -9,6 +9,7 @@
 #// If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #// Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013-2018. All rights reserved.
 #//
+#// PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 #// PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 #//CWE 2023-02-14: new target "make debug" added as alias for: "make DEBUG=TRUE all"
 #//CWE 2023-01-30: Ticket #380 new compile option: HIGH_PERF_BASE2 (is sub-option of HIGH_PERF_INDEXED), see LINUX_HP2_config
@@ -145,6 +146,10 @@ ifeq ($(SOA_SUPPORT),1)
 	TRDP_OPT_OBJS   += tau_so_if.o
 	CFLAGS += -DSOA_SUPPORT
 #	Option: Building with service orientation support!
+endif
+
+ifeq ($(PD_UNICAST_SUPPORT),1)
+	CFLAGS += -DPD_UNICAST_SUPPORT
 endif
 
 ifeq ($(TSN_SUPPORT),1)

@@ -31,6 +31,9 @@ LDFLAGS += -lrt -luuid
 
 LINT_SYSINCLUDE_DIRECTIVES = -i ./src/vos/posix -wlib 0 -DL_ENDIAN
 
+MD_SUPPORT = 1
+PD_UNICAST_SUPPORT = 1
+
 # TSN depends on RT_THREADS (already set in Makefile)
 # no longer required: VOS_USE_RAW_IP_SOCKET = 1
 TSN_SUPPORT = 1

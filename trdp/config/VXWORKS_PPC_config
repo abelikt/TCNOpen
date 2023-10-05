@@ -17,3 +17,6 @@ TCPOSTFIX = ppc
 DOXYPATH = /usr/local/bin/
 
 CFLAGS += -O2 -Wall -DO_DC -fstrength-reduce -fno-builtin -mlongcall -fsigned-char -D$(TARGET_FLAG)  -lpthread -DB_ENDIAN
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

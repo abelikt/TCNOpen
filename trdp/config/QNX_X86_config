@@ -19,3 +19,6 @@ DOXYPATH = /usr/local/bin/
 
 CFLAGS += -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -D__USE_BSD -D_DARWIN_C_SOURCE -DPOSIX -DL_ENDIAN
 LDFLAGS += -lrt
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

@@ -23,3 +23,6 @@ LDFLAGS += -lrt
 INCPATH += -I/usr/include/uuid
 CFLAGS +=  -DHAS_UUID
 LDFLAGS += -luuid
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

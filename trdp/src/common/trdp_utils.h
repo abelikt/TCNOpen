@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -169,6 +170,7 @@ TRDP_ERR_T      trdp_requestSocket(
     UINT16 port,
     const TRDP_COM_PARAM_T * params,
     TRDP_IP_ADDR_T srcIP,
+    TRDP_IP_ADDR_T dstIP,
     TRDP_IP_ADDR_T mcGroup,
     TRDP_SOCK_TYPE_T type,
     TRDP_OPTION_T options,

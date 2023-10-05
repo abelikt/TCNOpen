@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #439 Date Time dependency of publishing PD telegrams Multicast.
  *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *     CWE 2023-02-27: switch semaphore-wait to use CLOCK_MONOTONIC, available since glibc 2.30 through sem_clockwait()
@@ -333,6 +334,7 @@ static void vos_runCyclicThread (
 #if defined(SCHED_DEADLINE) && (defined(RT_THREADS) || defined(TSN_SUPPORT))
     struct timespec     deadline;
     struct timespec     now;
+    struct timespec nowMono;
 #else
     VOS_TIMEVAL_T       now;
     VOS_TIMEVAL_T       priorCall;
@@ -391,15 +393,18 @@ static void vos_runCyclicThread (
     deadline.tv_sec     = startTime.tv_sec;
     deadline.tv_nsec    = startTime.tv_usec * NSECS_PER_USEC;
 
-    deadline.tv_nsec    += 1000000 - (deadline.tv_nsec % 1000000); /* adjust start-time to next full ms to sync with TSN cycle */
-    deadline.tv_nsec    += 800000;                                 /* 200µs before the next TSN timeslot (should be configured to start on full ms) */
-    deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
-    deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
-
     for (;; )
     {
+        (void)clock_gettime(CLOCK_REALTIME, &now);
+        deadline.tv_nsec    += interval_ns - (now.tv_nsec % interval_ns); /* adjust new interval to next full ms to sync with TSN cycle */
+        if (deadline.tv_nsec >= 1000000000)
+        {
+            ++deadline.tv_sec;
+            deadline.tv_nsec -= 1000000000;
+        }
+
         /* Sleep until deadline */
-        while (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &deadline, NULL) != 0)
+        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL) != 0)
         {
             if (errno != EINTR)
             {
@@ -415,30 +420,20 @@ static void vos_runCyclicThread (
         deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
         deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
 
-        (void)clock_gettime(CLOCK_REALTIME, &now);
-        if (now.tv_sec > deadline.tv_sec || (now.tv_sec == deadline.tv_sec && now.tv_nsec > deadline.tv_nsec))
+        (void)clock_gettime(CLOCK_MONOTONIC, &nowMono);
+        if (nowMono.tv_sec > deadline.tv_sec || (nowMono.tv_sec == deadline.tv_sec && nowMono.tv_nsec > deadline.tv_nsec))
         {
-            UINT32 too_late = (1000 * 1000 * (now.tv_sec - deadline.tv_sec)) + ((now.tv_nsec - deadline.tv_nsec) / 1000);
+            UINT32 too_late = (1000 * 1000 * (nowMono.tv_sec - deadline.tv_sec)) + ((nowMono.tv_nsec - deadline.tv_nsec) / 1000);
             
             /* severe error: cyclic task time violated */
-            /* calculate next deadline */
-            deadline.tv_nsec    += interval_ns;
-            deadline.tv_sec     += deadline.tv_nsec / NSECS_PER_SEC;
-            deadline.tv_nsec    = deadline.tv_nsec % NSECS_PER_SEC;
-
-            /* if still not in the future: move deadline one interval into the future */
-            if (now.tv_sec > deadline.tv_sec || (now.tv_sec == deadline.tv_sec && now.tv_nsec > deadline.tv_nsec))
-            {
-                deadline.tv_nsec  = now.tv_nsec + interval_ns;
-                deadline.tv_sec   = now.tv_sec  + deadline.tv_nsec / NSECS_PER_SEC;
-                deadline.tv_nsec  = deadline.tv_nsec % NSECS_PER_SEC;
-            }
-
             /* Log the runtime violation */
             vos_printLog(VOS_LOG_WARNING,
                          "cyclic thread with interval %uµsec was running %10.3fms too long.\n",
                          (unsigned int)interval, too_late/1000.0);
         }
+        deadline.tv_nsec  = nowMono.tv_nsec;
+        deadline.tv_sec   = nowMono.tv_sec;
+
         pthread_testcancel();
     }
 
@@ -928,7 +923,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
     wanted_delay.tv_sec     = delay / 1000000u;
     wanted_delay.tv_nsec    = (delay % 1000000) * 1000;
     // Using absolute time to avoid program block with nanosleep
-    (void)clock_gettime(CLOCK_REALTIME, &current_time);
+    (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
     target_time.tv_sec    = current_time.tv_sec + wanted_delay.tv_sec;
     target_time.tv_nsec   = current_time.tv_nsec + wanted_delay.tv_nsec;
     if (target_time.tv_nsec >= 1000000000)
@@ -940,7 +935,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
     {
         pthread_testcancel();
         ret = clock_nanosleep(
-                              CLOCK_REALTIME,
+                              CLOCK_MONOTONIC,
                               TIMER_ABSTIME,
                               &target_time,
                               &remaining_delay);
@@ -951,7 +946,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
         //ret = nanosleep(&wanted_delay, &remaining_delay);
         if (ret == -1 && errno == EINTR)
         {
-            (void)clock_gettime(CLOCK_REALTIME, &current_time);
+            (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
             target_time.tv_sec    = current_time.tv_sec + remaining_delay.tv_sec;
             target_time.tv_nsec   = current_time.tv_nsec + remaining_delay.tv_nsec;
             if (target_time.tv_nsec >= 1000000000)

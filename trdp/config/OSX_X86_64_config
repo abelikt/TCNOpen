@@ -22,6 +22,9 @@ CFLAGS += -Wno-unused-label -Wno-unused-function -Wno-int-to-void-pointer-cast -
 
 CFLAGS +=  -DHAS_UUID
 
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1
+
 # Additional sources for TSN support
 
 SOA_SUPPORT = 1

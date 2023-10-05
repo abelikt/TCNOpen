@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
@@ -555,6 +556,7 @@ EXT_DECL TRDP_ERR_T tlp_publish (
                             appHandle->pdDefault.port,
                             &appHandle->pdDefault.sendParam, /* #435 */
                             srcIpAddr,
+                            destIpAddr,
                             0u,
                             sockType,
                             appHandle->option,
@@ -823,6 +825,7 @@ EXT_DECL TRDP_ERR_T tlp_republish (
     else
     {
         pubHandle->addr.mcGroup = 0u;
+        appHandle->ifacePD[pubHandle->socketIdx].dstAddr = destIpAddr;
     }
 
     /*    Compute the header fields */
@@ -1165,6 +1168,7 @@ EXT_DECL TRDP_ERR_T tlp_request (
                                          appHandle->pdDefault.port,                                         
                                          &appHandle->pdDefault.sendParam, /* #435 */
                                          srcIpAddr,
+                                         destIpAddr,
                                          0u,
                                          TRDP_SOCK_PD,
                                          appHandle->option,
@@ -1405,6 +1409,7 @@ EXT_DECL TRDP_ERR_T tlp_subscribe (
                                  appHandle->pdDefault.port,
                                  &appHandle->pdDefault.sendParam, /* '435 */
                                  appHandle->realIP,
+                                 0u,
                                  subHandle.mcGroup,
                                  usage,
                                  appHandle->option,
@@ -1642,6 +1647,7 @@ EXT_DECL TRDP_ERR_T tlp_resubscribe (
                                      appHandle->pdDefault.port,
                                      &appHandle->pdDefault.sendParam,
                                      appHandle->realIP,
+                                     0u,
                                      destIpAddr,
                                      TRDP_SOCK_PD,
                                      appHandle->option,

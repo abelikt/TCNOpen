@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      A� 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced
@@ -57,12 +58,6 @@ extern "C" {
 /***********************************************************************************************************************
  * DEFINES
  */
-
-/** Support for message data can only be excluded during compile time!
- */
-#ifndef MD_SUPPORT
-#define MD_SUPPORT  1
-#endif
 
 /***********************************************************************************************************************
  * TYPEDEFS

@@ -30,6 +30,8 @@ LDFLAGS += -luuid
 LINT_SYSINCLUDE_DIRECTIVES = -i ./src/vos/posix -wlib 0 -DL_ENDIAN
 
 # Additional sources for TSN support
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1
 #TSN_SUPPORT = 1
 #SOA_SUPPORT = 1
 

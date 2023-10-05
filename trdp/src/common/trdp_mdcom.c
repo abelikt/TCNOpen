@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-02-21: Lint warnigs
  *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
@@ -2861,6 +2862,7 @@ void  trdp_mdCheckListenSocks (
                                 &appHandle->mdDefault.sendParam,
                                 appHandle->realIP,
                                 0,
+                                0,
                                 TRDP_SOCK_MD_TCP,
                                 TRDP_OPTION_NONE,
                                 TRUE,
@@ -3107,7 +3109,9 @@ static TRDP_ERR_T trdp_mdConnectSocket (TRDP_APP_SESSION_T      appHandle,
                                      appHandle->mdDefault.tcpPort,
                                      (pSendParam != NULL) ?
                                      pSendParam : (&appHandle->mdDefault.sendParam),
-                                     srcIpAddr, 0, /* no TCP multicast possible */
+                                     srcIpAddr,
+                                     0,
+                                     0, /* no TCP multicast possible */
                                      TRDP_SOCK_MD_TCP,
                                      TRDP_OPTION_NONE,
                                      FALSE,
@@ -3142,7 +3146,9 @@ static TRDP_ERR_T trdp_mdConnectSocket (TRDP_APP_SESSION_T      appHandle,
                                  appHandle->mdDefault.udpPort,
                                  (pSendParam != NULL) ?
                                  pSendParam : (&appHandle->mdDefault.sendParam),
-                                 srcIpAddr, vos_isMulticast(destIpAddr) ? destIpAddr : 0u,
+                                 srcIpAddr,
+                                 0u,
+                                 vos_isMulticast(destIpAddr) ? destIpAddr : 0u,
                                  TRDP_SOCK_MD_UDP,
                                  appHandle->option,
                                  FALSE,

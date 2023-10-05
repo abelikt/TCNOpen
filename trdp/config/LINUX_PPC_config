@@ -32,3 +32,6 @@ LDFLAGS += -lrt
 
 #LINT section  
 LINT_SYSINCLUDE_DIRECTIVES = -D__linux -D__GNUC__ -i "./src/vos/posix" -i "/scm/gbe/repository/sysroot/nrtos/2.4.0.1/sysroot/usr/include" -i "/scm/gbe/repository/sysroot/nrtos/2.4.0.1/sysroot/usr/include/linux" -i "/opt/cross/freescale-2010.09/lib/gcc/powerpc-linux-gnu/4.5.1/include" +libdir "/scm/gbe/repository/sysroot/nrtos/2.4.0.1/sysroot/usr/include" -wlib 0 
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
@@ -129,6 +130,7 @@ void printSocketUsage (
         }
         vos_printLog(VOS_LOG_DBG, "iface[%d].sock = %d\n", lIndex, vos_sockId(iface[lIndex].sock));
         vos_printLog(VOS_LOG_DBG, "iface[%d].bindAddr = %x = %s\n", lIndex, iface[lIndex].bindAddr, vos_ipDotted(iface[lIndex].bindAddr));
+        vos_printLog(VOS_LOG_DBG, "iface[%d].dstAddr = %x = %s\n", lIndex, iface[lIndex].dstAddr, vos_ipDotted(iface[lIndex].dstAddr));
         vos_printLog(VOS_LOG_DBG, "iface[%d].type = %s \n", lIndex, (iface[lIndex].type == TRDP_SOCK_PD ? "PD_UDP" :
                                                                      (iface[lIndex].type == TRDP_SOCK_MD_UDP ? "MD_UDP" :
                                                                       (iface[lIndex].type == TRDP_SOCK_MD_TCP ? "MD_TCP" :
@@ -961,6 +963,7 @@ void trdp_initSockets (
  *  @param[in]      port            port to use
  *  @param[in]      params          parameters to use
  *  @param[in]      srcIP           IP to bind to (0 = any address)
+ *  @param[in]      dstIP           unicast destination IP (0 = multicast)
  *  @param[in]      mcGroup         MC group to join (0 = do not join)
  *  @param[in]      type            type determines port to bind to (PD TSN, PD, MD/UDP, MD/TCP)
  *  @param[in]      options         blocking/nonblocking
@@ -977,6 +980,7 @@ TRDP_ERR_T  trdp_requestSocket (
     UINT16                  port,
     const TRDP_COM_PARAM_T *params,
     TRDP_IP_ADDR_T          srcIP,
+    TRDP_IP_ADDR_T          dstIP,
     TRDP_IP_ADDR_T          mcGroup,
     TRDP_SOCK_TYPE_T        type,
     TRDP_OPTION_T           options,
@@ -1021,6 +1025,9 @@ TRDP_ERR_T  trdp_requestSocket (
                  && !((mcGroup != 0u) && (bindAddr != iface[lIndex].bindAddr))  /* do not use if multicast and different iface specified! */
                  && ((bindAddr == 0) || (iface[lIndex].bindAddr == bindAddr))
                  && (iface[lIndex].type == type)
+#ifdef PD_UNICAST_SUPPORT                 
+                 && ((dstIP == 0) || (!vos_isMulticast(dstIP) && (iface[lIndex].dstAddr == dstIP)))
+#endif                 
                  && ((rcvMostly) || (iface[lIndex].sendParam.qos == params->qos))
                  && ((rcvMostly) || (iface[lIndex].sendParam.ttl == params->ttl))
                  && (iface[lIndex].rcvMostly == rcvMostly)
@@ -1130,6 +1137,7 @@ TRDP_ERR_T  trdp_requestSocket (
         iface[lIndex].sock      = VOS_INVALID_SOCKET;
         iface[lIndex].bindAddr  = bindAddr /* was srcIP (ID #125) */;
         iface[lIndex].srcAddr   = srcIP;
+        iface[lIndex].dstAddr   = dstIP;
         iface[lIndex].type      = type;
         iface[lIndex].sendParam = *params;
         iface[lIndex].rcvMostly = rcvMostly;
@@ -1407,6 +1415,7 @@ void  trdp_releaseSocket (
                 iface[lIndex].usage         = 0;
                 iface[lIndex].bindAddr      = 0;
                 iface[lIndex].srcAddr       = 0;
+                iface[lIndex].dstAddr       = 0;
                 iface[lIndex].type      = TRDP_SOCK_INVAL;
                 iface[lIndex].rcvMostly = FALSE;
                 iface[lIndex].tcpParams.cornerIp = 0;

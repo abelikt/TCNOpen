@@ -29,3 +29,6 @@ CFLAGS += -pthread -fPIC -D_GNU_SOURCE -DPOSIX -mfloat-abi=hard
 LDFLAGS += -lrt -mfloat-abi=hard
 
 LINT_SYSINCLUDE_DIRECTIVES = -i ./src/vos/posix -wlib 0 -DL_ENDIAN
+
+MD_SUPPORT = 1
+#PD_UNICAST_SUPPORT = 1

@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
  *      AÖ 2023-01-13: Ticket #413 In Windows export gPDebugFunction and gRefCon
  *     AHW 2023-01-11: Lint warnigs
  *      BL 2019-01-23: Ticket #231: XML config from stream buffer
@@ -173,10 +174,6 @@ extern EXT_DECL void *gRefCon; /* #413 */
 
 #if defined(__APPLE__) || defined(__USE_XOPEN2K8)
 #define HAS_FMEMOPEN    1
-#endif
-
-#ifndef MD_SUPPORT
-#define MD_SUPPORT 1
 #endif
 
 /***********************************************************************************************************************

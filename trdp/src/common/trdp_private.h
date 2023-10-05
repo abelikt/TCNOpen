@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -69,8 +70,8 @@
 #ifndef TRDP_VERSION
 #define TRDP_VERSION    2
 #define TRDP_RELEASE    2
-#define TRDP_UPDATE     23
-#define TRDP_EVOLUTION  99              /* Evolution > 0 denotes trunk! */
+#define TRDP_UPDATE     24
+#define TRDP_EVOLUTION  01              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
@@ -221,7 +222,8 @@ typedef struct TRDP_SOCKETS
     VOS_SOCK_T          sock;                            /**< vos socket descriptor to use                */
     TRDP_IP_ADDR_T      bindAddr;                        /**< Defines the interface to use                */
     TRDP_IP_ADDR_T      srcAddr;                         /**< Defines the source interface to use         */
-    TRDP_COM_PARAM_T   sendParam;                       /**< Send parameters                              */
+    TRDP_IP_ADDR_T      dstAddr;                         /**< Defines the destination interface to use    */
+    TRDP_COM_PARAM_T    sendParam;                       /**< Send parameters                             */
     TRDP_SOCK_TYPE_T    type;                            /**< Usage of this socket                        */
     BOOL8               rcvMostly;                       /**< Used for receiving                          */
     INT16               usage;                           /**< No. of current users of this socket         */

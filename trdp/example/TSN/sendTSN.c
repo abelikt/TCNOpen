@@ -13,6 +13,7 @@
  *
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #439 Date Time dependency of publishing PD telegrams Multicast.
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *     CWE 2022-12-21: Ticket #404 Fix compile error - Test does not need to run, it is only used to verify bugfixes. It requires a special network-setup to run
@@ -616,7 +617,7 @@ int main (int argc, char *argv[])
                       PD_STD_PAYLOAD_SIZE           /*    data size                      */
                       );
 
-
+    
     if (err != TRDP_NO_ERR)
     {
         vos_printLogStr(VOS_LOG_USR, "publisher error\n");
@@ -631,7 +632,7 @@ int main (int argc, char *argv[])
     /*******************************************************************************/
 
     /* Start TSN producer with delay given */
-    vos_getRealTime(&now);                  // use CLOCK_REALTIME: in most environments the realtime clock runs synchronized to TSN- / PTP-time
+    vos_getTime(&now);                      // use CLOCK_MONOTONIC: sync with PTP is done in vos_thread.
     now.tv_usec += (int) startTimeTsn;      // delay the TSN cyclic producer for "startTimeTsn" microseconds from "now"
     if (now.tv_usec >= 1000000) {
         now.tv_usec -= 1000000;
@@ -660,10 +661,10 @@ int main (int argc, char *argv[])
         (void) vos_threadDelay(2 * PD_COMID_STD_CYCLE);
 
         snprintf((char *) gpOutputBufferStd, PD_STD_PAYLOAD_SIZE, "Hello World, pckt %05u", counter++);
-        tlp_put(gAppContextStd.appHandle, gAppContextStd.pubHandle, gpOutputBufferStd, PD_STD_PAYLOAD_SIZE);
+                tlp_put(gAppContextStd.appHandle, gAppContextStd.pubHandle, gpOutputBufferStd, PD_STD_PAYLOAD_SIZE);
 
         vos_printLog(VOS_LOG_USR, "Prepared new standard PD (%d): %s\n", PD_COMID_STD, gpOutputBufferStd);
-    }
+            }
 
     /*
      *    We always clean up behind us!
@@ -673,7 +674,7 @@ int main (int argc, char *argv[])
     gComThreadStdRunning = FALSE;
 
     tlp_unpublish(gAppContextTsn.appHandle, gAppContextTsn.pubHandle);
-    tlp_unpublish(gAppContextStd.appHandle, gAppContextStd.pubHandle);
+        tlp_unpublish(gAppContextStd.appHandle, gAppContextStd.pubHandle);
     tlc_closeSession(gAppContextTsn.appHandle);
     tlc_closeSession(gAppContextStd.appHandle);
     tlc_terminate();

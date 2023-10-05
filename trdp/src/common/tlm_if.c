@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *     AHW 2021-05-26: Ticket #370 Number of Listeners in MD statistics not counted correctly
@@ -506,6 +507,7 @@ EXT_DECL TRDP_ERR_T  tlm_addListener (
                             appHandle->mdDefault.udpPort,
                             &appHandle->mdDefault.sendParam,
                             appHandle->realIP,
+                            pNewElement->addr.destIpAddr,
                             pNewElement->addr.mcGroup,
                             TRDP_SOCK_MD_UDP,
                             appHandle->option,
@@ -741,6 +743,7 @@ EXT_DECL TRDP_ERR_T tlm_readdListener (
                                      appHandle->mdDefault.udpPort,
                                      &appHandle->mdDefault.sendParam,
                                      appHandle->realIP,
+                                     0,
                                      mcDestIpAddr,
                                      TRDP_SOCK_MD_UDP,
                                      appHandle->option,

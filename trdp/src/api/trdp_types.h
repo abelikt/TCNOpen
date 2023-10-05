@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
@@ -80,10 +81,6 @@ extern "C" {
 /***********************************************************************************************************************
  * DEFINES
  */
-
-#ifndef MD_SUPPORT
-    #define MD_SUPPORT  1
-#endif
 
 #ifndef USE_HEAP
     #define USE_HEAP  0                 /**< If this is set, we can allocate dynamically memory    */
