@@ -18,6 +18,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
 *     AHW 2023-01-11: Lint warnigs
@@ -122,8 +123,51 @@ VOS_IP4_ADDR_T  gIpInterfaceIndexToIpAddr[VOS_MAX_NUM_IF] = { 0 };    /* resolve
 /***********************************************************************************************************************
  * LOCAL FUNCTIONS
  */
+void   vos_collectIpInterfaces();
+UINT32 vos_getInterfaceList(VOS_IF_REC_T* ipInterfaceList[]);
+UINT32 vos_getInterfaceIP(UINT32 ifIndex);
 
-UINT32      vos_getInterfaceList(VOS_IF_REC_T* ipInterfaceList[]);
+/**********************************************************************************************************************/
+/** Get the IP, VLAN and MAC addresses of local network interfaces for faster access
+ *  If called while interface data is already stored: discard data and collect again
+ *
+*/
+void vos_collectIpInterfaces()
+{
+    VOS_ERR_T     err = VOS_NO_ERR;
+    UINT32        i = 0u;
+    UINT32        tempIndex = 0U;
+
+    /* initialize (clear) global storage */
+    memset(gIpInterfaceIndexToIpAddr, 0, sizeof(gIpInterfaceIndexToIpAddr));
+    memset(gIpInterfaces, 0, sizeof(gIpInterfaces));
+
+    gIpInterfaceCount = VOS_MAX_NUM_IF;
+    err = vos_getInterfaces(&gIpInterfaceCount, gIpInterfaces);             /* setup interface record array */
+
+    if (err != VOS_NO_ERR)
+    {
+        gIpInterfaceCount = 0u;
+    }
+
+    for (i = 0; i < gIpInterfaceCount; i++)
+    {
+        tempIndex = gIpInterfaces[i].ifIndex;
+        if ((0 < tempIndex) && (tempIndex < VOS_MAX_NUM_IF) &&              /* array boundaries 1..VOS_MAX_NUM_IF */
+            ((VOS_IP4_ADDR_T)0 == gIpInterfaceIndexToIpAddr[tempIndex]))   /* index not yet used */
+        {
+            gIpInterfaceIndexToIpAddr[tempIndex] = gIpInterfaces[i].ipAddr;
+        }
+        else
+        {
+            for (tempIndex = 0; tempIndex < VOS_MAX_NUM_IF; tempIndex++)
+            {
+
+                gIpInterfaceIndexToIpAddr[tempIndex] = (VOS_IP4_ADDR_T)0;
+            }
+        }
+    }
+}
 
 /**********************************************************************************************************************/
 /** Receive a message including sender address information.
@@ -562,60 +606,28 @@ EXT_DECL INT32 vos_select (
 /**********************************************************************************************************************/
 /** Get the IP address of local network interface.
  *
- *  @param[in]      index    interface index
+ *  @param[in]      interfaceIndex    interface index
  *
  *  @retval         IP address of interface
  *  @retval         0 if index not found
  */
-UINT32 vos_getInterfaceIP (UINT32 index)
+UINT32 vos_getInterfaceIP (UINT32 interfaceIndex)
 {
-    static VOS_IF_REC_T     ifAddrs[VOS_MAX_NUM_IF]  = {0};                         /* set once: get IP Interface list once and remember them */
-    static VOS_IP4_ADDR_T   indexToIpAddr[4*VOS_MAX_NUM_IF] = {(VOS_IP4_ADDR_T) 0}; /* set once: quick resolve OS-interface index to IP address - there may be many virtual interfaces, not all are setup for IP traffic */
-    static UINT32           ifCount     = 0u;                                       /* set once: number of stored interface-records */
-    VOS_ERR_T               err         = VOS_NO_ERR;
-    UINT32                  i           = 0u;
-    UINT32                  tempIndex   = 0U; 
-
-    if (ifCount == 0u)                                  /* first function-call - or no IP interface found */
+    if (0 < gIpInterfaceCount)                                 /* any IP interfaces stored? */
     {
-        ifCount = VOS_MAX_NUM_IF;
-        err = vos_getInterfaces(&ifCount, ifAddrs);     /* setup interface record array */
-
-        if (err != VOS_NO_ERR)
+        if ((0 < interfaceIndex) && (interfaceIndex < VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T)0 != gIpInterfaceIndexToIpAddr[interfaceIndex]))
         {
-            ifCount = 0u;
-            return 0u;
+            return gIpInterfaceIndexToIpAddr[interfaceIndex];  /* quick return the IP address != 0.0.0.0 stored for OS interface index */
         }
-
-        for (i = 0; i < ifCount; i++)
+        else                                                   /* fallback, if requested index is invalid or empty */
         {
-            tempIndex = ifAddrs[i].ifIndex;
-            if ((0 < tempIndex) && (tempIndex < 4*VOS_MAX_NUM_IF) &&    /* array boundaries 1..(4*VOS_MAX_NUM_IF) */
-                ((VOS_IP4_ADDR_T) 0 == indexToIpAddr[tempIndex]))       /* index unused */
+            UINT32 i;
+            for (i = 0; i < gIpInterfaceCount; i++)
             {
-                indexToIpAddr[tempIndex] = ifAddrs[i].ipAddr;
-            }
-            else                                                        /* on any single failure: clear fast index table and search the old way */
-            {
-                for (tempIndex = 0; tempIndex < 4*VOS_MAX_NUM_IF; tempIndex++)
+                if (gIpInterfaces[i].ifIndex == interfaceIndex)
                 {
-                    indexToIpAddr[tempIndex] = (VOS_IP4_ADDR_T) 0;
+                    return gIpInterfaces[i].ipAddr;
                 }
-            }
-        }
-    }
-
-    if ((0 < index) && (index < 4*VOS_MAX_NUM_IF) && ((VOS_IP4_ADDR_T) 0 != indexToIpAddr[index]))
-    {
-        return indexToIpAddr[index];        /* quick return the IP address != 0.0.0.0 stored for OS interface index */
-    }
-    else
-    {
-        for (i = 0; i < ifCount; i++)
-        {
-            if (ifAddrs[i].ifIndex == index)
-            {
-                return ifAddrs[i].ipAddr;
             }
         }
     }
@@ -651,9 +663,24 @@ EXT_DECL VOS_ERR_T vos_ifnameFromVlanId(
         UINT32 i = 0u;
         for (i = 0; i < ipInterfaceCount; i++)                  // search intefaces for VLAN ID
         {
-            if ((ipInterfaceList[i].vlanId == vlanId) &&
+            /* extract number from name */
+            UINT16 val=0;
+            char *p = ipInterfaceList[i].name;
+            while (*p)
+            {
+                if (isdigit(*p))
+                {
+                    val = (UINT16) strtol(p, &p, 4);
+                }
+                else
+                {
+                    p++;
+                }
+            }
+            if ((val == vlanId) &&
                 ((0 == ipAddr) || (ipAddr == ipInterfaceList[i].ipAddr)))
             {
+                ipInterfaceList[i].vlanId = vlanId;
                 vos_printLog(VOS_LOG_INFO, "Matching VLAN (ID %u) interface found: %s with IP %s\n",
                     vlanId, ipInterfaceList[i].name, vos_ipDotted(ipInterfaceList[i].ipAddr));
                 return VOS_NO_ERR;
@@ -689,6 +716,7 @@ EXT_DECL VOS_ERR_T vos_sockInit (void)
 
     memset(mac, 0, sizeof(mac));
     (void) vos_getInterfaceIP(0);
+    vos_collectIpInterfaces();    // fill global interface list: gIpInterfaces, gIpInterfaceIndexToIpAddr, gIpInterfaceCount
     gVosSockInitialised = TRUE;
 
     return VOS_NO_ERR;

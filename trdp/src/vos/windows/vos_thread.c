@@ -18,6 +18,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-05: Ticket #439 Date Time dependency of publishing PD telegrams Multicast.
 *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     AHW 2023-02-21: Lint warnings
 *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - improved warning message
@@ -493,7 +494,8 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 EXT_DECL void vos_getTime (
     VOS_TIMEVAL_T *pTime)
 {
-    struct __timeb32 curTime;
+    LARGE_INTEGER curTime;
+    LARGE_INTEGER timeFreq;
 
     if (pTime == NULL)
     {
@@ -508,11 +510,11 @@ EXT_DECL void vos_getTime (
         if (_ftime(&curTime) == 0)
 #endif  /*MINGW_HAS_SECURE_API*/
 #else /*__GNUC__*/
-        if (_ftime32_s(&curTime) == 0)
+        if(QueryPerformanceCounter(&curTime) && QueryPerformanceFrequency(&timeFreq))
 #endif /*__GNUC__*/
         {
-            pTime->tv_sec   = curTime.time;
-            pTime->tv_usec  = curTime.millitm * 1000;
+            pTime->tv_sec = curTime.QuadPart / timeFreq.QuadPart;
+            pTime->tv_usec = (curTime.QuadPart % timeFreq.QuadPart) / (timeFreq.QuadPart / (USECS_PER_MSEC * MSECS_PER_SEC));
         }
         else
         {

@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
@@ -99,7 +100,7 @@ extern "C" {
 #ifdef IFNAMSIZ
 #define VOS_MAX_IF_NAME_SIZE    IFNAMSIZ
 #else
-#define VOS_MAX_IF_NAME_SIZE   40
+#define VOS_MAX_IF_NAME_SIZE   80
 #endif
 #endif
 
