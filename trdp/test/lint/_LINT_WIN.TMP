@@ -76,3 +76,116 @@
 --- Module:   ..\..\src\common\tau_dnr.c (C)
 
 --- Module:   ..\..\src\common\tau_tti.c (C)
+
+/// Start of Pass 3 ///
+
+--- Module:   ..\..\src\vos\common\vos_utils.c (C)
+
+--- Module:   ..\..\src\vos\common\vos_mem.c (C)
+
+During Specific Walk:
+  File ..\..\src\common\trdp_xml.c line 474: trdp_XMLSeekStartTagAny(?, [133],
+    133)
+  File ..\..\src\common\trdp_xml.c line 448: vos_strncpy([133], [133], 133)
+..\..\src\vos\common\vos_mem.c(730) : Warning 415: Likely access of
+    out-of-bounds pointer (1 beyond end of data) by operator '[' [Reference:
+    file ..\..\src\vos\common\vos_mem.c: line 730; file ..\..\src\common\trdp_xml.c:
+    lines 448, 474]
+..\..\src\vos\common\vos_mem.c(730) : Info 831: Reference cited in prior
+    message
+..\..\src\common\trdp_xml.c(448) : Info 831: Reference cited in prior message
+..\..\src\common\trdp_xml.c(474) : Info 831: Reference cited in prior message
+
+During Specific Walk:
+  File ..\..\src\common\trdp_xml.c line 474: trdp_XMLSeekStartTagAny(?, [133],
+    133)
+  File ..\..\src\common\trdp_xml.c line 448: vos_strncpy([133], [133], 133)
+..\..\src\vos\common\vos_mem.c(732) : Warning 415: Likely access of
+    out-of-bounds pointer (1 beyond end of data) by operator '[' [Reference:
+    file ..\..\src\vos\common\vos_mem.c: line 732; file ..\..\src\common\trdp_xml.c:
+    lines 448, 474]
+..\..\src\vos\common\vos_mem.c(732) : Info 831: Reference cited in prior
+    message
+..\..\src\common\trdp_xml.c(448) : Info 831: Reference cited in prior message
+..\..\src\common\trdp_xml.c(474) : Info 831: Reference cited in prior message
+
+During Specific Walk:
+  File ..\..\src\common\tau_xml.c line 361: trdp_XMLSeekStartTagAny(?, [132],
+    132)
+  File ..\..\src\common\trdp_xml.c line 448: vos_strncpy([132], [133], 132)
+..\..\src\vos\common\vos_mem.c(730) : Warning 415: Likely access of
+    out-of-bounds pointer (1 beyond end of data) by operator '[' [Reference:
+    file ..\..\src\vos\common\vos_mem.c: line 730; file ..\..\src\common\trdp_xml.c:
+    line 448; file ..\..\src\common\tau_xml.c: line 361]
+..\..\src\vos\common\vos_mem.c(730) : Info 831: Reference cited in prior
+    message
+..\..\src\common\trdp_xml.c(448) : Info 831: Reference cited in prior message
+..\..\src\common\tau_xml.c(361) : Info 831: Reference cited in prior message
+
+During Specific Walk:
+  File ..\..\src\common\tau_xml.c line 361: trdp_XMLSeekStartTagAny(?, [132],
+    132)
+  File ..\..\src\common\trdp_xml.c line 448: vos_strncpy([132], [133], 132)
+..\..\src\vos\common\vos_mem.c(732) : Warning 415: Likely access of
+    out-of-bounds pointer (1 beyond end of data) by operator '[' [Reference:
+    file ..\..\src\vos\common\vos_mem.c: line 732; file ..\..\src\common\trdp_xml.c:
+    line 448; file ..\..\src\common\tau_xml.c: line 361]
+..\..\src\vos\common\vos_mem.c(732) : Info 831: Reference cited in prior
+    message
+..\..\src\common\trdp_xml.c(448) : Info 831: Reference cited in prior message
+..\..\src\common\tau_xml.c(361) : Info 831: Reference cited in prior message
+
+--- Module:   ..\..\src\vos\windows\vos_thread.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_sock.c (C)
+
+--- Module:   ..\..\src\vos\windows\vos_shared_mem.c (C)
+
+--- Module:   ..\..\src\common\tlc_if.c (C)
+
+--- Module:   ..\..\src\common\tlp_if.c (C)
+
+--- Module:   ..\..\src\common\tlm_if.c (C)
+
+--- Module:   ..\..\src\common\trdp_mdcom.c (C)
+
+During Specific Walk:
+  File ..\..\src\common\tau_dnr.c line 943: tlm_request(?, [4], ?, [1], 140, 0,
+    0, 0, ?, 4, 1, 3000000, 0, [23508], !=0, 0, 0)
+  File ..\..\src\common\tlm_if.c line 380: trdp_mdCall(19826, ?, [4], ?, [1],
+    140, 0, 0, 0, ?, 4, 1, 3000000, 0, 0, [23508], 65388?, 0, 0)
+  File ..\..\src\common\trdp_mdcom.c line 3624: trdp_mdDetailSenderPacket(19826,
+    0, 3000000, 0, [23508], 65388?, 1, ?, 0, 0, !=0)
+..\..\src\common\trdp_mdcom.c(3249) : Warning 670: Possible access beyond array
+    for function 'memcpy(void *, const void *, unsigned int)', argument 3
+    (size=65388) exceeds argument 2 (size=23508) [Reference: file
+    ..\..\src\common\tlm_if.c: lines 333, 376, 377; file ..\..\src\common\trdp_mdcom.c:
+    lines 3618, 3619; file ..\..\src\common\tau_dnr.c: line 940]
+..\..\src\common\tlm_if.c(333) : Info 831: Reference cited in prior message
+..\..\src\common\tlm_if.c(376) : Info 831: Reference cited in prior message
+..\..\src\common\tlm_if.c(377) : Info 831: Reference cited in prior message
+..\..\src\common\trdp_mdcom.c(3618) : Info 831: Reference cited in prior
+    message
+..\..\src\common\trdp_mdcom.c(3619) : Info 831: Reference cited in prior
+    message
+..\..\src\common\tau_dnr.c(940) : Info 831: Reference cited in prior message
+
+--- Module:   ..\..\src\common\trdp_pdcom.c (C)
+
+--- Module:   ..\..\src\common\trdp_pdindex.c (C)
+
+--- Module:   ..\..\src\common\trdp_utils.c (C)
+
+--- Module:   ..\..\src\common\trdp_stats.c (C)
+
+--- Module:   ..\..\src\common\tau_marshall.c (C)
+
+--- Module:   ..\..\src\common\trdp_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_xml.c (C)
+
+--- Module:   ..\..\src\common\tau_ctrl.c (C)
+
+--- Module:   ..\..\src\common\tau_dnr.c (C)
+
+--- Module:   ..\..\src\common\tau_tti.c (C)

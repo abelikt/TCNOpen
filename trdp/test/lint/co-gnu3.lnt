@@ -52,7 +52,7 @@
 // -----------------------------
 // End: System Dependent Options
 
-+cpp(.cc,.C)  // extensions for C++ that are commonly used in addition
++cpp(.cc,.c)  // extensions for C++ that are commonly used in addition
             // to the default extensions of .cpp and .cxx
 +fld        // support gcc's label designators
 

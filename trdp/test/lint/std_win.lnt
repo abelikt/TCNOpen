@@ -28,7 +28,7 @@ au-misra.lnt
 -D__AARCH64EB__=0
 
 -w2
--passes(2)
+-passes(3)
 +macros
 +ppw(warning)
 
