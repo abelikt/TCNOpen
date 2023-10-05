@@ -1026,7 +1026,7 @@ TRDP_ERR_T  trdp_requestSocket (
                  && ((bindAddr == 0) || (iface[lIndex].bindAddr == bindAddr))
                  && (iface[lIndex].type == type)
 #ifdef PD_UNICAST_SUPPORT                 
-                 && ((dstIP == 0) || (!vos_isMulticast(dstIP) && (iface[lIndex].dstAddr == dstIP)))
+                 && ((dstIP == 0) || vos_isMulticast(dstIP) || (iface[lIndex].dstAddr == dstIP))
 #endif                 
                  && ((rcvMostly) || (iface[lIndex].sendParam.qos == params->qos))
                  && ((rcvMostly) || (iface[lIndex].sendParam.ttl == params->ttl))
