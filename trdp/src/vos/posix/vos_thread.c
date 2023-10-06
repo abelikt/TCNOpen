@@ -965,7 +965,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 
 
 /**********************************************************************************************************************/
-/** Return the current time in sec and µs
+/** Return the current monotonic time in sec and µs
  ** Be aware, that MONOTONIC time is returned, if available!
  ** Fallback is REALTIME, with additional consideration of time zones and daylight saving time
  *

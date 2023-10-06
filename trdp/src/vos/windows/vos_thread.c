@@ -485,7 +485,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 }
 
 /**********************************************************************************************************************/
-/** Return the current time in sec and us
+/** Return the current monotonic time in sec and us
 *
 *
 *  @param[out]     pTime           Pointer to time value
@@ -532,7 +532,33 @@ EXT_DECL void vos_getTime (
 EXT_DECL void vos_getRealTime(
     VOS_TIMEVAL_T *pTime)
 {
-    vos_getTime(pTime);
+    struct __timeb32 curTime;
+
+    if (pTime == NULL)
+    {
+        vos_printLogStr(VOS_LOG_ERROR, "ERROR NULL pointer\n");
+    }
+    else
+    {
+#ifdef __GNUC__
+#ifdef MINGW_HAS_SECURE_API
+        if (_ftime_s(&curTime) == 0)
+#else /*MINGW_HAS_SECURE_API*/
+        if (_ftime(&curTime) == 0)
+#endif  /*MINGW_HAS_SECURE_API*/
+#else /*__GNUC__*/
+        if (_ftime32_s(&curTime) == 0)
+#endif /*__GNUC__*/
+        {
+            pTime->tv_sec = curTime.time;
+            pTime->tv_usec = curTime.millitm * 1000;
+        }
+        else
+        {
+            pTime->tv_sec = 0;
+            pTime->tv_usec = 0;
+        }
+    }
 }
 
 /**********************************************************************************************************************/
