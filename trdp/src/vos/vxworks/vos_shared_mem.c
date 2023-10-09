@@ -41,6 +41,7 @@
 #include <stat.h>
 #include <sys/mman.h>
 #include "sysLib.h"
+#include <unistd.h>
 
 
 
