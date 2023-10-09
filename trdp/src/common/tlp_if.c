@@ -995,6 +995,7 @@ EXT_DECL TRDP_ERR_T tlp_put (
  *  @retval         TRDP_PARAM_ERR     parameter error on uninitialized parameter or changed dataSize compared to published one
  *  @retval         TRDP_NOPUB_ERR     not published
  *  @retval         TRDP_NOINIT_ERR    handle invalid
+ *  @retval         TRDP_MEM_ERR       out of memory
  */
 EXT_DECL TRDP_ERR_T tlp_putImmediate (
     TRDP_APP_SESSION_T  appHandle,
@@ -1004,6 +1005,51 @@ EXT_DECL TRDP_ERR_T tlp_putImmediate (
     VOS_TIMEVAL_T       *pTxTime)
 {
     PD_ELE_T *pElement = (PD_ELE_T *) pubHandle;
+    
+    UINT32 packetSize = 0;
+
+    if ( (pubHandle->dataSize == 0U) && (dataSize == 0U) )
+    {
+        pubHandle->privFlags = (TRDP_PRIV_FLAGS_T) (pubHandle->privFlags & ~(TRDP_PRIV_FLAGS_T) TRDP_INVALID_DATA);
+        pubHandle->updPkts++;
+    }
+    else if ( (pData != NULL) && (dataSize != 0U) )
+    {
+        if ( dataSize > TRDP_MAX_PD_DATA_SIZE )
+        {
+            return TRDP_PARAM_ERR;
+        }
+        packetSize = sizeof(PD_HEADER_T) + dataSize;
+        if ( (dataSize & 0x3U) > 0 )
+        {
+            packetSize += 4 - dataSize % 4;
+        }
+        if ( (pubHandle->dataSize == 0U) || (pubHandle->grossSize < packetSize) )
+        {
+            PD_PACKET_T *pTemp;
+            pubHandle->dataSize   = dataSize;
+            pubHandle->grossSize  = packetSize;
+            pTemp = (PD_PACKET_T*) vos_memAlloc(pubHandle->grossSize);
+            if ( pTemp == NULL )
+            {
+                return TRDP_MEM_ERR;
+            }
+            else
+            {
+                /* copy existing header info */
+                memcpy(pTemp, pubHandle->pFrame, sizeof(PD_HEADER_T));
+                vos_memFree(pubHandle->pFrame);
+                pubHandle->pFrame = pTemp;
+                pubHandle->dataSize = dataSize;
+                pubHandle->grossSize = packetSize;
+                pubHandle->pFrame->frameHead.datasetLength = vos_htonl(pubHandle->dataSize);
+                pubHandle->privFlags =
+                    (TRDP_PRIV_FLAGS_T)(pubHandle->privFlags & ~(TRDP_PRIV_FLAGS_T) TRDP_INVALID_DATA);
+                pubHandle->updPkts++;
+            }
+        }
+    }
+    
     if ((PD_ELE_T *)pubHandle == NULL || ((PD_ELE_T *)pubHandle)->magic != TRDP_MAGIC_PUB_HNDL_VALUE)
     {
         return TRDP_NOPUB_ERR;
