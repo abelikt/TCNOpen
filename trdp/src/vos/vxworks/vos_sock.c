@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *		MM 2023-10-09: Ticket #442: Adaption for VxWorks 23.03
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      MM 2022-05-30: Ticket #326: fixed handling of destination (own) address on UDP receive
