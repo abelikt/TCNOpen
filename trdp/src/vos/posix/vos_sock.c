@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-11: Lint warnings
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
 *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
@@ -1857,7 +1858,7 @@ EXT_DECL VOS_ERR_T vos_sockReceiveTCP (
         if (rcvSize > 0)
         {
             bufferSize  -= (size_t) rcvSize;
-            pBuffer     += rcvSize;
+            pBuffer     += rcvSize;  //lint -e662  suppress "possible creation of out-of-bounds pointer"
             *pSize      += (UINT32) rcvSize;
             vos_printLog(VOS_LOG_DBG, "received %lu bytes (Socket: %d)\n", (unsigned long)rcvSize, (int) sock);
         }

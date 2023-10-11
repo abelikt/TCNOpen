@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *      PL 2023-10-11: Lint warnings
  *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
@@ -71,7 +72,7 @@
 #define TRDP_VERSION    2
 #define TRDP_RELEASE    2
 #define TRDP_UPDATE     24
-#define TRDP_EVOLUTION  05              /* Evolution > 0 denotes trunk! */
+#define TRDP_EVOLUTION  12              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
