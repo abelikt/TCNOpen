@@ -17,7 +17,7 @@
 /*
 * $Id$
 *
-*      PL 2023-10-13: Ticket #431 MC sending on multihoming interface
+*      PL 2023-10-13: Ticket #443 tlc_if: tlc_reinitSession doesn't perform multicast socket join for MD sockets listed in MDListenQueue
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
 *     AHW 2023-04-25: Ticket #431 MC sending on multihoming interface
