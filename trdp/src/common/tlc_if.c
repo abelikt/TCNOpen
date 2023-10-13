@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      PL 2023-10-13: Ticket #431 MC sending on multihoming interface
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
 *     AHW 2023-04-25: Ticket #431 MC sending on multihoming interface
@@ -1284,6 +1285,11 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
                     ret = (TRDP_ERR_T) vos_sockJoinMC(appHandle->ifacePD[iterPD->socketIdx].sock,
                                                       iterPD->addr.mcGroup,
                                                       appHandle->realIP);
+                    if (ret != TRDP_NO_ERR)
+                    {
+                        vos_printLog(VOS_LOG_ERROR, "vos_sockJoinMC() for UDP PD rcv failed! (Err: %d)\n", ret);
+                        /* continue for the other sockets anyway */
+                    }
                 }
             }
 
@@ -1299,7 +1305,7 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
 
                     if (ret != TRDP_NO_ERR)
                     {
-                        vos_printLog(VOS_LOG_ERROR, "vos_sockSetMulticastIf() for UDP send failed! (Err: %d)\n", ret);
+                        vos_printLog(VOS_LOG_ERROR, "vos_sockSetMulticastIf() for UDP PD send failed! (Err: %d)\n", ret);
                         /* continue for the other sockets anyway */
                     }
                 }
@@ -1307,7 +1313,7 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
 #if MD_SUPPORT
             {
                 MD_ELE_T *iterMD;
-                /*    Walk over the registered MDs */
+                /*    Walk over the registered MD receivers */
                 for (iterMD = appHandle->pMDRcvQueue; iterMD != NULL; iterMD = iterMD->pNext )
                 {
                     if (iterMD->privFlags & TRDP_MC_JOINT &&
@@ -1317,6 +1323,50 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
                         ret = (TRDP_ERR_T) vos_sockJoinMC(appHandle->ifaceMD[iterMD->socketIdx].sock,
                                                           iterMD->addr.mcGroup,
                                                           appHandle->realIP);
+                        if (ret != TRDP_NO_ERR)
+                        {
+                            vos_printLog(VOS_LOG_ERROR, "vos_sockJoinMC() for UDP MD rcv failed! (Err: %d)\n", ret);
+                            /* continue for the other sockets anyway */
+                        }
+                    }
+                }
+            }
+            {
+                MD_LIS_ELE_T* iterMD;
+                /*    Walk over the registered MD listeners*/
+                for (iterMD = appHandle->pMDListenQueue; iterMD != NULL; iterMD = iterMD->pNext)
+                {
+                    if (iterMD->privFlags & TRDP_MC_JOINT &&
+                        iterMD->socketIdx != -1)
+                    {
+                        /*    Join the MC group again    */
+                        ret = (TRDP_ERR_T)vos_sockJoinMC(appHandle->ifaceMD[iterMD->socketIdx].sock,
+                                                        iterMD->addr.mcGroup,
+                                                        appHandle->realIP);
+                        if (ret != TRDP_NO_ERR)
+                        {
+                            vos_printLog(VOS_LOG_ERROR, "vos_sockJoinMC() for UDP MD listen failed! (Err: %d)\n", ret);
+                            /* continue for the other sockets anyway */
+                        }
+                    }
+                }
+            }
+            {
+                MD_ELE_T* iterMD;
+                for (iterMD = appHandle->pSndQueue; iterMD != NULL; iterMD = iterMD->pNext)
+                {
+                    /* Multicast sender shall be bound to an interface */
+                    if ((iterMD->socketIdx < TRDP_MAX_MD_SOCKET_CNT)     /* to make the VC compiler happy */
+                        && (appHandle->ifaceMD[iterMD->socketIdx].bindAddr != 0)
+                        && !vos_isMulticast(appHandle->ifaceMD[iterMD->socketIdx].bindAddr))
+                    {
+                        ret = (TRDP_ERR_T)vos_sockSetMulticastIf(appHandle->ifaceMD[iterMD->socketIdx].sock, appHandle->ifaceMD[iterMD->socketIdx].bindAddr);
+
+                        if (ret != TRDP_NO_ERR)
+                        {
+                            vos_printLog(VOS_LOG_ERROR, "vos_sockSetMulticastIf() for UDP MD send failed! (Err: %d)\n", ret);
+                            /* continue for the other sockets anyway */
+                        }
                     }
                 }
             }
