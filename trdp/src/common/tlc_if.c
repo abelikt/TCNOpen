@@ -1353,7 +1353,7 @@ EXT_DECL TRDP_ERR_T tlc_reinitSession (
             }
             {
                 MD_ELE_T* iterMD;
-                for (iterMD = appHandle->pSndQueue; iterMD != NULL; iterMD = iterMD->pNext)
+                for (iterMD = appHandle->pMDSndQueue; iterMD != NULL; iterMD = iterMD->pNext)
                 {
                     /* Multicast sender shall be bound to an interface */
                     if ((iterMD->socketIdx < TRDP_MAX_MD_SOCKET_CNT)     /* to make the VC compiler happy */
