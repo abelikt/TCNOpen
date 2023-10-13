@@ -20,6 +20,7 @@
  *
  * Changes:
  * 
+ *      PL 2023-10-13: Ticket #444 Lint
  *     AHW 2023-02-21: Lint warnings
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, CWE: easier init of gMem
  *      SB 2021-08-09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
@@ -728,7 +729,7 @@ EXT_DECL void vos_strncpy (
 {
 #if (defined (WIN32) || defined (WIN64))
     CHAR8 character = pStrDst[count];
-    (void) strncpy_s((char *)pStrDst, (size_t)(count + 1), (const char *)pStrSrc, (size_t) count);
+    (void) strncpy_s((char *)pStrDst, (size_t)(count) + 1, (const char *)pStrSrc, (size_t) count); /*lint -e670 count is set by strlen */
     pStrDst[count] = character;
 #else
     (void) strncpy((char *)pStrDst, (const char *)pStrSrc, (size_t) count); /*lint !e920: return value not used */

@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*      PL 2023-10-13: Ticket #444 Lint
 *	   MM 2023-10-09: Ticket #441 added needed packet header handling to tlp_putImmediate
 *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
@@ -1049,6 +1050,10 @@ EXT_DECL TRDP_ERR_T tlp_putImmediate (
                 pubHandle->updPkts++;
             }
         }
+    }
+    else
+    {
+        return TRDP_PARAM_ERR;
     }
     
     if ((PD_ELE_T *)pubHandle == NULL || ((PD_ELE_T *)pubHandle)->magic != TRDP_MAGIC_PUB_HNDL_VALUE)

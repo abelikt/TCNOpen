@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *      PL 2023-10-13: Ticket #444 Lint
  *      PL 2023-10-11: Lint warnings
  *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
@@ -3247,9 +3248,7 @@ static void trdp_mdDetailSenderPacket (const TRDP_MSG_T         msgType,
         }
         else
         {
-            memcpy(pSenderElement->pPacket->data, pData,
-				dataSize < sizeof(*pData) ? dataSize : sizeof(*pData)
-			);
+            memcpy(pSenderElement->pPacket->data, pData, dataSize);  /*lint -e670  trdp_mdReply and trdp_mdCall are using dataSize for allocation of paket memory.*/
         }
     }
 
