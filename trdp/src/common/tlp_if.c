@@ -795,6 +795,8 @@ EXT_DECL TRDP_ERR_T tlp_republish (
     TRDP_IP_ADDR_T      srcIpAddr,
     TRDP_IP_ADDR_T      destIpAddr)
 {
+    TRDP_ERR_T err = TRDP_NO_ERR;
+
     /*    Check params    */
 
     if (!trdp_isValidSession(appHandle))
@@ -827,18 +829,59 @@ EXT_DECL TRDP_ERR_T tlp_republish (
     else
     {
         pubHandle->addr.mcGroup = 0u;
-        appHandle->ifacePD[pubHandle->socketIdx].dstAddr = destIpAddr;
+        
+        if (appHandle->ifacePD[pubHandle->socketIdx].usage == 1)
+        {
+            /* This is the only publisher using this socket. We can update simply to new dest IP address */
+            appHandle->ifacePD[pubHandle->socketIdx].dstAddr = destIpAddr;
+        }
+        else
+        {
+            /* There are more users of this socket. Need to request new socket for this publisher */
+
+            /* Extract the send parameters from the previously socket */
+            TRDP_SEND_PARAM_T sendParams = appHandle->ifacePD[pubHandle->socketIdx].sendParam;
+
+            /* Release the previously used socket for this publisher */
+            trdp_releaseSocket(appHandle->ifacePD, pubHandle->socketIdx, 0u, FALSE, VOS_INADDR_ANY);
+
+            err = trdp_requestSocket(
+                appHandle->ifacePD,
+                appHandle->pdDefault.port,
+                &sendParams,
+                pubHandle->addr.srcIpAddr,
+                pubHandle->addr.destIpAddr,
+                0u,
+                TRDP_SOCK_PD,
+                appHandle->option,
+                FALSE,
+                -1,
+                &pubHandle->socketIdx,
+                0u);
+            
+            /* If we couldn't get a socket, we could still keep the used memory for the publisher 
+            with the hope that everything could work again after next republish. Only return 
+            error for now. */
+            if (err != TRDP_NO_ERR)
+            {
+                vos_printLog(VOS_LOG_INFO, "Socket creation failed during republish of the comId %d\n", pubHandle->addr.comId);
+                /* No explicit error handling */
+            }
+        }
     }
 
-    /*    Compute the header fields */
-    trdp_pdInit(pubHandle, TRDP_MSG_PD, etbTopoCnt, opTrnTopoCnt, 0u, 0u, pubHandle->addr.serviceId);
-
+    if (err == TRDP_NO_ERR)
+    {
+        /*    Compute the header fields */
+        trdp_pdInit(pubHandle, TRDP_MSG_PD, etbTopoCnt, opTrnTopoCnt, 0u, 0u, pubHandle->addr.serviceId);
+    }
+    
     if (vos_mutexUnlock(appHandle->mutexTxPD) != VOS_NO_ERR)
     {
         vos_printLogStr(VOS_LOG_INFO, "vos_mutexUnlock() failed\n");
     }
 
-    return TRDP_NO_ERR;
+    return err;
 }
 
 /**********************************************************************************************************************/
