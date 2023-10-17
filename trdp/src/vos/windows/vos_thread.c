@@ -513,8 +513,8 @@ EXT_DECL void vos_getTime (
         if(QueryPerformanceCounter(&curTime) && QueryPerformanceFrequency(&timeFreq))
 #endif /*__GNUC__*/
         {
-            pTime->tv_sec = curTime.QuadPart / timeFreq.QuadPart;
-            pTime->tv_usec = (curTime.QuadPart % timeFreq.QuadPart) / (timeFreq.QuadPart / (USECS_PER_MSEC * MSECS_PER_SEC));
+            pTime->tv_sec = (long) (curTime.QuadPart / timeFreq.QuadPart);
+            pTime->tv_usec = (long) ((curTime.QuadPart % timeFreq.QuadPart) / (timeFreq.QuadPart / (USECS_PER_MSEC * MSECS_PER_SEC)));
         }
         else
         {

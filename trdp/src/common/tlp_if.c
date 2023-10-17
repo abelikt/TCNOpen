@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*      CK 2023-10-17: Ticket #437 Loss of UDP messages if a distant equipment is not available - tlp_republish updated
 *      PL 2023-10-13: Ticket #444 Lint
 *	   MM 2023-10-09: Ticket #441 added needed packet header handling to tlp_putImmediate
 *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
@@ -25,7 +26,7 @@
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     AHW 2023-02-21: Lint warnings
 *     AHW 2023-02-20: Ticket #420 Infinite loop in tlp_get() on unrecoverable errors
-*      A� 2023-01-13: Ticket #412 Added tlp_republishService
+*     AHW 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *     AHW 2022-03-24: Ticket #391 Allow PD request without reply
 *     IBO 2021-08-12: Ticket #355 Redundant PD default state should be follower
@@ -840,7 +841,7 @@ EXT_DECL TRDP_ERR_T tlp_republish (
             /* There are more users of this socket. Need to request new socket for this publisher */
 
             /* Extract the send parameters from the previously socket */
-            TRDP_SEND_PARAM_T sendParams = appHandle->ifacePD[pubHandle->socketIdx].sendParam;
+            TRDP_COM_PARAM_T sendParams = appHandle->ifacePD[pubHandle->socketIdx].sendParam;
 
             /* Release the previously used socket for this publisher */
             trdp_releaseSocket(appHandle->ifacePD, pubHandle->socketIdx, 0u, FALSE, VOS_INADDR_ANY);
@@ -864,7 +865,7 @@ EXT_DECL TRDP_ERR_T tlp_republish (
             error for now. */
             if (err != TRDP_NO_ERR)
             {
-                vos_printLog(VOS_LOG_INFO, "Socket creation failed during republish of the comId %d\n", pubHandle->addr.comId);
+                vos_printLog(VOS_LOG_ERROR, "Socket request failed during republish of the comId %d\n", pubHandle->addr.comId);
                 /* No explicit error handling */
             }
         }
