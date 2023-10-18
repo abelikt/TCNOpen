@@ -856,7 +856,7 @@ EXT_DECL TRDP_ERR_T tlp_republish (
                 TRDP_SOCK_PD,
                 appHandle->option,
                 FALSE,
-                -1,
+                VOS_INVALID_SOCKET,
                 &pubHandle->socketIdx,
                 0u);
             
