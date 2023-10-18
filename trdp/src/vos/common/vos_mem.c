@@ -729,7 +729,7 @@ EXT_DECL void vos_strncpy (
 {
 #if (defined (WIN32) || defined (WIN64))
     CHAR8 character = pStrDst[count];
-    (void) strncpy_s((char *)pStrDst, (size_t)(count) + 1, (const char *)pStrSrc, (size_t) count); /*lint -e670 count is set by strlen */
+    (void) strncpy_s((char *)pStrDst, (size_t)(count) + 1, (const char *)pStrSrc, (size_t) count); /*lint -e670 -e415 count is set by strlen */
     pStrDst[count] = character;
 #else
     (void) strncpy((char *)pStrDst, (const char *)pStrSrc, (size_t) count); /*lint !e920: return value not used */
