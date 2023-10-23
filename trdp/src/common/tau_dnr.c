@@ -56,6 +56,11 @@
 #include "vos_mem.h"
 #include "vos_sock.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if MD_SUPPORT
 
 /***********************************************************************************************************************
  * DEFINES
@@ -1361,3 +1366,8 @@ EXT_DECL TRDP_ERR_T tau_addr2Uri (
 }
 
 /* ---------------------------------------------------------------------------- */
+#endif 
+
+#ifdef __cplusplus
+}
+#endif

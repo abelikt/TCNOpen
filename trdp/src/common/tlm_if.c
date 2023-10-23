@@ -56,6 +56,7 @@
 extern "C" {
 #endif
 
+#if MD_SUPPORT
 /***********************************************************************************************************************
  * TYPEDEFS
  */
@@ -1005,6 +1006,8 @@ EXT_DECL TRDP_ERR_T tlm_abortSession (
 
     return err;
 }
+
+#endif
 
 #ifdef __cplusplus
 }

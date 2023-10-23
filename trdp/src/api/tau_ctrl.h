@@ -36,6 +36,8 @@
 extern "C" {
 #endif
 
+#if MD_SUPPORT
+
 /***********************************************************************************************************************
  * DEFINES
  */
@@ -163,6 +165,8 @@ EXT_DECL TRDP_ERR_T tau_requestEcspConfirmReply(TRDP_APP_SESSION_T      appHandl
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif /* TAU_CTRL_H */

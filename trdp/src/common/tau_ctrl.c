@@ -48,6 +48,12 @@
 #include "trdp_if_light.h"
 #include "tau_ctrl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if MD_SUPPORT
+
 /**********************************************************************************************************************
  * DEFINES
  */
@@ -478,3 +484,9 @@ EXT_DECL TRDP_ERR_T tau_requestEcspConfirmReply(TRDP_APP_SESSION_T      appHandl
 
    return (TRDP_NOINIT_ERR);
 }
+
+#endif
+
+#ifdef __cplusplus
+}
+#endif

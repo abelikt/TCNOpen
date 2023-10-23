@@ -1,3 +1,4 @@
+
 /******************************************************************************/
 /**
  * @file            trdp_mdcom.h
@@ -29,15 +30,22 @@
 #ifndef TRDP_MDCOM_H
 #define TRDP_MDCOM_H
 
+
 /*******************************************************************************
  * INCLUDES
  */
 
 #include "trdp_private.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if MD_SUPPORT
 /*******************************************************************************
  * DEFINES
  */
+
 
 
 /*******************************************************************************
@@ -128,4 +136,10 @@ TRDP_ERR_T trdp_mdCall (const TRDP_MSG_T        msgType,
                         UINT32                  dataSize,
                         const TRDP_URI_USER_T   srcURI,
                         const TRDP_URI_USER_T   destURI);
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

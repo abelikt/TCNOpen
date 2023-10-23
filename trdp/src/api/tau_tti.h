@@ -40,6 +40,8 @@
 extern "C" {
 #endif
 
+#if MD_SUPPORT
+
 /***********************************************************************************************************************
  * DEFINES
  */
@@ -84,6 +86,8 @@ extern "C" {
 
 */
 
+
+#if MD_SUPPORT
 
 /**********************************************************************************************************************/
 /**    Function to init TTI access
@@ -408,6 +412,9 @@ EXT_DECL UINT8 tau_getOwnOpCstNo (
 EXT_DECL UINT8 tau_getOwnTrnCstNo (
     TRDP_APP_SESSION_T appHandle);
 
+#endif
+
+#endif 
 
 #ifdef __cplusplus
 }

@@ -45,6 +45,10 @@
 #include "vos_mem.h"
 #include "vos_thread.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************************
  * DEFINES
  */
@@ -519,6 +523,8 @@ void    trdp_UpdateStats (
             }
         }
     }
+
+#if MD_SUPPORT
     /* Count the joins on MD sockets, as well */
     for (lIndex = 0u; lIndex < trdp_getCurrentMaxSocketCnt(TRDP_SOCK_MD_UDP); lIndex++)
     {
@@ -530,6 +536,7 @@ void    trdp_UpdateStats (
             }
         }
     }
+#endif
 
 }
 
@@ -632,3 +639,8 @@ void    trdp_pdPrepareStats (
     /* mark the data as valid */
     pPacket->privFlags = (TRDP_PRIV_FLAGS_T) (pPacket->privFlags & ~(TRDP_PRIV_FLAGS_T)TRDP_INVALID_DATA);
 }
+
+
+#ifdef __cplusplus
+}
+#endif

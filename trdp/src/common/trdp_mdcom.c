@@ -79,6 +79,7 @@
  *
  */
 
+
 /***********************************************************************************************************************
  * INCLUDES
  */
@@ -90,7 +91,11 @@
 #include "trdp_utils.h"
 #include "trdp_mdcom.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#if MD_SUPPORT
 /***********************************************************************************************************************
  * DEFINES
  */
@@ -3786,3 +3791,8 @@ TRDP_ERR_T trdp_mdConfirm (
     }
     return errv;    /*lint !e438 unused pSenderElement */
 }
+#endif
+
+#ifdef __cplusplus
+}
+#endif
