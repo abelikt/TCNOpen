@@ -8,12 +8,12 @@
  *
  * @note            Project: TRDP SPY
  *
- * @author          Florian Weispfenning, Bombardier Transportation
+ * @author          Florian Weispfenning, Alstom Transportation GmbH
  * @author          Thorsten Schulz, Universität Rostock
  *
  * @copyright       This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  *                  If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * @copyright       Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013. All rights reserved.
+ * @copyright       Copyright Alstom SA or its subsidiaries and others, 2013-2023. All rights reserved.
  * @copyright       Copyright Universität Rostock, 2019 (substantial changes leading to GLib-only version and update to v2.0, Wirshark 3.)
  *
  * $Id: $

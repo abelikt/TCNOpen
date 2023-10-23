@@ -13,7 +13,7 @@
  *
  * @remarks This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. 
  *          If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *          Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013. All rights reserved.
+ *          Copyright Alstom SA or its subsidiaries and others, 2013-2023. All rights reserved.
  */
  /*
  * $Id$
@@ -63,7 +63,7 @@ typedef enum
 
 #define VOS_MEM_MAX_PREALLOCATE     100u  /**< Max. no. of blocks to pre-allocate */
 
-#define VOS_MEM_BLOCKSIZES  {48u, 72u, 128u, 180u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
+#define VOS_MEM_BLOCKSIZES  {32u, 64u, 128u, 180u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
                                 8192u, 16384u, 32768u, 65536u, 131072u}
 
     /** Default pre-allocation of free memory blocks. To avoid problems with too many small blocks and no large one.

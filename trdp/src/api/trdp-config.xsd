@@ -6,7 +6,7 @@
        #=====================================================================================================
        #         This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
        #         If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-       #         Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013-2021. All rights reserved..
+       #         Copyright Alstom SA or its subsidiaries and others, 2013-2023. All rights reserved..
        #=====================================================================================================
        #
        #  PRODUCT       : TRDP
@@ -21,7 +21,7 @@
        #
        #  HISTORY       :
        #                            1.19.0.0  Ticket #435 Cleanup VLAN and TSN for options for Linux systems
-	     #                            1.18.0.0  Ticket #342 VLAN support added
+	   #                            1.18.0.0  Ticket #342 VLAN support added
        #                            1.17.0.0  Ticket #423 and #424 Splitted sdtv2 and sdtv4 parameters, added sdtv4-parameters to service instance
        #                            1.16.0.0  Ticket #349 support for parsing "dataset name" and "device type"
        #                            1.15.0.0  Added optional attributes for SDTv4 support

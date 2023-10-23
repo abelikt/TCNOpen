@@ -1,19 +1,18 @@
 /**********************************************************************************************************************/
 /**
- * @file            vtest.c
+ * @file    vtest.c
  *
- * @brief           Test VOS functions
+ * @brief   Test VOS functions
  *
- * @details         -
+ * @details -
  *
- * @note            Project: TCNOpen TRDP prototype stack
+ * @note    Project: TCNOpen TRDP prototype stack
  *
- * @author          Christoph Schneider, Bombardier Transportation GmbH
- *
+ * @author  Christoph Schneider
  *
  * @remarks This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  *          If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *          Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013-2021. All rights reserved.
+ *          Copyright Alstom SA or its subsidiaries and others, 2013-2023. All rights reserved.
  *
  * $Id$
  *
