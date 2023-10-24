@@ -793,6 +793,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
     return VOS_NO_ERR;
 }
 
+#if MD_SUPPORT
 /**********************************************************************************************************************/
 /** Create a TCP socket.
  *  Return a socket descriptor for further calls. The socket options are optional and can be
@@ -842,6 +843,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
 
     return VOS_NO_ERR;
 }
+#endif
 
 /**********************************************************************************************************************/
 /** Close a socket.
@@ -1352,6 +1354,7 @@ EXT_DECL VOS_ERR_T vos_sockBind (
     return VOS_NO_ERR;
 }
 
+#if MD_SUPPORT
 /**********************************************************************************************************************/
 /** Listen for incoming connections.
  *
@@ -1680,7 +1683,7 @@ EXT_DECL VOS_ERR_T vos_sockReceiveTCP (
         return VOS_NO_ERR;
     }
 }
-
+#endif
 
 /**********************************************************************************************************************/
 /** Set Using Multicast I/F

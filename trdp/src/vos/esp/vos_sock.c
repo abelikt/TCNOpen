@@ -354,6 +354,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenUDP (
     return VOS_NO_ERR;
 }
 
+#if MD_SUPPORT
 /**********************************************************************************************************************/
 /** Create a TCP socket.
  *  Return a socket descriptor for further calls. The socket options are optional and can be
@@ -395,6 +396,7 @@ EXT_DECL VOS_ERR_T vos_sockOpenTCP (
     vos_printLog(VOS_LOG_INFO, "vos_sockOpenTCP: socket()=%d success\n", sock);
     return VOS_NO_ERR;
 }
+#endif
 
 /**********************************************************************************************************************/
 /** Close a socket.
@@ -963,12 +965,13 @@ EXT_DECL VOS_ERR_T vos_sockBind (
     return VOS_NO_ERR;
 }
 
+#if MD_SUPPORT
 /**********************************************************************************************************************/
 /** Listen for incoming connections.
  *
  *
  *  @param[in]      sock            socket descriptor
- *  @param[in]      backlog            maximum connection attempts if system is busy
+ *  @param[in]      backlog         maximum connection attempts if system is busy
  *
  *  @retval         VOS_NO_ERR      no error
  *  @retval         VOS_PARAM_ERR   sock descriptor unknown, parameter error
@@ -1082,6 +1085,7 @@ EXT_DECL VOS_ERR_T vos_sockReceiveTCP (
 {
     return VOS_NO_ERR;
 }
+#endif
 
 /**********************************************************************************************************************/
 /** Set Using Multicast I/F

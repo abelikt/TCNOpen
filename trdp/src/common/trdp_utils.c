@@ -132,9 +132,9 @@ void printSocketUsage (
         vos_printLog(VOS_LOG_DBG, "iface[%d].bindAddr = %x = %s\n", lIndex, iface[lIndex].bindAddr, vos_ipDotted(iface[lIndex].bindAddr));
         vos_printLog(VOS_LOG_DBG, "iface[%d].dstAddr = %x = %s\n", lIndex, iface[lIndex].dstAddr, vos_ipDotted(iface[lIndex].dstAddr));
         vos_printLog(VOS_LOG_DBG, "iface[%d].type = %s \n", lIndex, (iface[lIndex].type == TRDP_SOCK_PD ? "PD_UDP" :
-                                                                     (iface[lIndex].type == TRDP_SOCK_MD_UDP ? "MD_UDP" :
-                                                                      (iface[lIndex].type == TRDP_SOCK_MD_TCP ? "MD_TCP" :
-                                                                      (iface[lIndex].type == TRDP_SOCK_PD_TSN ? "PD_TSN" : "TRDP_SOCK_INVAL")))));
+                                                                    (iface[lIndex].type == TRDP_SOCK_MD_UDP ? "MD_UDP" :
+                                                                    (iface[lIndex].type == TRDP_SOCK_MD_TCP ? "MD_TCP" :
+                                                                    (iface[lIndex].type == TRDP_SOCK_PD_TSN ? "PD_TSN" : "TRDP_SOCK_INVAL")))));
         vos_printLog(VOS_LOG_DBG,
                      "iface[%d].sendParam.qos = %u, ttl = %u\n",
                      lIndex,
@@ -1324,6 +1324,7 @@ TRDP_ERR_T  trdp_requestSocket (
 
                 }
                 break;
+ #if MD_SUPPORT
             case TRDP_SOCK_MD_TCP:
                 err = (TRDP_ERR_T) vos_sockOpenTCP(&iface[lIndex].sock, &sock_options);
                 if (err != TRDP_NO_ERR)
@@ -1338,6 +1339,7 @@ TRDP_ERR_T  trdp_requestSocket (
                 }
 
                 break;
+#endif
             default:
                 *pIndex = TRDP_INVALID_SOCKET_INDEX;
                 err     = TRDP_SOCK_ERR;
