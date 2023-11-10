@@ -775,8 +775,7 @@ TRDP_ERR_T  trdp_pdReceive (
     }
 
     /* Ticket #322 Subscriber multicast message routing in multi-home device */
-    /* Note that if communication is done within the same device, the srcIfAddr can be localhost address */
-    if ((appHandle->realIP != 0u) && (srcIfAddr != 0) && (appHandle->realIP != srcIfAddr) && (srcIfAddr != 0x7f000001))
+    if ((appHandle->realIP != 0u) && (srcIfAddr != 0) && (appHandle->realIP != srcIfAddr))
     {
         /* Packet does not belong to this session, ignore packet */
         /* If you want to work with more than one local IP, you need to start a separate session for each IP */
