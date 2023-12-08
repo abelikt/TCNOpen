@@ -133,7 +133,7 @@ extern "C" {
 #if defined(SOCKET) || defined (WIN32) || defined (WIN64)
 #define VOS_SOCK_T          SOCKET
 #else
-#define VOS_SOCK_T          INT32
+    typedef INT32 VOS_SOCK_T;
 #endif
 
 #ifdef INVALID_SOCKET                           /* In Windows SOCKET is unsigned int */

@@ -94,6 +94,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TRDP_PDTestFastBase10", "TR
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TRDP_MDTestFastBase2", "TRDP_MDTestFastBase2\TRDP_MDTestFastBase2.vcxproj", "{9829144A-690E-4892-AD2D-7E347680FECB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TRDP_PDTestVlan", "TRDP_PDTestVlan\TRDP_PDTestVlan.vcxproj", "{00EB53D4-6070-4864-B30C-8ECA4E59C542}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -568,6 +570,26 @@ Global
 		{9829144A-690E-4892-AD2D-7E347680FECB}.ReleaseSim|x64.Build.0 = ReleaseSim|x64
 		{9829144A-690E-4892-AD2D-7E347680FECB}.ReleaseSim|x86.ActiveCfg = ReleaseSim|Win32
 		{9829144A-690E-4892-AD2D-7E347680FECB}.ReleaseSim|x86.Build.0 = ReleaseSim|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Debug|x64.ActiveCfg = Debug|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Debug|x64.Build.0 = Debug|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Debug|x86.ActiveCfg = Debug|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Debug|x86.Build.0 = Debug|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSim|x64.ActiveCfg = DebugSim|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSim|x64.Build.0 = DebugSim|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSim|x86.ActiveCfg = DebugSim|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSim|x86.Build.0 = DebugSim|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSimTSN|x64.ActiveCfg = DebugSimTSN|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSimTSN|x64.Build.0 = DebugSimTSN|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSimTSN|x86.ActiveCfg = DebugSimTSN|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.DebugSimTSN|x86.Build.0 = DebugSimTSN|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Release|x64.ActiveCfg = Release|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Release|x64.Build.0 = Release|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Release|x86.ActiveCfg = Release|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.Release|x86.Build.0 = Release|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.ReleaseSim|x64.ActiveCfg = ReleaseSim|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.ReleaseSim|x64.Build.0 = ReleaseSim|x64
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.ReleaseSim|x86.ActiveCfg = ReleaseSim|Win32
+		{00EB53D4-6070-4864-B30C-8ECA4E59C542}.ReleaseSim|x86.Build.0 = ReleaseSim|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

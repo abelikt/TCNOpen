@@ -670,7 +670,7 @@ EXT_DECL VOS_ERR_T vos_ifnameFromVlanId(
             {
                 if (isdigit(*p))
                 {
-                    val = (UINT16) strtol(p, &p, 4);
+                    val = (UINT16) strtol(p, &p, 10);
                 }
                 else
                 {
