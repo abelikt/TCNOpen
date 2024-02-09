@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-02-07: Ticket #447 Wrong errno handling in vos_threadDelay() function
  *      PL 2023-10-05: Ticket #439 Date Time dependency of publishing PD telegrams Multicast.
  *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
@@ -901,7 +902,6 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
     (void) usleep(delay);
 #else
     struct timespec wanted_delay;
-    struct timespec remaining_delay;
     struct timespec current_time;
     struct timespec target_time;
     int ret;
@@ -921,43 +921,31 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
 
     wanted_delay.tv_sec     = delay / 1000000u;
     wanted_delay.tv_nsec    = (delay % 1000000) * 1000;
-    // Using absolute time to avoid program block with nanosleep
+
+    /* Using absolute time to avoid program block with nanosleep */
     (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
     target_time.tv_sec    = current_time.tv_sec + wanted_delay.tv_sec;
     target_time.tv_nsec   = current_time.tv_nsec + wanted_delay.tv_nsec;
+
     if (target_time.tv_nsec >= 1000000000)
     {
         ++target_time.tv_sec;
         target_time.tv_nsec -= 1000000000;
     }
+
     do
     {
         pthread_testcancel();
-        ret = clock_nanosleep(
-                              CLOCK_MONOTONIC,
-                              TIMER_ABSTIME,
-                              &target_time,
-                              &remaining_delay);
-        // This nanosleep can block program as remaining delay can be bigger than wanted delay
-        // if another thread is calling to this same function at the same time. It could get
-        // interrupted all time and cannot get away from this loop
-        // Danger code with nanosleep
-        //ret = nanosleep(&wanted_delay, &remaining_delay);
-        if (ret == -1 && errno == EINTR)
-        {
-            (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
-            target_time.tv_sec    = current_time.tv_sec + remaining_delay.tv_sec;
-            target_time.tv_nsec   = current_time.tv_nsec + remaining_delay.tv_nsec;
-            if (target_time.tv_nsec >= 1000000000)
-            {
-                ++target_time.tv_sec;
-                target_time.tv_nsec -= 1000000000;
-            }
-            // Danger code with nanosleep
-            //wanted_delay = remaining_delay;
-        }
+        /* In contrast to nanosleep, clock_nanosleep does not set errno
+           but encodes error conditions in the return value.              */
+        ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target_time, NULL);
     }
-    while (errno == EINTR);
+    while (ret == EINTR);
+
+    if (ret != 0)
+    {
+        return VOS_PARAM_ERR;
+    }
 #endif
     return VOS_NO_ERR;
 }

@@ -17,6 +17,7 @@
  /*
  * $Id$*
  *
+ *     AHW 2024-02-07: Ticket #447 Wrong errno handling in vos_threadDelay() function
  *		MM 2023-10-09: Ticket #442: Adaption for VxWorks 23.03
  *     AHW 2023-02-21: Lint warnings
  *     CEW 2023-01-09: Ticket #408: thread-safe localtime - but be aware of static pTimeString
@@ -441,15 +442,45 @@ EXT_DECL VOS_ERR_T vos_threadSelf (
 EXT_DECL VOS_ERR_T vos_threadDelay (
     UINT32 delay)
 {
-    VOS_ERR_T result = VOS_NO_ERR;
+    struct timespec wanted_delay;
+    struct timespec current_time;
+    struct timespec target_time;
+    int ret;
 
-    struct timespec ts;
-    ts.tv_sec = delay / 1000000;
-    ts.tv_nsec = (delay % 1000000) * 1000L;
+    if (delay == 0u)
+    {
+        pthread_testcancel();
 
-    nanosleep(&ts, NULL);
+        /*    yield cpu to other processes   */
+        if (sched_yield() != 0)
+        {
+            return VOS_PARAM_ERR;
+        }
+        return VOS_NO_ERR;
+    }
 
-    return result;
+    wanted_delay.tv_sec = delay / 1000000u;
+    wanted_delay.tv_nsec = (delay % 1000000) * 1000;
+
+    /* Using absolute time to avoid program block with nanosleep */
+    (void)clock_gettime(CLOCK_MONOTONIC, &current_time);
+    target_time.tv_sec = current_time.tv_sec + wanted_delay.tv_sec;
+    target_time.tv_nsec = current_time.tv_nsec + wanted_delay.tv_nsec;
+
+    if (target_time.tv_nsec >= 1000000000)
+    {
+        ++target_time.tv_sec;
+        target_time.tv_nsec -= 1000000000;
+    }
+
+    ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target_time, NULL);
+
+    if (ret != 0)
+    {
+        return VOS_PARAM_ERR;
+    }
+
+    return VOS_NO_ERR;  
 }
 
 
