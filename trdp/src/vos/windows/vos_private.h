@@ -46,10 +46,10 @@ extern "C" {
  * DEFINES
  */
 
-#define VOS_VERSION     2u
-#define VOS_RELEASE     2u /* 399: Socket abstraction added, vos_select(), highDesc is NOT anymore incremented in call */
+#define VOS_VERSION     3u
+#define VOS_RELEASE     0u /* 399: Socket abstraction added, vos_select(), highDesc is NOT anymore incremented in call */
 #define VOS_UPDATE      0u
-#define VOS_EVOLUTION   0u
+#define VOS_EVOLUTION   1u
 
 #define MAX_SEM_COUNT  10
 
