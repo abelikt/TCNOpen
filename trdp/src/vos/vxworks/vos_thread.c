@@ -473,6 +473,7 @@ EXT_DECL VOS_ERR_T vos_threadDelay (
         target_time.tv_nsec -= 1000000000;
     }
 
+    pthread_testcancel();
     ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target_time, NULL);
 
     if (ret != 0)

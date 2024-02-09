@@ -404,15 +404,22 @@ static void vos_runCyclicThread (
         }
 
         /* Sleep until deadline */
-        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL) != 0)
+        do
         {
-            if (errno != EINTR)
-            {
-                vos_printLog(VOS_LOG_ERROR,
-                             "cyclic thread %s sleep error.\n",
-                             name);
-            }
+            pthread_testcancel();
+
+            /* In contrast to nanosleep, clock_nanosleep does not set errno
+               but encodes error conditions in the return value.              */
+            retCode = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL);
+        } while (retCode == EINTR);
+
+        if (retCode != 0)
+        {
+            vos_printLog(VOS_LOG_ERROR,
+                "cyclic thread %s sleep error.\n",
+                name);
         }
+
         pFunction(pArguments);
 
         /* calculate next deadline */
@@ -433,9 +440,7 @@ static void vos_runCyclicThread (
         }
         deadline.tv_nsec  = nowMono.tv_nsec;
         deadline.tv_sec   = nowMono.tv_sec;
-
-        pthread_testcancel();
-    }
+     }
 
 #else
     for (;; )
