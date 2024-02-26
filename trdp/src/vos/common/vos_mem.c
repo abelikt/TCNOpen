@@ -19,7 +19,8 @@
  * $Id$
  *
  * Changes:
- * 
+ *
+ *     STS 2024-02.26: Ticket #449 ensured system alignment of returned blocks
  *      PL 2023-10-13: Ticket #444 Lint
  *     AHW 2023-02-21: Lint warnings
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, CWE: easier init of gMem
@@ -355,7 +356,7 @@ EXT_DECL void vos_memDelete (
 EXT_DECL UINT8 *vos_memAlloc (
     UINT32 size)
 {
-    UINT32      i, blockSize;
+    UINT32      i, blockSize, allocSize;
     MEM_BLOCK_T *pBlock;
 
     if (size == 0)
@@ -378,8 +379,8 @@ EXT_DECL UINT8 *vos_memAlloc (
         return p;
     }
 
-    /* Adjust size to get one which is a multiple of UINT32's */
-    size = ((size + sizeof(UINT32) - 1) / sizeof(UINT32)) * sizeof(UINT32);
+    /* Adjust size to get one which is a multiple of the systems alignment */
+    size = ((size + sizeof(void*) - 1) / sizeof(void*)) * sizeof(void*);
 
     /* Find appropriate blocksize */
     for (i = 0; i < gMem.noOfBlocks; i++)
@@ -424,13 +425,18 @@ EXT_DECL UINT8 *vos_memAlloc (
         {
             /* There was no suitable free block, create one from the free area */
 
+            /* Align the allocated memory to the platforms width */
+            /* some libs (e.g. pthread lib) might fail otherwise */
+            allocSize = blockSize + sizeof(MEM_BLOCK_T);
+            allocSize += allocSize % sizeof(void*);
+
             /* Enough free memory left ? */
             if ((gMem.allocSize + blockSize + sizeof(MEM_BLOCK_T)) < gMem.memSize)
             {
                 pBlock = (MEM_BLOCK_T *) gMem.pFreeArea; /*lint !e826 Allocation of MEM_BLOCK from free area*/
 
-                gMem.pFreeArea  = (UINT8 *) gMem.pFreeArea + (sizeof(MEM_BLOCK_T) + blockSize);
-                gMem.allocSize  += blockSize + sizeof(MEM_BLOCK_T);
+                gMem.pFreeArea  = (UINT8 *) gMem.pFreeArea + allocSize;
+                gMem.allocSize  += allocSize;
                 gMem.memCnt.blockCnt[i]++;
             }
             else

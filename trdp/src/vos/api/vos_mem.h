@@ -18,6 +18,7 @@
  /*
  * $Id$
  *
+ *     STS 2024-02.26: Ticket #449 Increased blocksize[3] to be 64 bit aligned
  *      SB 2021-08.09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
  *      BL 2019-09-06: Default pre-allocated blocks for HIGH_PERF raised again
  *      BL 2019-08-15: Default pre-allocated blocks for HIGH_PERF raised
@@ -63,7 +64,7 @@ typedef enum
 
 #define VOS_MEM_MAX_PREALLOCATE     100u  /**< Max. no. of blocks to pre-allocate */
 
-#define VOS_MEM_BLOCKSIZES  {32u, 64u, 128u, 180u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
+#define VOS_MEM_BLOCKSIZES  {32u, 64u, 128u, 184u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
                                 8192u, 16384u, 32768u, 65536u, 131072u}
 
     /** Default pre-allocation of free memory blocks. To avoid problems with too many small blocks and no large one.
@@ -77,7 +78,7 @@ typedef enum
 
 #define VOS_MEM_MAX_PREALLOCATE     15u  /**< Max. no. of blocks to pre-allocate */
 
-#define VOS_MEM_BLOCKSIZES  {48u, 72u, 128u, 180u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
+#define VOS_MEM_BLOCKSIZES  {48u, 72u, 128u, 184u, 256u, 512u, 1024u, 1480u, 2048u, 4096u, \
                              8192u, 16384u, 32768u, 65536u, 131072u}
 
 /** Default pre-allocation of free memory blocks. To avoid problems with too many small blocks and no large one.
@@ -92,7 +93,7 @@ typedef enum
 
 #define VOS_MEM_MAX_PREALLOCATE     10u  /**< Max. no. of blocks to pre-allocate */
 
-#define VOS_MEM_BLOCKSIZES  {34u, 48u, 128u, 180u, 256u, 512u, 1024u, 1480u, 2048u, \
+#define VOS_MEM_BLOCKSIZES  {34u, 48u, 128u, 184u, 256u, 512u, 1024u, 1480u, 2048u, \
                              4096u, 11520u, 16384u, 32768u, 65536u, 131072u}
 
 /** Default pre-allocation of free memory blocks. To avoid problems with too many small blocks and no large one.
