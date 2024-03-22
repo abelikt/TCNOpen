@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-03-21: Ticket #450 trdp_xmlpd-test overwrites default communication parameters for pd
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      BL 2019-06-13: 'quiet' parameter to supress screen output (for performance measurements)
  *      BL 2019-06-12: Ticket #228 TRDP_XMLPDTest.exe multicast issuer (use type (source/sink) if available)
@@ -920,7 +921,6 @@ static TRDP_ERR_T configureTelegrams(UINT32 ifcIdx, UINT32 numExchgPar, TRDP_EXC
 static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
 {
     UINT32 i;
-    UINT32 j;
     TRDP_ERR_T result;
 
     if (numIfConfig > MAX_SESSIONS)
@@ -935,7 +935,7 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
         UINT32              numExchgPar = 0;
         TRDP_EXCHG_PAR_T    *pExchgPar = NULL;
 
-        printf("Configuring session for interface %s\n", pIfConfig[i].ifName);
+        printf("Read configuration for interface %s\n", pIfConfig[i].ifName);
         /*  Read telegrams configured for the interface */
         result = tau_readXmlInterfaceConfig(
             pDocHnd, pIfConfig[i].ifName, 
@@ -948,21 +948,13 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
                 pIfConfig[i].ifName, getResultString(result));
             return result;
         }
-        printf("Read configuration for interface %s\n", pIfConfig[i].ifName);
+
+        printf("Configuring session for interface %s\n", pIfConfig[i].ifName);
 
         /*  Check for minimum cycle time    */
         if (aSessionCfg[i].processConfig.cycleTime < minCycleTime)
             minCycleTime = aSessionCfg[i].processConfig.cycleTime;
 
-        /*  Get communication parameters  */
-        if (pExchgPar->comParId == 2)
-            aSessionCfg[i].pdConfig.sendParam = aSessionCfg[i].mdConfig.sendParam;
-        else if(pExchgPar->comParId != 1)
-        {
-            for (j = 0; j < numComPar; j++)
-                if (pComPar[j].id == pExchgPar->comParId)
-                    aSessionCfg[i].pdConfig.sendParam = pComPar[j].sendParam;
-        }
         if (!(&aSessionCfg[i].pdConfig.sendParam))
         {
             printf("Unknown comParId %u for comID %u\n", pExchgPar->comParId, pExchgPar->comId);

@@ -15,7 +15,7 @@
             <md-com-parameter udp-port="17225" tcp-port="17225"
                               confirm-timeout="1000000" connect-timeout="60000000" reply-timeout="5000000"
                               marshall="off" protocol="UDP" qos="3" retries="2" ttl="64" />
-            <telegram name="tlg1001" com-id="1001" data-set-id="1001" com-parameter-id="1">
+            <telegram name="tlg1001" com-id="1001" data-set-id="1001">
                 <pd-parameter cycle="10000" marshall="on" timeout ="30000" validity-behavior="keep"/>
                 <source id="1" uri1="10.2.13.50">
                     <sdt-parameter smi1="1234" udv="56" rx-period="500" tx-period="2000" />
@@ -24,7 +24,7 @@
                     <sdt-parameter smi1="1234" udv="56" rx-period="500" tx-period="2000" />
                 </destination>
             </telegram>
-            <telegram name="tlg1002" com-id="1002" data-set-id="1002" com-parameter-id="4">
+            <telegram name="tlg1002" com-id="1002" data-set-id="1002">
                 <pd-parameter cycle="50000" marshall="on" timeout ="150000" validity-behavior="zero"/>
                 <source id="1" uri1="10.2.13.50" />
                 <destination id="1" uri="10.2.13.50" />
@@ -37,7 +37,7 @@
             <md-com-parameter udp-port="21550" tcp-port="21550"
                               confirm-timeout="1500000" connect-timeout="65000000" reply-timeout="5500000"
                               marshall="off" protocol="TCP" qos="1" retries="4" ttl="64" callback="on" />
-            <telegram name="tlg1004" com-id="1004" data-set-id="1004" com-parameter-id="1">
+            <telegram name="tlg1004" com-id="1004" data-set-id="1004">
                 <source id="5" uri1="192.168.13.50" />
                 <destination id="5" uri="192.168.13.50" />
             </telegram>
@@ -48,11 +48,8 @@
     </mapped-device-list>
 
     <com-parameter-list>
-        <!--Default PD communication parameters-->
         <com-parameter id="1" qos="5" ttl="64" />
-        <!--Default MD communication parameters-->
         <com-parameter id="2" qos="3" ttl="64" />
-        <!--Own PD communication parameters-->
         <com-parameter id="4" qos="4" ttl="2" />
     </com-parameter-list>
 
