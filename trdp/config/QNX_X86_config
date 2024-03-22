@@ -3,22 +3,26 @@
 #//
 #// DESCRIPTION    Config file to make TRDP for QNX_X86 target
 #//
-#// AUTHOR         Bombardier Transportation GmbH
+#// AUTHOR         Alstom SA
 #//
 #// This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. 
 #// If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#// Copyright Bombardier Transportation Inc. or its subsidiaries and others, 2013. All rights reserved.
+#// Copyright Alstom SA or its subsidiaries and others, 2013-2024. All rights reserved.
 #//
 
 ARCH = qnx_x86
 TARGET_VOS = posix
-TARGET_OS = POSIX
-TCPREFIX = 
+TARGET_OS = QNX
+TCPATH = $(QNX_HOST)/usr/bin/
+
+TCPREFIX =  x86_64-pc-nto-qnx7.1.0-
 TCPOSTFIX = 
 DOXYPATH = /usr/local/bin/
 
-CFLAGS += -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -D__USE_BSD -D_DARWIN_C_SOURCE -DPOSIX -DL_ENDIAN
-LDFLAGS += -lrt
+CFLAGS += -Wall -fstrength-reduce -fno-builtin -fsigned-char -pthread -fPIC -D__USE_BSD -D_QNX_SOURCE -DPOSIX -DL_ENDIAN
+LDFLAGS += -lsocket
 
+RT_THREADS = 1
+SOA_SUPPORT = 1
 MD_SUPPORT = 1
 #PD_UNICAST_SUPPORT = 1

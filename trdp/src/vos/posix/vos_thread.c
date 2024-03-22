@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-03-22: Ticket #445 Fix and improve QNX support 
  *     AHW 2024-02-07: Ticket #447 Wrong errno handling in vos_threadDelay() function
  *      PL 2023-10-05: Ticket #439 Date Time dependency of publishing PD telegrams Multicast.
  *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
@@ -66,7 +67,11 @@
 #include <sched.h>
 
 #ifdef HAS_UUID
+#ifdef __QNXNTO__
+#include <uuid.h>
+#else
 #include <uuid/uuid.h>
+#endif
 #else
 #warning "Using internal uuid-generation does not conform to standard!"
 #include "vos_sock.h"

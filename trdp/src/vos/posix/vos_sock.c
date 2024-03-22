@@ -12,11 +12,12 @@
  *
  * @remarks This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
  *          If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *          Copyright Alstom SA or its subsidiaries and others, 2013-2023. All rights reserved.
+ *          Copyright Alstom SA or its subsidiaries and others, 2013-2024. All rights reserved.
  */
 /*
 * $Id$
 *
+*     AHW 2024-03-22: Ticket #445 Fix and improve QNX support
 *      PL 2023-10-11: Lint warnings
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
@@ -78,6 +79,12 @@
 #else
 #   include <net/if.h>
 #   include <net/if_types.h>
+#ifdef __QNXNTO__
+#   include <gulliver.h>
+#   define bswap_16(x) ENDIAN_RET16(x)
+#   define bswap_32(x) ENDIAN_RET32(x)
+#   define bswap_64(x) ENDIAN_RET64(x)
+#endif
 #endif
 
 #include <netinet/ip.h>
@@ -103,7 +110,7 @@ const CHAR8 *cDefaultIface = "eth0";
 #endif
 
 /* Hack for macOS and iOS */
-#if defined(__APPLE__) && !defined(SOL_IP)
+#if (defined(__APPLE__) || defined(__QNXNTO__)) && !defined(SOL_IP)
 #define SOL_IP SOL_SOCKET
 #warning "SOL_IP undeclared"
 #endif
@@ -445,7 +452,7 @@ EXT_DECL UINT32 vos_ntohl (
 EXT_DECL UINT64 vos_htonll (
     UINT64 val)
 {
-#ifdef __linux
+#if defined(__linux) || defined(__QNXNTO__)
 #   ifdef L_ENDIAN
     return bswap_64(val);
 #   else
@@ -459,7 +466,7 @@ EXT_DECL UINT64 vos_htonll (
 EXT_DECL UINT64 vos_ntohll (
     UINT64 val)
 {
-#ifdef __linux
+#if defined(__linux) || defined(__QNXNTO__)
 #   ifdef L_ENDIAN
     return bswap_64(val);
 #   else
