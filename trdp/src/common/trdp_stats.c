@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
  *      SB 2021-08.09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
  *      BL 2019-02-01: Ticket #234 Correcting Statistics ComIds & defines
  *      BL 2018-06-20: Ticket #184: Building with VS 2015: WIN64 and Windows threads (SOCKET instead of INT32)
@@ -98,6 +99,10 @@ void trdp_initStats (
     {
         vos_strncpy(appHandle->stats.leaderName, "unknown", TRDP_MAX_LABEL_LEN - 1);    /**< leader host name */
     }
+    if (appHandle->stats.type[0] == 0)
+    {
+        vos_strncpy(appHandle->stats.type, "unknown", TRDP_MAX_LABEL_LEN - 1);    /**< leader host name */
+    }
 }
 
 /**********************************************************************************************************************/
@@ -131,7 +136,7 @@ EXT_DECL TRDP_ERR_T tlc_resetStatistics (
  *
  *  @param[in]      appHandle           the handle returned by tlc_openSession
  *  @param[out]     pStatistics         Pointer to statistics for this application session
- *  @retval         TRDP_NO_ERR            no error
+ *  @retval         TRDP_NO_ERR         no error
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  *  @retval         TRDP_PARAM_ERR      parameter error
  */
@@ -190,7 +195,8 @@ EXT_DECL TRDP_ERR_T tlc_getSubsStatistics (
     for ((void)(lIndex = 0), iter = appHandle->pRcvQueue; lIndex < *pNumSubs && iter != NULL; (void)(lIndex++), iter = iter->pNext)
     {
         pStatistics[lIndex].comId       = iter->addr.comId;     /* Subscribed ComId            */
-        pStatistics[lIndex].joinedAddr  = iter->addr.mcGroup;   /* Joined IP address           */
+        pStatistics[lIndex].
+            edAddr  = iter->addr.mcGroup;   /* Joined IP address           */
         pStatistics[lIndex].filterAddr  = iter->addr.srcIpAddr; /* Filter IP address           */
         pStatistics[lIndex].callBack    = (iter->pfCbFunction == NULL)? 0 : 1;      /* > 0 if call back function is used */
         pStatistics[lIndex].userRef     = (iter->pUserRef == NULL) ? 0 : 1;         /* > 0 if user reference if used  */
@@ -418,7 +424,7 @@ EXT_DECL TRDP_ERR_T tlc_getRedStatistics (
  *  @param[in]      appHandle           the handle returned by tlc_openSession
  *  @param[in,out]  pNumJoin            Pointer to the number of joined IP Adresses
  *  @param[out]     pIpAddr             Pointer to a list with the joined IP adresses
- *  @retval         TRDP_NO_ERR            no error
+ *  @retval         TRDP_NO_ERR         no error
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  *  @retval         TRDP_PARAM_ERR      parameter error
  *  @retval         TRDP_MEM_ERR        there are more items than requested
@@ -570,11 +576,13 @@ void    trdp_pdPrepareStats (
     pData->upTime           = vos_htonl(appHandle->stats.upTime); /* it will make a difference if this is a struct !!! */
     pData->statisticTime    = vos_htonl(appHandle->stats.statisticTime);
     pData->ownIpAddr        = vos_htonl(appHandle->stats.ownIpAddr);
-    pData->leaderIpAddr     = vos_htonl(appHandle->stats.leaderIpAddr);
+    pData->leaderIpAddr     = vos_htonl(appHandle->stats.leaderIpAddr); 
+    pData->vlanId           = vos_htonl(appHandle->stats.vlanId);      /* #451 */
     pData->processPrio      = vos_htonl(appHandle->stats.processPrio);
     pData->processCycle     = vos_htonl(appHandle->stats.processCycle);
     vos_strncpy(pData->hostName, appHandle->stats.hostName, TRDP_MAX_LABEL_LEN - 1);
     vos_strncpy(pData->leaderName, appHandle->stats.leaderName, TRDP_MAX_LABEL_LEN - 1);
+    vos_strncpy(pData->type, appHandle->stats.type, TRDP_MAX_LABEL_LEN - 1);  /* #451 */
 
     /*  Memory  */
     pData->mem.total            = vos_htonl(appHandle->stats.mem.total);

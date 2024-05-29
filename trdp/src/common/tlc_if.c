@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
 *      PL 2023-10-13: Ticket #443 tlc_if: tlc_reinitSession doesn't perform multicast socket join for MD sockets listed in MDListenQueue
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
@@ -568,9 +569,10 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
 
     pSession->stats.ownIpAddr       = ownIpAddr;
     pSession->stats.leaderIpAddr    = leaderIpAddr;
+    pSession->stats.vlanId          = pSession->vlanId;
 
     /* Check the vlan interface #435 */
-    if (0 != pProcessConfig->vlanId)
+    if (0 != pSession->vlanId)   /* #451 */
     {
 #ifndef SIM
         /* This socket should bind to the (virtual) interface with the VLAN ID supplied by 'pOptions'.
@@ -581,10 +583,10 @@ EXT_DECL TRDP_ERR_T tlc_openSession (
                    If we can match one of the above schemes, bind the socket to the IP address
         */
 
-        if (vos_ifnameFromVlanId(pProcessConfig->vlanId, ownIpAddr) != VOS_NO_ERR)
+        if (vos_ifnameFromVlanId(pSession->vlanId, ownIpAddr) != VOS_NO_ERR)   /* #451 */
         {
                 vos_printLog(VOS_LOG_ERROR,
-                                "Creating TSN Socket failed, VLAN interface (ID %u) not available!\n", pProcessConfig->vlanId);
+                                "Creating TSN Socket failed, VLAN interface (ID %u) not available!\n", pSession->vlanId); /* #451 */
                 return TRDP_PARAM_ERR;
         }
     }
@@ -715,10 +717,12 @@ EXT_DECL TRDP_ERR_T tlc_configSession (
     if (pProcessConfig != NULL)
     {
         pSession->option                = pProcessConfig->options;
+        pSession->vlanId                = pProcessConfig->vlanId;            /* #451 */
         pSession->stats.processCycle    = pProcessConfig->cycleTime;
         pSession->stats.processPrio     = pProcessConfig->priority;
         vos_strncpy(pSession->stats.hostName, pProcessConfig->hostName, TRDP_MAX_LABEL_LEN - 1);
         vos_strncpy(pSession->stats.leaderName, pProcessConfig->leaderName, TRDP_MAX_LABEL_LEN - 1);
+        vos_strncpy(pSession->stats.type, pProcessConfig->type, TRDP_MAX_LABEL_LEN - 1);   /* #451 */
     }
 
     if (pMarshall != NULL)

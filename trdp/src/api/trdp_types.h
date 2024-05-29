@@ -17,6 +17,7 @@
 /*
  * $Id$
  *
+ *     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
  *      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
@@ -471,8 +472,10 @@ typedef struct
     UINT32                  statisticTime; /**< time in sec since last reset of statistics */
     TRDP_NET_LABEL_T        hostName;     /**< host name */
     TRDP_NET_LABEL_T        leaderName;   /**< leader host name */
+    TRDP_NET_LABEL_T        type;         /**< device type #451 */
     TRDP_IP_ADDR_T          ownIpAddr;    /**< own IP address */
     TRDP_IP_ADDR_T          leaderIpAddr; /**< leader IP address */
+    UINT32                  vlanId;       /**< Vlan id # 451 */
     UINT32                  processPrio;  /**< priority of TRDP process */
     UINT32                  processCycle; /**< cycle time of TRDP process in microseconds */
     UINT32                  numJoin;      /**< number of joins */
@@ -486,16 +489,16 @@ typedef struct
 /** Table containing particular PD subscription information. */
 typedef struct
 {
-    UINT32                  comId;  /**< Subscribed ComId      */
+    UINT32                  comId;      /**< Subscribed ComId      */
     TRDP_IP_ADDR_T          joinedAddr; /**< Joined IP address   */
-    TRDP_IP_ADDR_T          filterAddr; /**< Filter IP address, i.e IP address of the sender for this subscription, 0.0.0.0
-                                            in case all senders. */
-    UINT32                  callBack; /**< call back function if used */
-    UINT32                  userRef; /**< User reference if used */
-    UINT32                  timeout; /**< Time-out value in us. 0 = No time-out supervision */
-    UINT32 /*TRDP_ERR_T*/   status;           /**< Receive status information TRDP_NO_ERR, TRDP_TIMEOUT_ERR */
-    UINT32                  toBehav; /**< Behavior at time-out. Set data to zero / keep last value */
-    UINT32                  numRecv; /**< Number of packets received for this subscription */
+    TRDP_IP_ADDR_T          filterAddr; /**< Filter IP address, i.e IP address of the sender for this subscription,
+                                            0.0.0.0 in case of all senders. */
+    UINT32                  callBack;  /**< call back function if used */
+    UINT32                  userRef;   /**< User reference if used */
+    UINT32                  timeout;   /**< Time-out value in us. 0 = No time-out supervision */
+    UINT32 /*TRDP_ERR_T*/   status;    /**< Receive status information TRDP_NO_ERR, TRDP_TIMEOUT_ERR */
+    UINT32                  toBehav;   /**< Behavior at time-out. Set data to zero / keep last value */
+    UINT32                  numRecv;   /**< Number of packets received for this subscription */
     UINT32                  numMissed; /**< number of packets skipped for this subscription */
 } GNU_PACKED TRDP_SUBS_STATISTICS_T;
 

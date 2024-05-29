@@ -1108,7 +1108,7 @@
       </xs:attribute>
       <xs:attribute name="data-set-id" type="uint32" use="optional">
         <xs:annotation>
-          <xs:documentation>ID for dataset to bve exchanged.</xs:documentation>
+          <xs:documentation>ID for dataset to be exchanged.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="com-parameter-id" type="uint32" use="optional">

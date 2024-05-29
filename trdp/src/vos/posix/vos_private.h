@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *      RD 2024-05-29: Ticket #454 #455 QNX compiler warnings on strerror_r
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      PL 2023-04-19: Ticket #430 PC Lint Analysis and Fix
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced
@@ -53,7 +54,7 @@ extern "C" {
 #define VOS_VERSION            3u
 #define VOS_RELEASE            0u /* 399: Socket abstraction added, vos_select(), highDesc is NOT anymore incremented in call */
 #define VOS_UPDATE             0u
-#define VOS_EVOLUTION          1u
+#define VOS_EVOLUTION          2u
 #endif
 
 /* Defines for Linux TSN ready sockets (see socket.h) */
@@ -100,7 +101,7 @@ void        vos_mutexLocalDelete (struct VOS_MUTEX *pMutex);
 
 /**********************************************************************************************************************/
 
-#if (((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || __APPLE__)
+#if (((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || __APPLE__ || __QNXNTO__)  /* #455 */
 #   define STRING_ERR(pStrBuf)  (void)strerror_r(errno, pStrBuf, VOS_MAX_ERR_STR_SIZE);
 #elif INTEGRITY
 #   define STRING_ERR(pStrBuf)                                 \

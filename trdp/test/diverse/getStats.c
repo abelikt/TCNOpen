@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -62,7 +63,7 @@
 #define RESERVED_MEMORY     240000
 #define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 
-#define APP_VERSION         "0.0.0.3"
+#define APP_VERSION         "1.0.0.0"
 
 TRDP_STATISTICS_T gBuffer;
 BOOL8   gKeepOnRunning = TRUE;
@@ -108,11 +109,17 @@ void print_stats (
     printf("lastStatReset:      %u\n", vos_ntohl(pData->statisticTime));
     printf("hostName:           %s\n", pData->hostName);
     printf("leaderName:         %s\n", pData->leaderName);
+    printf("type:               %s\n", pData->type);   /* #451 */
     printf("ownIpAddr:          %s\n", vos_ipDotted(vos_ntohl(pData->ownIpAddr)));
     printf("leaderIpAddr:       %s\n", vos_ipDotted(vos_ntohl(pData->leaderIpAddr)));
+    printf("vlanId:             %u\n", vos_ntohl(pData->vlanId)); /* #451 */
     printf("processPrio:        %u\n", vos_ntohl(pData->processPrio));
     printf("processCycle:       %u\n", vos_ntohl(pData->processCycle));
+    printf("numJoin:            %u\n", vos_ntohl(pData->numJoin));
+    printf("numRed:             %u\n", vos_ntohl(pData->numRed));
+    printf("----------------------------------------------------------------------------------------------------\n\n");
 
+    /* Memory */
     printf("mem.total:          %u\n", vos_ntohl(pData->mem.total));
     printf("mem.free:           %u\n", vos_ntohl(pData->mem.free));
     printf("mem.minFree:        %u\n", vos_ntohl(pData->mem.minFree));
@@ -123,17 +130,18 @@ void print_stats (
     printf("mem.blockSize:      ");
     for (i = 0; i < VOS_MEM_NBLOCKSIZES; i++)
     {
-        printf("%u, ", vos_ntohl(pData->mem.blockSize[i]));
+        printf("%u \t", vos_ntohl(pData->mem.blockSize[i]));
     }
 
     printf("\nmem.usedBlockSize:  ");
     for (i = 0; i < VOS_MEM_NBLOCKSIZES; i++)
     {
-        printf("%u, ", vos_ntohl(pData->mem.usedBlockSize[i]));
+        printf("%u \t", vos_ntohl(pData->mem.usedBlockSize[i]));
     }
+    printf("\n----------------------------------------------------------------------------------------------------\n\n");
 
     /* Process data */
-    printf("\npd.defQos:          %u\n", vos_ntohl(pData->pd.defQos));
+    printf("pd.defQos:          %u\n", vos_ntohl(pData->pd.defQos));
     printf("pd.defTtl:          %u\n", vos_ntohl(pData->pd.defTtl));
     printf("pd.defTimeout:      %u\n", vos_ntohl(pData->pd.defTimeout));
     printf("pd.numSubs:         %u\n", vos_ntohl(pData->pd.numSubs));
@@ -148,6 +156,40 @@ void print_stats (
     printf("pd.numSend:         %u\n", vos_ntohl(pData->pd.numSend));
     printf("pd.numMissed:       %u\n", vos_ntohl(pData->pd.numMissed));
     printf("----------------------------------------------------------------------------------------------------\n\n");
+
+#if MD_SUPPORT
+    /* Message data TCP */
+    printf("tcpMd.defConfirmTimeout:       %u\n", vos_ntohl(pData->tcpMd.defConfirmTimeout));
+    printf("tcpMd.defReplyTimeout:         %u\n", vos_ntohl(pData->tcpMd.defReplyTimeout));
+    printf("tcpMd.defQoS:                  %u\n", vos_ntohl(pData->tcpMd.defQos));
+    printf("tcpMd.defTtl:                  %u\n", vos_ntohl(pData->tcpMd.defTtl));
+    printf("tcpMd.numConfirmTimeout:       %u\n", vos_ntohl(pData->tcpMd.numConfirmTimeout));
+    printf("tcpMd.numCrcErr:               %u\n", vos_ntohl(pData->tcpMd.numCrcErr));
+    printf("tcpMd.numList:                 %u\n", vos_ntohl(pData->tcpMd.numList));
+    printf("tcpMd.numNoListener:           %u\n", vos_ntohl(pData->tcpMd.numNoListener));
+    printf("tcpMd.numProtErr:              %u\n", vos_ntohl(pData->tcpMd.numProtErr));
+    printf("tcpMd.numRcv:                  %u\n", vos_ntohl(pData->tcpMd.numRcv));
+    printf("tcpMd.numReplyTimeout:         %u\n", vos_ntohl(pData->tcpMd.numReplyTimeout));
+    printf("tcpMd.numSend:                 %u\n", vos_ntohl(pData->tcpMd.numSend));
+    printf("tcpMd.numTopoErr:              %u\n", vos_ntohl(pData->tcpMd.numTopoErr));
+    printf("----------------------------------------------------------------------------------------------------\n\n");
+
+    /* Message data UDP */
+    printf("udpMd.defConfirmTimeout:       %u\n", vos_ntohl(pData->udpMd.defConfirmTimeout));
+    printf("udpMd.defReplyTimeout:         %u\n", vos_ntohl(pData->udpMd.defReplyTimeout));
+    printf("udpMd.defQoS:                  %u\n", vos_ntohl(pData->udpMd.defQos));
+    printf("udpMd.defTtl:                  %u\n", vos_ntohl(pData->udpMd.defTtl));
+    printf("udpMd.numConfirmTimeout:       %u\n", vos_ntohl(pData->udpMd.numConfirmTimeout));
+    printf("udpMd.numCrcErr:               %u\n", vos_ntohl(pData->udpMd.numCrcErr));
+    printf("udpMd.numList:                 %u\n", vos_ntohl(pData->udpMd.numList));
+    printf("udpMd.numNoListener:           %u\n", vos_ntohl(pData->udpMd.numNoListener));
+    printf("udpMd.numProtErr:              %u\n", vos_ntohl(pData->udpMd.numProtErr));
+    printf("udpMd.numRcv:                  %u\n", vos_ntohl(pData->udpMd.numRcv));
+    printf("udpMd.numReplyTimeout:         %u\n", vos_ntohl(pData->udpMd.numReplyTimeout));
+    printf("udpMd.numSend:                 %u\n", vos_ntohl(pData->udpMd.numSend));
+    printf("udpMd.numTopoErr:              %u\n", vos_ntohl(pData->udpMd.numTopoErr));
+    printf("----------------------------------------------------------------------------------------------------\n\n");
+#endif
 }
 
 /* Print a sensible usage message */
@@ -199,9 +241,9 @@ void dbgOut (
 /**********************************************************************************************************************/
 /** callback routine for receiving TRDP traffic
  *
- *  @param[in]      pRefCon            user supplied context pointer
+ *  @param[in]      pRefCon         user supplied context pointer
  *  @param[in]      pMsg            pointer to header/packet infos
- *  @param[in]      pData            pointer to data block
+ *  @param[in]      pData           pointer to data block
  *  @param[in]      dataSize        pointer to data size
  *  @retval         none
  */
@@ -223,10 +265,14 @@ void myPDcallBack (
                memcpy(&gBuffer, pData,
                       ((sizeof(gBuffer) <
                         dataSize) ? sizeof(gBuffer) : dataSize));
-               if (pMsg->comId == TRDP_GLOB_STATS_REQUEST_COMID)
+               if (pMsg->comId == TRDP_GLOB_STATS_COMID)
                {
                    print_stats(&gBuffer);
-                   gKeepOnRunning = FALSE;
+                   if (((TRDP_STATISTICS_T *)&gBuffer)->version)
+                   {
+                       /* valid statistics received */
+                       gKeepOnRunning = FALSE;
+                   }
                }
            }
            break;
@@ -261,7 +307,7 @@ int main (int argc, char * *argv)
                                                (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_MARSHALL), 10000000,
                                                TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
+    TRDP_PROCESS_CONFIG_T   processConfig   = {"statHost", "statLead", "statType", 10000, 0, TRDP_OPTION_BLOCK, 0u};
 
     int rv = 0;
     unsigned int            ip[4];
@@ -359,7 +405,7 @@ int main (int argc, char * *argv)
                          NULL,                          /*    user reference                         */
                          myPDcallBack,                  /*    callback function                      */
                          0u,
-                         TRDP_GLOB_STATS_REQUEST_COMID, /*    ComID                                  */
+                         TRDP_GLOB_STATS_COMID,         /*    ComID                                  */
                          0, 0,                          /*    topocount: local consist only          */
                          VOS_INADDR_ANY,                /*    source IP 1                           */
                          VOS_INADDR_ANY,                /*    Source IP filter                       */
@@ -375,31 +421,7 @@ int main (int argc, char * *argv)
         return 1;
     }
 
-    /*    Request statistics PD        */
-    err = tlp_request(appHandle,
-                      subHandle,
-                      0u,
-                      TRDP_GLOB_STATS_REQUEST_COMID,
-                      0,
-                      0,
-                      0,
-                      destIP,
-                      0,
-                      TRDP_FLAGS_NONE,
-                      0,
-                      0,
-                      TRDP_GLOB_STATS_COMID,
-                      replyIP);
-
-    if (err != TRDP_NO_ERR)
-    {
-        printf("prep pd publish error\n");
-        tlc_terminate();
-        return 1;
-    }
-
-
-    /*
+     /*
         Enter the main processing loop.
      */
     while (gKeepOnRunning)
@@ -409,6 +431,29 @@ int main (int argc, char * *argv)
         struct timeval  tv;
         struct timeval  max_tv = {5, 0};
 
+        /*    Request statistics PD        */
+        err = tlp_request(appHandle,
+            subHandle,
+            0u,
+            TRDP_GLOB_STATS_REQUEST_COMID,
+            0,
+            0,
+            0,
+            destIP,
+            0,
+            TRDP_FLAGS_NONE,
+            0,
+            0,
+            TRDP_GLOB_STATS_COMID,
+            replyIP);
+
+        if (err != TRDP_NO_ERR)
+        {
+            printf("prep pd publish error\n");
+            tlc_terminate();
+            return 1;
+        }
+        
         /*
             Prepare the file descriptor set for the select call.
             Additional descriptors can be added here.
