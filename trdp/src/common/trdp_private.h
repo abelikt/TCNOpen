@@ -74,7 +74,7 @@
 #define TRDP_VERSION    3
 #define TRDP_RELEASE    0
 #define TRDP_UPDATE     24
-#define TRDP_EVOLUTION  39              /* Evolution > 0 denotes trunk! */
+#define TRDP_EVOLUTION  41              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
@@ -424,6 +424,7 @@ typedef struct TRDP_SESSION
     PD_PACKET_T             *pNewFrame;         /**< pointer to received PD frame                           */
     TRDP_PR_SEQ_CNT_LIST_T  *pSeqCntList4PDReq; /**< pointer to list of sequence counters for PR per comId  */
     TRDP_TIME_T             initTime;           /**< initialization time of session                         */
+    UINT16                  vlanId;             /* */
     TRDP_STATISTICS_T       stats;              /**< statistics of this session                             */
 #ifdef HIGH_PERF_INDEXED
     TRDP_HP_SLOTS_T         *pSlot;             /**< pointer to a struct holding a list of slots for
