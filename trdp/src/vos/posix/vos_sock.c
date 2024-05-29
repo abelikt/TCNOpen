@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      RD 2024-05-29: Ticket #454 QNX vos_getMacAddress implementation
 *     AHW 2024-03-22: Ticket #445 Fix and improve QNX support
 *      PL 2023-10-11: Lint warnings
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
@@ -308,10 +309,41 @@ BOOL8 vos_getMacAddress (
 
     return found;
 
-#elif defined(__QNXNTO__)
-#   warning "no definition for get_mac_address() on this platform!"
+#elif defined(__QNXNTO__)    /* #454 */
+    struct ifaddrs* pIfList;
+    BOOL8           found = FALSE;
+    const char* pName = cDefaultIface;
+    
+    if (pIfName != NULL)
+    {
+        pName = pIfName;
+    }
+
+    if (getifaddrs(&pIfList) == 0)
+    {
+        struct ifaddrs* cur;
+ 
+        for (cur = pIfList; pName != NULL && cur != NULL; cur = cur->ifa_next)
+        {
+            if (cur->ifa_addr &&
+                (cur->ifa_addr->sa_family == AF_LINK) &&
+                (strcmp(cur->ifa_name, pName) == 0))
+            {
+                struct sockaddr_dl* p = (struct sockaddr_dl*)(cur->ifa_addr);
+                    
+                memcpy(pMacAddr, LLADDR(p), VOS_MAC_SIZE);
+                found = TRUE;
+                break;
+            }
+        }
+
+        freeifaddrs(pIfList);
+    }
+
+    return found;
+
 #else
-#   error no definition for get_mac_address() on this platform!
+#   error no definition for vos_getMacAddress() on this platform!
 #endif
 }
 
@@ -353,11 +385,11 @@ UINT16 vos_getVlanId (
     return vlan_id;
 
 #elif defined(__APPLE__)
-#   warning "no definition for get_mac_address() on this platform!"
+#   warning "no definition for vos_getVlanId() on this platform!"
 #elif defined(__QNXNTO__)
-#   warning "no definition for get_mac_address() on this platform!"
+#   warning "no definition for vos_getVlanId() on this platform!"
 #else
-#   error no definition for get_mac_address() on this platform!
+#   error no definition for vos_getVlanId() on this platform!
 #endif
 }
 
