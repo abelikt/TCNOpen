@@ -195,8 +195,7 @@ EXT_DECL TRDP_ERR_T tlc_getSubsStatistics (
     for ((void)(lIndex = 0), iter = appHandle->pRcvQueue; lIndex < *pNumSubs && iter != NULL; (void)(lIndex++), iter = iter->pNext)
     {
         pStatistics[lIndex].comId       = iter->addr.comId;     /* Subscribed ComId            */
-        pStatistics[lIndex].
-            edAddr  = iter->addr.mcGroup;   /* Joined IP address           */
+        pStatistics[lIndex].joinedAddr  = iter->addr.mcGroup;   /* Joined IP address           */
         pStatistics[lIndex].filterAddr  = iter->addr.srcIpAddr; /* Filter IP address           */
         pStatistics[lIndex].callBack    = (iter->pfCbFunction == NULL)? 0 : 1;      /* > 0 if call back function is used */
         pStatistics[lIndex].userRef     = (iter->pUserRef == NULL) ? 0 : 1;         /* > 0 if user reference if used  */
