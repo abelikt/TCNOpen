@@ -13,6 +13,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-03-28: Ticket #342 Updating TSN / VLAN / RT-thread code
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -271,13 +272,14 @@ static void myPDcallBack (
 static void *comThreadTsn (void *arg)
 {
     TRDP_APP_SESSION_T appHandle = (TRDP_APP_SESSION_T) arg;
+    TRDP_SOCK_T noDesc = TRDP_INVALID_SOCKET;    /* #456 */
 
     gComThreadTsnRunning = 1;
 
     while (gComThreadTsnRunning)
     {
         TRDP_FDS_T  rfds;
-        INT32       noDesc, rv;
+        INT32       rv;
         TRDP_TIME_T tv;
 
         FD_ZERO(&rfds);
@@ -305,13 +307,14 @@ static void *comThreadTsn (void *arg)
 static void *comThreadStd (void *arg)
 {
     TRDP_APP_SESSION_T appHandle = (TRDP_APP_SESSION_T) arg;
+    TRDP_SOCK_T noDesc = TRDP_INVALID_SOCKET;    /* 456 */
 
     gComThreadStdRunning = 1;
 
     while (gComThreadStdRunning)
     {
         TRDP_FDS_T  rfds;
-        INT32       noDesc, rv;
+        INT32       rv;
         TRDP_TIME_T tv;
 
         FD_ZERO(&rfds);

@@ -152,17 +152,17 @@ void dbgOut (
  */
 int main (int argc, char *argv[])
 {
-    unsigned int        ip[4];
-    TRDP_APP_SESSION_T  appHandle;  /*    Our identifier to the library instance    */
-    TRDP_PUB_T          pubHandle;  /*    Our identifier to the publication    */
-    TRDP_ERR_T          err;
-    TRDP_PD_CONFIG_T    pdConfiguration = {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000u, TRDP_TO_SET_TO_ZERO, TRDP_PD_UDP_PORT};
-    TRDP_MEM_CONFIG_T   dynamicConfig = {NULL, RESERVED_MEMORY, {0}};
-    TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK | TRDP_OPTION_TRAFFIC_SHAPING, 0u};
-    
-    int                 rv = 0;
-    UINT32              destIP = 0u;
-    UINT32              ownIP = 0u;
+    unsigned int            ip[4];
+    TRDP_APP_SESSION_T      appHandle;  /*    Our identifier to the library instance    */
+    TRDP_PUB_T              pubHandle;  /*    Our identifier to the publication    */
+    TRDP_ERR_T              err = TRDP_NO_ERR;
+    TRDP_PD_CONFIG_T        pdConfiguration = {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000u, TRDP_TO_SET_TO_ZERO, TRDP_PD_UDP_PORT};
+    TRDP_MEM_CONFIG_T       dynamicConfig = {NULL, RESERVED_MEMORY, {0}};
+    TRDP_PROCESS_CONFIG_T   processConfig = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK | TRDP_OPTION_TRAFFIC_SHAPING, 0u};
+    TRDP_SOCK_T             noDesc = TRDP_INVALID_SOCKET; /* #456 */
+    int                     rv = 0;
+    UINT32                  destIP = 0u;
+    UINT32                  ownIP = 0u;
 
     /*    Generate some data, that we want to send, when nothing was specified. */
     UINT8               *outputBuffer;
@@ -284,7 +284,6 @@ int main (int argc, char *argv[])
     while (1)
     {
         VOS_FDS_T      rfds;
-        TRDP_SOCK_T    noDesc;      /* #399 */
         VOS_TIMEVAL_T  tv;
         VOS_TIMEVAL_T  max_tv = {0, 10000};
         

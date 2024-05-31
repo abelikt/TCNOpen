@@ -14,6 +14,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      SB 2021-08-09: Compiler warnings
@@ -233,10 +234,11 @@ int main (int argc, char * *argv)
                                                10000000, TRDP_TO_SET_TO_ZERO, 0};
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
     TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
-    int     rv = 0;
-    unsigned int     ip[4];
-    int     ch,i;
-    UINT32  comId_In = SUBSCRIBE_COMID_BASE, comId_Out = PUBLISH_COMID_BASE;
+    int                     rv = 0;
+    unsigned int            ip[4];
+    int                     ch,i;
+    UINT32                  comId_In = SUBSCRIBE_COMID_BASE, comId_Out = PUBLISH_COMID_BASE;
+    TRDP_SOCK_T             noOfDesc = TRDP_INVALID_SOCKET;    /* #456 */
 
     /****** Parsing the command line arguments */
     if (argc <= 1)
@@ -394,7 +396,6 @@ int main (int argc, char * *argv)
     while (1)
     {
         VOS_FDS_T       rfds;
-        TRDP_SOCK_T     noOfDesc;    /* 399 */
         struct timeval  tv;
         struct timeval  max_tv = {0, 100000};
 

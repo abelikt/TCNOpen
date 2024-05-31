@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
  *     AHW 2023-01-10: Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -955,10 +956,11 @@ static void updateTCNDNSentry (
     /* how do we get the reply? */
     if (pDNR->useTCN_DNS == TRDP_DNR_OWN_THREAD)
     {
-        TRDP_TIME_T          replyTimeOut;
-        const TRDP_TIME_T    dnsReqTimeOut = {TCN_DNS_REQ_TO_US / 1000000, TCN_DNS_REQ_TO_US % 1000000 };
-        /* we must call tlc_process on our own, if we run single threaded */
+        TRDP_TIME_T         replyTimeOut;
+        const TRDP_TIME_T   dnsReqTimeOut = {TCN_DNS_REQ_TO_US / 1000000, TCN_DNS_REQ_TO_US % 1000000 };
+        TRDP_SOCK_T         noDesc = TRDP_INVALID_SOCKET;        /* #409, #456 */
 
+        /* we must call tlc_process on our own, if we run single threaded */
         (void) tlc_process(appHandle, NULL, NULL);   /* force sending message data */
        
         /* Calculate a timeout */
@@ -969,11 +971,8 @@ static void updateTCNDNSentry (
 
         while (TRUE)
         {
-
             /* switch context for the reply */
-
             TRDP_FDS_T          rfds = {0};
-            TRDP_SOCK_T         noDesc = TRDP_INVALID_SOCKET;        /* #409 */
             TRDP_TIME_T         tv = { 0, 0 };                       /* #409 */
             const TRDP_TIME_T   max_tv  = { 0, 100000 };
             INT32               rv = 0;                              /* #409 */

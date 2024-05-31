@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *     CWE 2023-01-27: Ticket #417 Multicast-N tests always failed due to unknown number of expected multicast repliers. Expected number can now be set as param
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -684,7 +685,7 @@ int main (int argc, char *argv[])
     TRDP_ERR_T      err;
     TRDP_FDS_T      rfds;
     TRDP_TIME_T     tv;
-    INT32           noOfDesc;
+    TRDP_SOCK_T     noOfDesc = TRDP_INVALID_SOCKET;
     struct timeval  tv_null = { 0, 0 };
     int rv;
 
@@ -836,7 +837,6 @@ int main (int argc, char *argv[])
     while (process_data()) /* drive TRDP stack */
     {
         FD_ZERO(&rfds);
-        noOfDesc = 0;
         tlc_getInterval(apph, &tv, &rfds, (TRDP_SOCK_T *) &noOfDesc);
         rv = vos_select((int)noOfDesc, &rfds, NULL, NULL, &tv_null);
         tlc_process(apph, &rfds, &rv);

@@ -16,6 +16,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
@@ -309,13 +310,14 @@ int main (int argc, char * *argv)
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
     TRDP_PROCESS_CONFIG_T   processConfig   = {"statHost", "statLead", "statType", 10000, 0, TRDP_OPTION_BLOCK, 0u};
 
-    int rv = 0;
+    int                     rv = 0;
     unsigned int            ip[4];
-    UINT32  destIP  = 0;
-    UINT32  replyIP = 0;
-    UINT32  ownIP   = 0;
-    int     count   = 1000, i;
-    int     ch;
+    UINT32                  destIP  = 0;
+    UINT32                  replyIP = 0;
+    UINT32                  ownIP   = 0;
+    int                     count   = 1000, i;
+    int                     ch;
+    TRDP_SOCK_T             noDesc = TRDP_INVALID_SOCKET; /* #456 */
 
     if (argc <= 1)
     {
@@ -427,7 +429,6 @@ int main (int argc, char * *argv)
     while (gKeepOnRunning)
     {
         fd_set  rfds;
-        TRDP_SOCK_T     noOfDesc; /* #399 */
         struct timeval  tv;
         struct timeval  max_tv = {5, 0};
 
@@ -466,7 +467,7 @@ int main (int argc, char * *argv)
         tlc_getInterval(appHandle,
                         (TRDP_TIME_T *) &tv,
                         (TRDP_FDS_T *) &rfds,
-                        &noOfDesc);
+                        &noDesc);
 
         /*
             The wait time for select must consider cycle times and timeouts of
@@ -485,7 +486,7 @@ int main (int argc, char * *argv)
             what ever comes first.
          */
 
-        rv = vos_select((int)noOfDesc, &rfds, NULL, NULL, &tv);
+        rv = vos_select((int)noDesc, &rfds, NULL, NULL, &tv);
 
         /*
             Check for overdue PDs (sending and receiving)
