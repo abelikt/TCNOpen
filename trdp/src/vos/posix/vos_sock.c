@@ -81,6 +81,7 @@
 #   include <net/if.h>
 #   include <net/if_types.h>
 #ifdef __QNXNTO__
+#   include <net/if_dl.h>  /* #454 */
 #   include <gulliver.h>
 #   define bswap_16(x) ENDIAN_RET16(x)
 #   define bswap_32(x) ENDIAN_RET32(x)

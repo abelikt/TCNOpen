@@ -54,7 +54,7 @@ extern "C" {
 #define VOS_VERSION            3u
 #define VOS_RELEASE            0u /* 399: Socket abstraction added, vos_select(), highDesc is NOT anymore incremented in call */
 #define VOS_UPDATE             0u
-#define VOS_EVOLUTION          2u
+#define VOS_EVOLUTION          3u
 #endif
 
 /* Defines for Linux TSN ready sockets (see socket.h) */

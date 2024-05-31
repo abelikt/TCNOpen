@@ -74,7 +74,7 @@
 #define TRDP_VERSION    3
 #define TRDP_RELEASE    0
 #define TRDP_UPDATE     24
-#define TRDP_EVOLUTION  43              /* Evolution > 0 denotes trunk! */
+#define TRDP_EVOLUTION  44              /* Evolution > 0 denotes trunk! */
 #endif
 
 /* Version as a string, this can also be for example 1.2.3.4.RC1 */
