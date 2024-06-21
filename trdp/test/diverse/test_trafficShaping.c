@@ -38,7 +38,7 @@
  * DEFINITIONS
  */
 #define APP_VERSION     "1.0"
-
+#define APP_USE         "This tool sends PD messages to an ED."
 #define DATA_MAX        1000
 
 #define PD_COMID1          1001
@@ -100,7 +100,7 @@ void usage (const char *appName)
 {
     printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
     printf("Usage of %s\n", appName);
-    printf("This tool sends PD messages to an ED.\n"
+    printf(APP_USE"\n"
            "Arguments are:\n"
            "-o own IP address in dotted decimal\n"
            "-t target IP address in dotted decimal\n"

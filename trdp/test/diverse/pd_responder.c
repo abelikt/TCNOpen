@@ -51,9 +51,11 @@
 #define DATASIZE_STEP           120
 
 /* We use dynamic memory    */
-#define RESERVED_MEMORY     1000000
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 
 #define APP_VERSION         "0.1"
+#define APP_USE             "This tool sends PD messages to an ED and displays received PD packages."
 
 #define MAX_NO_OF_PKTS      10
 
@@ -135,6 +137,7 @@ void initPacketList (
     }
 }
 
+
 /**********************************************************************************************************************/
 /** callback routine for TRDP logging/error output
  *
@@ -146,23 +149,21 @@ void initPacketList (
  *  @param[in]      pMsgStr         pointer to NULL-terminated string
  *  @retval         none
  */
+static FILE* pLogFile;
+
 void dbgOut (
              void        *pRefCon,
              TRDP_LOG_T  category,
              const CHAR8 *pTime,
              const CHAR8 *pFile,
-             UINT16      LineNumber,
+             UINT16      line,
              const CHAR8 *pMsgStr)
 {
-    const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:", "   User:"};
-    CHAR8       *pF = strrchr(pFile, VOS_DIR_SEP);
-
-    printf("%s %s %16s:%-4d %s",
-           strrchr(pTime, '-') + 1,
-           catStr[category],
-           (pF == NULL)? "" : pF + 1,
-           LineNumber,
-           pMsgStr);
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, category == VOS_LOG_ERROR ? "ERR " : (category == VOS_LOG_WARNING ? "WAR " : (category == VOS_LOG_INFO ? "INFO" : "DBG ")), pFile, (int)line, pMsgStr);
+        fflush(pLogFile);
+    }
 }
 
 
@@ -210,12 +211,12 @@ void myPDcallBack (
 void usage (const char *appName)
 {
     printf("Usage of %s\n", appName);
-    printf("This tool sends PD messages to an ED and displays received PD packages.\n"
+    printf(APP_USE"\n"
            "Arguments are:\n"
-           "-o own IP address\n"
-           "-t target IP address\n"
-           "-c expecting base comID\n"
-           "-s sending base comID\n"
+           "-o <own IP address>       in dotted decimal\n"
+           "-t <target IP address>    in dotted decimal\n"
+           "-c <expected base comID>\n"
+           "-s <sending base comID>\n"
            "-v print version and quit\n"
            );
 }
@@ -232,13 +233,14 @@ int main (int argc, char * *argv)
     TRDP_ERR_T              err;
     TRDP_PD_CONFIG_T        pdConfiguration = {myPDcallBack, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_CALLBACK,
                                                10000000, TRDP_TO_SET_TO_ZERO, 0};
-    TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
+    TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
     TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     int                     rv = 0;
     unsigned int            ip[4];
     int                     ch,i;
     UINT32                  comId_In = SUBSCRIBE_COMID_BASE, comId_Out = PUBLISH_COMID_BASE;
     TRDP_SOCK_T             noOfDesc = TRDP_INVALID_SOCKET;    /* #456 */
+    char filename           [TRDP_MAX_FILE_NAME_LEN];
 
     /****** Parsing the command line arguments */
     if (argc <= 1)
@@ -247,7 +249,7 @@ int main (int argc, char * *argv)
         return 1;
     }
 
-    while ((ch = getopt(argc, argv, "t:o:c:s:h?v")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:c:s:l:h?v")) != -1)
     {
         switch (ch)
         {
@@ -293,6 +295,12 @@ int main (int argc, char * *argv)
                 gDestIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                 break;
             }
+            case 'l':
+            {    /*  Log file   */
+                strncpy(filename, optarg, sizeof(filename) - 1);
+                pLogFile = fopen(optarg, "w");
+                break;
+            }
             case 'v':   /*  version */
                 printf("%s: Version %s\t(%s - %s)\n",
                        argv[0], APP_VERSION, __DATE__, __TIME__);
@@ -304,6 +312,19 @@ int main (int argc, char * *argv)
                 usage(argv[0]);
                 return 1;
         }
+    }
+
+
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
+    {
+        CHAR8 sourceip[16], destip[16];
+
+        strcpy(sourceip, vos_ipDotted(gOwnIP));
+        strcpy(destip, vos_ipDotted(gDestIP));
+
+        printf("\nParameters:\n  localip   = \t%s\n  remoteip  = \t%s\n  comId-in  = \t0x%04x/%d\n  comId-out = \t0x%04x/%d\n  logfile  = \t%s\n\n",
+            sourceip, destip, comId_In, comId_In, comId_Out, comId_Out, (pLogFile == NULL ? "" : filename));
     }
 
     if (gDestIP == 0)

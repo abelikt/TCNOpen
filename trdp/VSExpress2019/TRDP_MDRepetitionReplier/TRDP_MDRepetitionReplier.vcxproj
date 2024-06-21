@@ -197,7 +197,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;MD_SUPPORT=1;L_ENDIAN;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\src\vos\api;..\..\src\api;..\..\resources\windows\getopt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\test\diverse;..\..\src\common;..\..\src\vos\api;..\..\src\api;..\..\resources\windows\getopt</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -291,6 +291,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\resources\windows\getopt\getopt.c" />
+    <ClCompile Include="..\..\test\diverse\printOwnStatistics.c" />
     <ClCompile Include="..\..\test\mdpatterns\rep-testreplier.c" />
   </ItemGroup>
   <ItemGroup>

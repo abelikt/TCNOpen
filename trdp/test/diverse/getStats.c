@@ -48,6 +48,7 @@
 #include "vos_sock.h"
 #include "vos_utils.h"
 #include "vos_mem.h"
+#include "printOwnStatistics.h"
 
 /* Some sample comId definitions    */
 
@@ -65,6 +66,7 @@
 #define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 
 #define APP_VERSION         "1.0.0.0"
+#define APP_USE             "This tool requests the general statistics from an ED."
 
 TRDP_STATISTICS_T gBuffer;
 BOOL8   gKeepOnRunning = TRUE;
@@ -84,113 +86,110 @@ void dbgOut (void           *pRefCon,
              UINT16         LineNumber,
              const CHAR8    *pMsgStr);
 void    usage (const char *appName);
-void    print_stats (TRDP_STATISTICS_T *pData);
+void    print_remoteStats (TRDP_STATISTICS_T *pData);
 
 /**********************************************************************************************************************/
 
-void print_stats (
-    TRDP_STATISTICS_T *pData)
+void print_remoteStats(TRDP_STATISTICS_T* pData)
 {
     unsigned int    i;
+    UINT32          version = vos_ntohl(pData->version);
     TRDP_VERSION_T  trdp;
 
-    trdp.ver    = (UINT8) pData->version;
-    trdp.rel    = (UINT8) (pData->version << 8);
-    trdp.upd    = (UINT8) (pData->version << 16);
-    trdp.evo    = (UINT8) (pData->version << 24);
-
-    printf("\n----------------------------------------------------------------------------------------------------\n");
-    printf("version:            %d.%d.%d.%d\n",
-           (UINT32) trdp.ver,
-           (UINT32) trdp.rel,
-           (UINT32) trdp.upd,
-           (UINT32) trdp.evo);
-    printf("timestamp:          %llu\n", vos_ntohll(pData->timeStamp));
-    printf("upTime:             %u\n", vos_ntohl(pData->upTime));
-    printf("lastStatReset:      %u\n", vos_ntohl(pData->statisticTime));
-    printf("hostName:           %s\n", pData->hostName);
-    printf("leaderName:         %s\n", pData->leaderName);
-    printf("type:               %s\n", pData->type);   /* #451 */
-    printf("ownIpAddr:          %s\n", vos_ipDotted(vos_ntohl(pData->ownIpAddr)));
-    printf("leaderIpAddr:       %s\n", vos_ipDotted(vos_ntohl(pData->leaderIpAddr)));
-    printf("vlanId:             %u\n", vos_ntohl(pData->vlanId)); /* #451 */
-    printf("processPrio:        %u\n", vos_ntohl(pData->processPrio));
-    printf("processCycle:       %u\n", vos_ntohl(pData->processCycle));
-    printf("numJoin:            %u\n", vos_ntohl(pData->numJoin));
-    printf("numRed:             %u\n", vos_ntohl(pData->numRed));
+    trdp.ver = (UINT8)pData->version;
+    trdp.rel = (UINT8)(pData->version >> 8);
+    trdp.upd = (UINT8)(pData->version >> 16);
+    trdp.evo = (UINT8)(pData->version >> 24);
+    
+    printf("-------------------------------------- REMOTE STATISTICS -----------------------------------------\n\n");
+    printf("version:                 %d.%d.%d.%d\n",
+        (UINT32)trdp.ver,
+        (UINT32)trdp.rel,
+        (UINT32)trdp.upd,
+        (UINT32)trdp.evo);
+    printf("timestamp:               %llu\n", vos_ntohll(pData->timeStamp));
+    printf("upTime:                  %u\n", vos_ntohl(pData->upTime));
+    printf("lastStatReset:           %u\n", vos_ntohl(pData->statisticTime));
+    printf("hostName:                %s\n", pData->hostName);
+    printf("leaderName:              %s\n", pData->leaderName);
+    printf("type:                    %s\n", pData->type);   /* #451 */
+    printf("ownIpAddr:               %s\n", vos_ipDotted(vos_ntohl(pData->ownIpAddr)));
+    printf("leaderIpAddr:            %s\n", vos_ipDotted(vos_ntohl(pData->leaderIpAddr)));
+    printf("vlanId:                  %u\n", vos_ntohl(pData->vlanId)); /* #451 */
+    printf("processPrio:             %u\n", vos_ntohl(pData->processPrio));
+    printf("processCycle:            %u\n", vos_ntohl(pData->processCycle));
+    printf("numJoin:                 %u\n", vos_ntohl(pData->numJoin));
+    printf("numRed:                  %u\n", vos_ntohl(pData->numRed));
     printf("----------------------------------------------------------------------------------------------------\n\n");
 
     /* Memory */
-    printf("mem.total:          %u\n", vos_ntohl(pData->mem.total));
-    printf("mem.free:           %u\n", vos_ntohl(pData->mem.free));
-    printf("mem.minFree:        %u\n", vos_ntohl(pData->mem.minFree));
-    printf("mem.numAllocBlocks: %u\n", vos_ntohl(pData->mem.numAllocBlocks));
-    printf("mem.numAllocErr:    %u\n", vos_ntohl(pData->mem.numAllocErr));
-    printf("mem.numFreeErr:     %u\n", vos_ntohl(pData->mem.numFreeErr));
+    printf("mem.total:               %u\n", vos_ntohl(pData->mem.total));
+    printf("mem.free:                %u\n", vos_ntohl(pData->mem.free));
+    printf("mem.minFree:             %u\n", vos_ntohl(pData->mem.minFree));
+    printf("mem.numAllocBlocks:      %u\n", vos_ntohl(pData->mem.numAllocBlocks));
+    printf("mem.numAllocErr:         %u\n", vos_ntohl(pData->mem.numAllocErr));
+    printf("mem.numFreeErr:          %u\n", vos_ntohl(pData->mem.numFreeErr));
+    printf("mem.usedBlockSizes:      ");
 
-    printf("mem.blockSize:      ");
     for (i = 0; i < VOS_MEM_NBLOCKSIZES; i++)
     {
-        printf("%u \t", vos_ntohl(pData->mem.blockSize[i]));
+        printf("%d x %u, ", vos_ntohl(pData->mem.usedBlockSize[i]), vos_ntohl(pData->mem.blockSize[i]));
+        if ((i+1) % 8 == 0)
+        {
+            printf("\n                         ");
+        }
     }
 
-    printf("\nmem.usedBlockSize:  ");
-    for (i = 0; i < VOS_MEM_NBLOCKSIZES; i++)
-    {
-        printf("%u \t", vos_ntohl(pData->mem.usedBlockSize[i]));
-    }
     printf("\n----------------------------------------------------------------------------------------------------\n\n");
 
     /* Process data */
-    printf("pd.defQos:          %u\n", vos_ntohl(pData->pd.defQos));
-    printf("pd.defTtl:          %u\n", vos_ntohl(pData->pd.defTtl));
-    printf("pd.defTimeout:      %u\n", vos_ntohl(pData->pd.defTimeout));
-    printf("pd.numSubs:         %u\n", vos_ntohl(pData->pd.numSubs));
-    printf("pd.numPub:          %u\n", vos_ntohl(pData->pd.numPub));
-    printf("pd.numRcv :         %u\n", vos_ntohl(pData->pd.numRcv));
-    printf("pd.numCrcErr:       %u\n", vos_ntohl(pData->pd.numCrcErr));
-    printf("pd.numProtErr:      %u\n", vos_ntohl(pData->pd.numProtErr));
-    printf("pd.numTopoErr:      %u\n", vos_ntohl(pData->pd.numTopoErr));
-    printf("pd.numNoSubs:       %u\n", vos_ntohl(pData->pd.numNoSubs));
-    printf("pd.numNoPub:        %u\n", vos_ntohl(pData->pd.numNoPub));
-    printf("pd.numTimeout:      %u\n", vos_ntohl(pData->pd.numTimeout));
-    printf("pd.numSend:         %u\n", vos_ntohl(pData->pd.numSend));
-    printf("pd.numMissed:       %u\n", vos_ntohl(pData->pd.numMissed));
+    printf("pd.defQos:               %u\t", vos_ntohl(pData->pd.defQos));
+    printf("tcpMd.defQoS:            %u\t\t", vos_ntohl(pData->tcpMd.defQos));
+    printf("udpMd.defQoS:            %u\n", vos_ntohl(pData->udpMd.defQos));
+    printf("pd.defTtl:               %u\t", vos_ntohl(pData->pd.defTtl));
+    printf("tcpMd.defTtl:            %u\t\t", vos_ntohl(pData->tcpMd.defTtl));
+    printf("udpMd.defTtl:            %u\n", vos_ntohl(pData->udpMd.defTtl));
+    printf("pd.defTimeout:           %u\t", vos_ntohl(pData->pd.defTimeout));
+    printf("tcpMd.defReplyTimeout:   %u\t\t", vos_ntohl(pData->tcpMd.defReplyTimeout));
+    printf("udpMd.defReplyTimeout:   %u\n", vos_ntohl(pData->udpMd.defReplyTimeout));
+    printf("pd.numPub:               %u\t", vos_ntohl(pData->pd.numPub));
+    printf("tcpMd.defConfirmTimeout: %u\t", vos_ntohl(pData->tcpMd.defConfirmTimeout));
+    printf("udpMd.defConfirmTimeout: %u\n", vos_ntohl(pData->udpMd.defConfirmTimeout));
+    printf("pd.numSubs:              %u\t", vos_ntohl(pData->pd.numSubs));
+    printf("tcpMd.numList:           %u\t\t", vos_ntohl(pData->tcpMd.numList));
+    printf("udpMd.numList:           %u\n", vos_ntohl(pData->udpMd.numList));
+    printf("pd.numMissed:            %u\t", vos_ntohl(pData->pd.numMissed));
+    printf("tcpMd.numConfirmTimeout: %u\t", vos_ntohl(pData->tcpMd.numConfirmTimeout));
+    printf("udpMd.numConfirmTimeout: %u\n", vos_ntohl(pData->udpMd.numConfirmTimeout));
+    printf("pd.numNoSubs:            %u\t", vos_ntohl(pData->pd.numNoSubs));
+    printf("tcpMd.numNoListener:     %u\t\t", vos_ntohl(pData->tcpMd.numNoListener));
+    printf("udpMd.numNoListener:     %u\n", vos_ntohl(pData->udpMd.numNoListener));
+    printf("pd.numSend:              %u\t", vos_ntohl(pData->pd.numSend));
+    printf("tcpMd.numSend:           %u\t\t", vos_ntohl(pData->tcpMd.numSend));
+    printf("udpMd.numSend:           %u\n", vos_ntohl(pData->udpMd.numSend));
+    printf("pd.numRcv:               %u\t", vos_ntohl(pData->pd.numRcv));
+    printf("tcpMd.numRcv:            %u\t\t", vos_ntohl(pData->tcpMd.numRcv));
+    printf("udpMd.numRcv:            %u\n", vos_ntohl(pData->udpMd.numRcv));
+    printf("pd.numTimeout:           %u\t", vos_ntohl(pData->pd.numTimeout));
+    printf("tcpMd.numReplyTimeout:   %u\t\t", vos_ntohl(pData->tcpMd.numReplyTimeout));
+    printf("udpMd.numReplyTimeout:   %u\n", vos_ntohl(pData->udpMd.numReplyTimeout));
+    printf("pd.numTopoErr:           %u\t", vos_ntohl(pData->pd.numTopoErr));
+    printf("tcpMd.numTopoErr:        %u\t\t", vos_ntohl(pData->tcpMd.numTopoErr));
+    printf("udpMd.numTopoErr:        %u\n", vos_ntohl(pData->udpMd.numTopoErr));
+    printf("pd.numProtErr:           %u\t", vos_ntohl(pData->pd.numProtErr));
+    printf("tcpMd.numProtErr:        %u\t\t", vos_ntohl(pData->tcpMd.numProtErr));
+    printf("udpMd.numProtErr:        %u\n", vos_ntohl(pData->udpMd.numProtErr));
+    printf("pd.numCrcErr:            %u\t", vos_ntohl(pData->pd.numCrcErr));
+    printf("tcpMd.numCrcErr:         %u\t\t", vos_ntohl(pData->tcpMd.numCrcErr));
+    printf("udpMd.numCrcErr:         %u\n", vos_ntohl(pData->udpMd.numCrcErr));
+    printf("pd.numNoPub:             %u\n", vos_ntohl(pData->pd.numNoPub));
     printf("----------------------------------------------------------------------------------------------------\n\n");
 
-#if MD_SUPPORT
-    /* Message data TCP */
-    printf("tcpMd.defConfirmTimeout:       %u\n", vos_ntohl(pData->tcpMd.defConfirmTimeout));
-    printf("tcpMd.defReplyTimeout:         %u\n", vos_ntohl(pData->tcpMd.defReplyTimeout));
-    printf("tcpMd.defQoS:                  %u\n", vos_ntohl(pData->tcpMd.defQos));
-    printf("tcpMd.defTtl:                  %u\n", vos_ntohl(pData->tcpMd.defTtl));
-    printf("tcpMd.numConfirmTimeout:       %u\n", vos_ntohl(pData->tcpMd.numConfirmTimeout));
-    printf("tcpMd.numCrcErr:               %u\n", vos_ntohl(pData->tcpMd.numCrcErr));
-    printf("tcpMd.numList:                 %u\n", vos_ntohl(pData->tcpMd.numList));
-    printf("tcpMd.numNoListener:           %u\n", vos_ntohl(pData->tcpMd.numNoListener));
-    printf("tcpMd.numProtErr:              %u\n", vos_ntohl(pData->tcpMd.numProtErr));
-    printf("tcpMd.numRcv:                  %u\n", vos_ntohl(pData->tcpMd.numRcv));
-    printf("tcpMd.numReplyTimeout:         %u\n", vos_ntohl(pData->tcpMd.numReplyTimeout));
-    printf("tcpMd.numSend:                 %u\n", vos_ntohl(pData->tcpMd.numSend));
-    printf("tcpMd.numTopoErr:              %u\n", vos_ntohl(pData->tcpMd.numTopoErr));
-    printf("----------------------------------------------------------------------------------------------------\n\n");
+}
 
-    /* Message data UDP */
-    printf("udpMd.defConfirmTimeout:       %u\n", vos_ntohl(pData->udpMd.defConfirmTimeout));
-    printf("udpMd.defReplyTimeout:         %u\n", vos_ntohl(pData->udpMd.defReplyTimeout));
-    printf("udpMd.defQoS:                  %u\n", vos_ntohl(pData->udpMd.defQos));
-    printf("udpMd.defTtl:                  %u\n", vos_ntohl(pData->udpMd.defTtl));
-    printf("udpMd.numConfirmTimeout:       %u\n", vos_ntohl(pData->udpMd.numConfirmTimeout));
-    printf("udpMd.numCrcErr:               %u\n", vos_ntohl(pData->udpMd.numCrcErr));
-    printf("udpMd.numList:                 %u\n", vos_ntohl(pData->udpMd.numList));
-    printf("udpMd.numNoListener:           %u\n", vos_ntohl(pData->udpMd.numNoListener));
-    printf("udpMd.numProtErr:              %u\n", vos_ntohl(pData->udpMd.numProtErr));
-    printf("udpMd.numRcv:                  %u\n", vos_ntohl(pData->udpMd.numRcv));
-    printf("udpMd.numReplyTimeout:         %u\n", vos_ntohl(pData->udpMd.numReplyTimeout));
-    printf("udpMd.numSend:                 %u\n", vos_ntohl(pData->udpMd.numSend));
-    printf("udpMd.numTopoErr:              %u\n", vos_ntohl(pData->udpMd.numTopoErr));
-    printf("----------------------------------------------------------------------------------------------------\n\n");
-#endif
+void print_ownStats(TRDP_APP_SESSION_T  appHandle)
+{
+    (void) printOwnStatistics(appHandle, TRUE);
 }
 
 /* Print a sensible usage message */
@@ -198,14 +197,17 @@ void usage (const char *appName)
 {
     printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
     printf("Usage of %s\n", appName);
-    printf("This tool requests the general statistics from an ED.\n"
+    printf(APP_USE"\n"
            "Arguments are:\n"
-           "-o own IP address in dotted decimal\n"
-           "-r reply IP address in dotted decimal\n"
-           "-t target IP address in dotted decimal\n"
-           "-v print version and quit\n"
+           "-o <own IP address>       in dotted decimal\n"
+           "-t <target IP address>    in dotted decimal\n"
+           "-r <reply IP address>     in dotted decimal\n"
+           "-l <logfile>              file name (e.g. test.txt)\n"
+           "-v                        print version and quit\n"
            );
 }
+
+
 
 /**********************************************************************************************************************/
 /** callback routine for TRDP logging/error output
@@ -218,6 +220,8 @@ void usage (const char *appName)
  *  @param[in]        pMsgStr         pointer to NULL-terminated string
  *  @retval         none
  */
+static FILE* pLogFile;
+
 void dbgOut (
     void        *pRefCon,
     TRDP_LOG_T  category,
@@ -268,7 +272,7 @@ void myPDcallBack (
                         dataSize) ? sizeof(gBuffer) : dataSize));
                if (pMsg->comId == TRDP_GLOB_STATS_COMID)
                {
-                   print_stats(&gBuffer);
+                   print_remoteStats(&gBuffer);
                    if (((TRDP_STATISTICS_T *)&gBuffer)->version)
                    {
                        /* valid statistics received */
@@ -318,6 +322,8 @@ int main (int argc, char * *argv)
     int                     count   = 1000, i;
     int                     ch;
     TRDP_SOCK_T             noDesc = TRDP_INVALID_SOCKET; /* #456 */
+    char filename[TRDP_MAX_FILE_NAME_LEN];
+
 
     if (argc <= 1)
     {
@@ -325,7 +331,7 @@ int main (int argc, char * *argv)
         return 1;
     }
 
-    while ((ch = getopt(argc, argv, "o:r:t:h?v")) != -1)
+    while ((ch = getopt(argc, argv, "o:r:t:l:h?v")) != -1)
     {
         switch (ch)
         {
@@ -362,6 +368,12 @@ int main (int argc, char * *argv)
                destIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                break;
            }
+           case 'l':
+           {    /*  Log file   */
+               strncpy(filename, optarg, sizeof(filename) - 1);
+               pLogFile = fopen(optarg, "w");
+               break;
+           }
            case 'v':    /*  version */
                printf("%s: Version %s\t(%s - %s)\n",
                       argv[0], APP_VERSION, __DATE__, __TIME__);
@@ -375,7 +387,19 @@ int main (int argc, char * *argv)
         }
     }
 
-    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
+    {
+        CHAR8 srcip[16], dstip[16], rplip[16];
+
+        strcpy(srcip, vos_ipDotted(ownIP));
+        strcpy(dstip, vos_ipDotted(destIP));
+        strcpy(rplip, vos_ipDotted(replyIP));
+        printf("\nParameters:\n  localip  = %s\n  remoteip = %s\n  replyip    = %s\n  logfile  = %s\n\n",
+            srcip, dstip, rplip,
+            (pLogFile == NULL ? "" : filename));
+    }
+
 
     /*    Init the library for callback operation    (PD only) */
     if (tlc_init(dbgOut,                            /* actually printf    */
@@ -517,6 +541,8 @@ int main (int argc, char * *argv)
         {
             VOS_MEM_STATISTICS_T memStatistics;
 
+            print_ownStats(appHandle);
+
             vos_memCount(&memStatistics);
             printf("\nMemory usage (%s):\n", argv[0]);
             printf("    allocatedMemory:    %u\n", memStatistics.total);
@@ -529,7 +555,12 @@ int main (int argc, char * *argv)
             for (i = 0; i < (int)VOS_MEM_NBLOCKSIZES; i++)
             {
                 printf("%d x %u, ", memStatistics.usedBlockSize[i], memStatistics.blockSize[i]);
+                if ((i+1) % 8 == 0)
+                {
+                    printf("\n                        ");
+                }
             }
+
             printf("\n\n");
             count = 0;
         }

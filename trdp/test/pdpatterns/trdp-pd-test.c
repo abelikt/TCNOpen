@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *      AÖ 2020-05-04: Ticket #330 Extend TRDP_PDTest with TSN support
@@ -40,13 +41,21 @@
 #endif
 
 #include "vos_thread.h"
+#include "printOwnStatistics.h"
+#include "getopt.h"
+
+#define APP_VERSION "1.9"
+#define APP_USE     "This tool either sends and receives PD messages or acts as a responder."
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 
 /* --- globals ---------------------------------------------------------------*/
 
-TRDP_MEM_CONFIG_T memcfg;
+TRDP_MEM_CONFIG_T memcfg = { NULL, RESERVED_MEMORY, PREALLOCATE };
 TRDP_APP_SESSION_T apph;
 TRDP_PD_CONFIG_T pdcfg;
 TRDP_PROCESS_CONFIG_T proccfg;
+BOOL printDetailedStatistics;
 
 /* default addresses - overriden from command line */
 TRDP_IP_ADDR_T srcip;
@@ -839,6 +848,7 @@ static void process_data()
         printf(" %3d\n", p->err);
         _set_color_default();
     }
+
     /* increment cycle counter  */
     ++cycle;
 }
@@ -880,42 +890,137 @@ static void printLog(
 }
 
 
+/**********************************************************************************************************************/
+/* Print a sensible usage message */
+void usage(const char* appName)
+{
+    printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
+    printf("Usage of %s\n", appName);
+    printf(APP_USE"\n"
+        "Arguments are:\n"
+        "-o <own IP address>       in dotted decimal\n"
+        "-t <target IP address>    in dotted decimal\n"
+        "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
+#ifdef SIM
+        "-p <prefix>               instance prefix in simulation mode (ie. CCU1)\n"
+#endif
+        "-s                        print detailed statistics\n"
+        "-l <logfile>              file name          (e.g. test.txt)\n"
+        "-v                        print version and quit\n"
+    );
+}
+
 /* --- main ------------------------------------------------------------------*/
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
     TRDP_ERR_T err;
     unsigned tick = 0;
+    char filename[TRDP_MAX_FILE_NAME_LEN];
+    int ch;
 
-    printf("TRDP process data test program, version r178\n");
+    mcast = vos_dottedIP("239.2.24.1");   /* default multicast address */
+    printDetailedStatistics = FALSE;
 
-    if (argc < 4)
-    {
-        printf("usage: %s <localip> <remoteip> <mcast> <logfile>\n", argv[0]);
-        printf("  <localip>  .. own IP address (ie. 10.2.24.1)\n");
-        printf("  <remoteip> .. remote peer IP address (ie. 10.2.24.2)\n");
-        printf("  <mcast>    .. multicast group address (ie. 239.2.24.1)\n");
-        printf("  <logfile>  .. file name for logging (ie. test.txt)\n");
+    /* get the arguments/options */
+    while ((ch = getopt(argc, argv,
 #ifdef SIM
-        printf("  <prefix>  .. instance prefix in simulation mode (ie. CCU1)\n");
+        "t:o:m:p:l:h?sv"
+#else
+        "t:o:m:l:h?sv"
 #endif
-        return 1;
+    )) != -1)
+    {
+        switch (ch)
+        {
+        case 'o':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            srcip = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+#ifdef SIM
+            if (!SimSetHostIp(optarg))
+                printf("Failed to set sim host IP.");
+#endif
+            break;
+        }
+        case 't':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            dstip = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 'm':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            mcast = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+#ifdef SIM
+        case 'p':
+        {
+            vos_setTimeSyncPrefix(optarg);
+        }
+#endif
+        case 's':
+        {
+            printDetailedStatistics = TRUE;
+            break;
+        }
+        case 'v':    /*  version */
+        {
+            printf("%s: Version %s\t(%s - %s)\n",
+                argv[0], APP_VERSION, __DATE__, __TIME__);
+            return 0;
+            break;
+        }
+        case 'l':
+        {    /*  Log file   */
+            strncpy(filename, optarg, sizeof(filename) - 1);
+            pLogFile = fopen(optarg, "w");
+            break;
+        }
+
+        case 'h':
+        case '?':
+        default:
+            usage(argv[0]);
+            return 1;
+        }
     }
 
-    srcip = vos_dottedIP(argv[1]);
-    dstip = vos_dottedIP(argv[2]);
-    mcast = vos_dottedIP(argv[3]);
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
 
-#ifdef SIM
-    if (argc < 6)
     {
-        printf("In simulation mode an extra last argument is required <Unike thread name>\n");
-        return 1;
-    }
-    vos_setTimeSyncPrefix(argv[5]);
+        CHAR8 sourcip[16], destip[16], mcgroup[16];
 
-    if (!SimSetHostIp(argv[1]))
-        printf("Failed to set sim host IP.");
-#endif
+        strcpy(sourcip, vos_ipDotted(srcip));
+        strcpy(destip, vos_ipDotted(dstip));
+        strcpy(mcgroup, vos_ipDotted(mcast));
+        printf("\nParameters:\n  localip  = %s\n  remoteip = %s\n  mcast    = %s\n  logfile  = %s\n  mode     = %s\n\n",
+            sourcip, destip, mcgroup,
+            (pLogFile == NULL ? "" : filename),
+            (printDetailedStatistics == TRUE) ? "detailed statistics" : "statistics overview");
+    }
 
     if (!srcip || !dstip || (mcast >> 28) != 0xE)
     {
@@ -923,41 +1028,39 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-    memset(&memcfg, 0, sizeof(memcfg));
+    /* Init process config and pdcfg */
     memset(&proccfg, 0, sizeof(proccfg));
+    proccfg.cycleTime = 5000u;
+    proccfg.options = TRDP_OPTION_TRAFFIC_SHAPING;      // by now: there is no traffic shaping option for HIGH_PERF_INDEXED
+    strcpy(proccfg.hostName, "PD_TEST_HOST");
+    strcpy(proccfg.leaderName, "PD_TEST_LEADER");
+    strcpy(proccfg.type, "PD_TEST_TYPE");
 
-    if (argc >= 5)
-    {
-        pLogFile = fopen(argv[4], "w+");
-    }
-    else
-    {
-        pLogFile = NULL;
-    }
+    pdcfg.pfCbFunction = NULL;
+    pdcfg.pRefCon = NULL;
+    pdcfg.sendParam.ttl = TRDP_PD_DEFAULT_TTL;
+    pdcfg.flags = TRDP_FLAGS_NONE;
+    pdcfg.timeout = 100 * TRDP_PD_DEFAULT_TIMEOUT;
+    pdcfg.toBehavior = TRDP_TO_SET_TO_ZERO;
+    pdcfg.port = TRDP_PD_UDP_PORT;
 
-    /* initialize TRDP protocol library */
+#if PORT_FLAGS == TRDP_FLAGS_TSN
+    proccfg.vlanId = 1;
+    pdcfg.sendParam.qos = TRDP_PD_DEFAULT_TSN_PRIORITY;
+#else
+    pdcfg.sendParam.qos = TRDP_PD_DEFAULT_QOS;
+#endif
+
+     /* initialize TRDP protocol library */
     err = tlc_init(printLog, NULL, &memcfg);
     if (err != TRDP_NO_ERR)
     {
         printf("tlc_init() failed, err: %d\n", err);
         return 1;
     }
+
 #ifdef SIM
     vos_threadRegister("main", TRUE);
-#endif
-    pdcfg.pfCbFunction = NULL;
-    pdcfg.pRefCon = NULL;
-    pdcfg.sendParam.ttl = 64;
-    pdcfg.flags = TRDP_FLAGS_NONE;
-    pdcfg.timeout = 10000000;
-    pdcfg.toBehavior = TRDP_TO_SET_TO_ZERO;
-    pdcfg.port = 17224;
-
-#if PORT_FLAGS == TRDP_FLAGS_TSN
-    proccfg.vlanId = 1;
-    pdcfg.sendParam.qos = TRDP_PD_DEFAULT_TSN_PRIORITY;
-#else
-    pdcfg.sendParam.qos = 5;
 #endif
 
     /* open session */
@@ -975,6 +1078,7 @@ int main(int argc, char * argv[])
     gen_pull_ports_slave(30000, 40000);
     setup_ports();
     vos_threadDelay(2000000);
+
     /* main test loop */
     while (1)
     {   /* drive TRDP communications */
@@ -987,6 +1091,7 @@ int main(int argc, char * argv[])
         /* wait 10 msec  */
         vos_threadDelay(10000);
     }
+
 
     return 0;
 }

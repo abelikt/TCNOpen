@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2023-06-19  Ticket #458 Unify cmd line interfaces of tests
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *     CWE 2023-01-27: Ticket #417 Multicast-N tests always failed due to unknown number of expected multicast repliers. Expected number can now be set as param
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -45,12 +46,21 @@
 #include <time.h>
 #endif
 
+#include "printOwnStatistics.h"
+#include "getopt.h"
+
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool sends and receives MD in high performance mode."
 #define UDP
 #define TCPN
 #define TCPRR
 #define TCPRRC
 #define MCAST
 #define MCASTN
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
+
+
 
 /* --- globals ----------------------------------------------------------------- */
 
@@ -149,12 +159,14 @@ typedef struct
     Record      rec[64];                /* space for records */
 } Queue;
 
-TRDP_MEM_CONFIG_T       memcfg;
+TRDP_MEM_CONFIG_T       memcfg = { NULL, RESERVED_MEMORY, PREALLOCATE };
 TRDP_APP_SESSION_T      apph;
 TRDP_MD_CONFIG_T        mdcfg;
+TRDP_PD_CONFIG_T        pdcfg;
 TRDP_PROCESS_CONFIG_T   proccfg;
 VOS_THREAD_T            rcvThread;
 VOS_THREAD_T            sndThread;
+static BOOL             printDetailedStatistics;
 
 const unsigned          tick = 10;      /* 10 msec tick */
 char        *buf;                       /* send buffer */
@@ -678,6 +690,27 @@ void md_callback (void *ref, TRDP_APP_SESSION_T apph,
     }
 }
 
+/**********************************************************************************************************************/
+/* Print a sensible usage message */
+void usage(const char* appName)
+{
+    printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
+    printf("Usage of %s\n", appName);
+    printf(APP_USE"\n"
+        "Arguments are:\n"
+        "-o <own IP address>       in dotted decimal\n"
+        "-t <target IP address>    in dotted decimal\n"
+        "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
+        "-r <replier mode>         mode (default caller mode)\n"
+        "-s <statistics>           print statistics details\n"
+        "-b <bytes>                size of the MD data in bytes (default 65336)\n"
+        "-n <number of repliers>   expected number of multicast repliers (default 1)\n"
+        "-l <logfile>              log file name     (e.g. test.txt)\n"
+        "-v                        print version and quit\n"
+    );
+}
+
+
 /* --- main -------------------------------------------------------------------- */
 
 int main (int argc, char *argv[])
@@ -688,91 +721,143 @@ int main (int argc, char *argv[])
     INT32           noOfDesc;
     struct timeval  tv_null = { 0, 0 };
     int rv;
+    char filename[TRDP_MAX_FILE_NAME_LEN];
+    int ch;
 
-    printf("TRDP message data test program, version 0\n");
-
-    if (argc < 4)
-    {
-        printf("usage: %s <mode> <localip> <remoteip> <mcast>\n", argv[0]);
-        printf("  <mode>     .. caller or replier\n");
-        printf("  <localip>  .. own IP address (ie. 10.2.24.1)\n");
-        printf("  <remoteip> .. remote peer IP address (ie. 10.2.24.2)\n");
-        printf("  <mcast>    .. multicast group address (default 239.2.24.1)\n");
-        printf("  <logfile>  .. file name for logging (ie. test.txt)\n");
-        printf("  <msgsize>  .. size of the MD data in bytes (default 65336)\n");
-        printf("  <repliers> .. expected number of multicast repliers (default 1)\n");
-
-        return 1;
-    }
 
     /* initialize test status and options */
     memset(&sts, 0, sizeof(sts));
     memset(&opts, 0, sizeof(opts));
     sts.test = TST_BEGIN;
 
-    if (strcmp(argv[1], "caller") == 0)
-    {
-        opts.mode = MODE_CALLER;
-    }
-    else if (strcmp(argv[1], "replier") == 0)
-    {
-        opts.mode = MODE_REPLIER;
-    }
-    else
-    {
-        printf("invalid program mode\n");
-        return 1;
-    }
-
     /* initialize test options */
+    opts.mcgrp = vos_dottedIP("239.2.24.1");   /* default multicast address */
+    printDetailedStatistics = FALSE;
+    opts.mode = MODE_CALLER;
+    opts.multicastRepliers = 1;       /* #417 default number of multicast repliers: 1 */
     opts.groups = TST_ALL;                                  /* run all test groups */
-    opts.once   = 0;                                        /* endless test */
-    opts.msgsz  = 64 * 1024 - 200;                          /* default message size [bytes] */
-    opts.tmo    = 3000;                                     /* timeout [msec] */
+    opts.once =  0;                                         /* endless test */
+    opts.msgsz = 64 * 1024 - 200;                           /* default message size [bytes] */
+    opts.tmo = 3000;                                        /* timeout [msec] */
     strncpy(opts.uri, "message.test", sizeof(opts.uri));    /* test URI */
-    opts.srcip  = vos_dottedIP(argv[2]);                    /* source (local) IP address */
-    opts.dstip  = vos_dottedIP(argv[3]);                    /* destination (remote) IP address */
 
-    if (argc > 4)
+    /* get the arguments/options */
+    while ((ch = getopt(argc, argv,
+        "t:o:m:l:n:b:h?svr"
+    )) != -1)
     {
-        opts.mcgrp  = vos_dottedIP(argv[4]);                /* multicast group */
+        switch (ch)
+        {
+        case 'o':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            opts.srcip = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 't':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            opts.dstip = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 'm':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            opts.mcgrp = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 'r':
+        {
+            opts.mode = MODE_REPLIER;
+            break;
+        }
+        case 's':
+        {
+            printDetailedStatistics = TRUE;
+            break;
+        }
+        case 'v':    /*  version */
+        {
+            printf("%s: Version %s\t(%s - %s)\n",
+                argv[0], APP_VERSION, __DATE__, __TIME__);
+            return 0;
+            break;
+        }
+        case 'n':
+        {    /*  number of replies  */
+            if (sscanf(optarg, "%u", &opts.multicastRepliers) < 1)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            break;
+        }
+        case 'b':
+        {    /*  msg length    */
+            if (sscanf(optarg, "%u", &opts.msgsz) < 1)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            break;
+        }
+        case 'l':
+        {    /*  Log file   */
+            strncpy(filename, optarg, sizeof(filename) - 1);
+            pLogFile = fopen(optarg, "w");
+            break;
+        }
+
+        case 'h':
+        case '?':
+        default:
+            usage(argv[0]);
+            return 1;
+        }
     }
-    if (opts.mcgrp == 0)
+
+    if ((opts.srcip == 0) || (opts.dstip == 0))
     {
-        opts.mcgrp  = vos_dottedIP("239.2.24.1");           /* default multicast group: 239.2.24.1 */
+        usage(argv[0]);
+        return -1;
     }
-    if (!opts.srcip || !opts.dstip || !vos_isMulticast(opts.mcgrp))
+
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
     {
-        printf("invalid input arguments\n");
-        return 1;
+        CHAR8 srcip[16], dstip[16], mcgrp[16];
+
+        strcpy(srcip, vos_ipDotted(opts.srcip));
+        strcpy(dstip, vos_ipDotted(opts.dstip));
+        strcpy(mcgrp, vos_ipDotted(opts.mcgrp));
+        printf("\nParameters:\n  mode       = %s\n  localip    = %s\n  remoteip   = %s\n  mcast      = %s\n  logfile    = %s\n  repliers   = %d\n  msg size   = %d\n  statistics = %s\n\n",
+            (opts.mode == MODE_CALLER ? "caller" : "replier"), srcip, dstip, mcgrp,
+            (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz,
+            (printDetailedStatistics == TRUE) ? "detailed" : "overview");
     }
 
-    pLogFile = NULL;                                        /* default: no logfile */
-    if ((argc > 5) && (strlen(argv[5]) > 0))
-    {
-        pLogFile = fopen(argv[5], "w");
-    }
-
-    if (argc > 6)
-    {
-        opts.msgsz = (unsigned) strtoul(argv[6], NULL, 10);
-    }
-
-    opts.multicastRepliers = 1;                             /* #417 default number of multicast repliers: 1 */
-    if (argc > 7) 
-    {
-        opts.multicastRepliers = (unsigned) strtoul(argv[7], NULL, 10);
-    }
-
-    CHAR8 srcip[16], dstip[16], mcgrp[16];
-    strcpy(srcip, vos_ipDotted(opts.srcip));
-    strcpy(dstip, vos_ipDotted(opts.dstip));
-    strcpy(mcgrp, vos_ipDotted(opts.mcgrp));
-    printf("\nTRDP-MD-Test-FAST parameters:\n  mode     = %s\n  localip  = %s\n  remoteip = %s\n  mcast    = %s\n  logfile  = %s\n  msgsize  = %d\n  repliers = %d\n\n",
-        (opts.mode == MODE_CALLER ? "caller" : "replier"), srcip, dstip, mcgrp, 
-        (pLogFile == NULL ? "" : argv[5]), opts.msgsz, opts.multicastRepliers);
-
-
+  
     /* initialize request queue */
     queue.head  = queue.rec;
     queue.tail  = queue.rec;
@@ -787,11 +872,6 @@ int main (int argc, char *argv[])
         return 2;
     }
 
-    memset(&memcfg, 0, sizeof(memcfg));
-    memset(&proccfg, 0, sizeof(proccfg));
-
-    proccfg.cycleTime = 5000u;
-
     /* initialize TRDP protocol library */
     err = tlc_init(print_log, NULL, &memcfg);
     if (err != TRDP_NO_ERR)
@@ -800,24 +880,45 @@ int main (int argc, char *argv[])
         return 1;
     }
 
+    /* prepare process configuration */
+    memset(&proccfg, 0, sizeof(proccfg));
+
+    proccfg.cycleTime = 5000u;
+    proccfg.options = TRDP_OPTION_TRAFFIC_SHAPING;      // by now: there is no traffic shaping option for HIGH_PERF_INDEXED
+    strcpy(proccfg.hostName, "MD_TEST_HOST");
+    strcpy(proccfg.leaderName, "MD_TEST_LEADER");
+    strcpy(proccfg.type, "MD_TEST_TYPE");
+
+    /* prepare default pd configuration */
+    memset(&pdcfg, 0, sizeof(pdcfg));
+
+    pdcfg.pfCbFunction = NULL;
+    pdcfg.pRefCon = NULL;
+    pdcfg.sendParam.ttl = TRDP_PD_DEFAULT_TTL;
+    pdcfg.flags = TRDP_FLAGS_NONE;
+    pdcfg.timeout = 100 * TRDP_PD_DEFAULT_TIMEOUT;
+    pdcfg.toBehavior = TRDP_TO_SET_TO_ZERO;
+    pdcfg.port = TRDP_PD_UDP_PORT;
+    pdcfg.sendParam.qos = TRDP_PD_DEFAULT_QOS;
+
     /* prepare default md configuration */
-    /* prepare default md configuration */
-    /* prepare default md configuration */
+    memset(&mdcfg, 0, sizeof(mdcfg));
+
     mdcfg.pfCbFunction      = md_callback;
     mdcfg.pRefCon           = NULL;
-    mdcfg.sendParam.qos     = 3;
-    mdcfg.sendParam.ttl     = 64;
-    mdcfg.sendParam.retries = 2;
+    mdcfg.sendParam.qos     = TRDP_MD_DEFAULT_QOS;
+    mdcfg.sendParam.ttl     = TRDP_MD_DEFAULT_TTL;
+    mdcfg.sendParam.retries = TRDP_MD_DEFAULT_RETRIES;
     mdcfg.flags             = (TRDP_FLAGS_T) (TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP);
     mdcfg.replyTimeout      = 1000 * opts.tmo;
     mdcfg.confirmTimeout    = 1000 * opts.tmo;
     mdcfg.connectTimeout    = 1000 * opts.tmo;
-    mdcfg.udpPort           = 17225;
-    mdcfg.tcpPort           = 17225;
+    mdcfg.udpPort           = TRDP_MD_UDP_PORT;
+    mdcfg.tcpPort           = TRDP_MD_TCP_PORT;
     mdcfg.maxNumSessions    = 64;
 
     /* open session */
-    err = tlc_openSession(&apph, opts.srcip, 0, NULL, NULL, &mdcfg, &proccfg);
+    err = tlc_openSession(&apph, opts.srcip, 0, NULL, &pdcfg, &mdcfg, &proccfg);
     if (err != TRDP_NO_ERR)
     {
         printf("tlc_openSession() failed, err: %s\n", get_result_string(err));
@@ -863,6 +964,18 @@ void exec_next_test ()
     /* next test */
     if (++sts.test == TST_END) /* print test statistics */
     {
+        /* print test status */
+        print_status();
+
+        if (printDetailedStatistics)
+        {
+            printOwnStatistics(apph, TRUE);
+        }
+        else
+        {
+            printOwnStatistics(apph, FALSE);
+        }
+
         if (opts.once) /* exit the test */
         {
             enqueue(REQ_STATUS, 0, NULL, TRDP_FLAGS_DEFAULT);
@@ -870,8 +983,7 @@ void exec_next_test ()
             enqueue(REQ_EXIT, 0, NULL, TRDP_FLAGS_DEFAULT);
             return;
         }
-        /* print test status */
-        print_status();
+
         /* start everything from begin */
         sts.test = TST_BEGIN + 1;
         memset(&sts.replies, 0, sizeof(sts.replies));    // #417

@@ -16,7 +16,7 @@
  *
  * $Id$
  *
- *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
+ *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      SB 2021-08-09: Compiler warnings
@@ -44,25 +44,34 @@
 #include "vos_types.h"
 #include "vos_thread.h"                           
 #include "trdp_if_light.h"
+#include "printOwnStatistics.h"
+#include "getopt.h"
 
-#define CALLTEST_MR_COMID 2000
-#define CALLTEST_MQ_COMID 2001
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool acts as a caller to execute MD tests continiously."
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
+#define ERROR_CYCLE         1000  /* generate errors after the given number of cycles */
+#define STATISTICS_CYCLE   50000  /* print statistics after the given number of cycles */
+
+#define CALLTEST_MR_COMID 0x2000
+#define CALLTEST_MQ_COMID 0x2001
 
 /* Status MR/MP tuple */
-#define CALLTEST_MR_MP_COMID 3000
-#define CALLTEST_MP_COMID 3001
+#define CALLTEST_MR_MP_COMID 0x3000
+#define CALLTEST_MP_COMID 0x3001
 
 /* No listener ever - triggers ME */
-#define CALLTEST_MR_NOLISTENER_COMID 4000
-#define CALLTEST_MP_NOLISTENER_COMID 4001
+#define CALLTEST_MR_NOLISTENER_COMID 0x4000
+#define CALLTEST_MP_NOLISTENER_COMID 0x4001
 
 /* Moving Topo - triggers ME */
-#define CALLTEST_MR_TOPOX_COMID 5000
-#define CALLTEST_MP_TOPOX_COMID 5001
+#define CALLTEST_MR_TOPOX_COMID 0x5000
+#define CALLTEST_MP_TOPOX_COMID 0x5001
 
 /* Infinity Pair - sound weird, though basically a reply after 0xFFFFFFFE usec, will proof it */
-#define CALLTEST_MR_INF_COMID 6000
-#define CALLTEST_MQ_INF_COMID 6001
+#define CALLTEST_MR_INF_COMID 0x6000
+#define CALLTEST_MQ_INF_COMID 0x6001
 
 #define ONESECOND 1000000
 
@@ -80,6 +89,7 @@ static INT32              callFlagMR_MP    = TRUE;
 static INT32              callFlagME       = TRUE;
 static INT32              callFlagTO       = TRUE;
 static INT32              callFlagIN       = TRUE;
+static TRDP_MEM_CONFIG_T  memcfg = { NULL, RESERVED_MEMORY, PREALLOCATE };
 
 
 /* --- debug log --------------------------------------------------------------- */
@@ -128,7 +138,7 @@ static void manageMDCall(TRDP_APP_SESSION_T appSession,
         if ( *callFlag == TRUE )
         {
             /* call replier */
-            printf("perform tlm_request comId %d\n",comId);
+//            printf("perform tlm_request comId %d\n",comId);
             (void)tlm_request(appSession,
                               NULL,
                               NULL/*default callback fct.*/,
@@ -175,10 +185,10 @@ static  void mdCallback(
         case TRDP_NO_ERR:
             if (pMsg->comId == CALLTEST_MQ_COMID)
             {
-                /* no cofirm for 0,1,2,3,4 */
-                if ((switchConfirmOnOff % 10U) > 4U)
+                /* no confirm for every 10000th MQ */
+                if ((switchConfirmOnOff % ERROR_CYCLE) != 0)
                 {
-                    /* sending cofirm for 5,6,7,8,9 */
+                    /* sending confirm for 99 times */
                     /* recvd. MQ from our replier */
                     /* send confirm */ 
                     tlm_confirm(appSessionCaller,
@@ -214,13 +224,20 @@ static  void mdCallback(
             {
                 if ( vos_mutexLock(callMutexIN) == VOS_NO_ERR )
                 {
-                    printf("Received Reply from INFINITY Replier\n");
+        //            printf("Received MQ reply from INFINITY Replier\n");
                     if ( pMsg->msgType == TRDP_MSG_MQ )
                     {
-                        tlm_confirm(appSessionCaller,
-                                    (const TRDP_UUID_T*)pMsg->sessionId,
-                                    0,
-                                    NULL);
+                        TRDP_ERR_T errCode;
+                        
+                        errCode = tlm_confirm(appSessionCaller,
+                            (const TRDP_UUID_T*)pMsg->sessionId,
+                            0,
+                            NULL);
+                        
+                        if (errCode != TRDP_NO_ERR)
+                        {
+                            printf("unable to send confirm(% d)\n", errCode);
+                       }
                     }
                     callFlagIN = TRUE;
                     vos_mutexUnlock(callMutexIN);
@@ -230,7 +247,7 @@ static  void mdCallback(
         case TRDP_REPLYTO_ERR:
         case TRDP_TIMEOUT_ERR:
             /* The application can decide here if old data shall be invalidated or kept */
-            printf("Packet timed out (ComID %d, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
+            printf("Packet timed out (ComID 0x%04x, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
             if (pMsg->comId == CALLTEST_MR_COMID)
             {
                 if (vos_mutexLock(callMutex) == VOS_NO_ERR)
@@ -290,6 +307,42 @@ static  void mdCallback(
     }
 }  
 
+static FILE* pLogFile;
+
+/**********************************************************************************************************************/
+/* Logging function */
+static void printLog(
+    void* pRefCon,
+    VOS_LOG_T   category,
+    const CHAR8* pTime,       // timestamp string "yyyymmdd-hh:mm:ss.µs"
+    const CHAR8* pFile,
+    UINT16      line,
+    const CHAR8* pMsgStr)
+{
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, category == VOS_LOG_ERROR ? "ERR " : (category == VOS_LOG_WARNING ? "WAR " : (category == VOS_LOG_INFO ? "INFO" : "DBG ")), pFile, (int)line, pMsgStr);
+        fflush(pLogFile);
+    }
+}
+
+
+/**********************************************************************************************************************/
+/* Print a sensible usage message */
+void usage(const char* appName)
+{
+    printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
+    printf("Usage of %s\n", appName);
+    printf(APP_USE"\n"
+        "Arguments are:\n"
+        "-o <own IP address>       in dotted decimal (ie. 10.2.24.1)\n"
+        "-t <target IP address>    in dotted decimal (ie. 10.2.24.1)\n"
+        "-l <logfile>              file name (e.g. test.txt)\n"
+        "-v                        print version and quit\n"
+    );
+}
+
+
 /******************************************************************************/
 /** Main routine
  */
@@ -303,6 +356,8 @@ int main(int argc, char** argv)
     TRDP_SOCK_T      noOfDesc = TRDP_INVALID_SOCKET;
     struct timeval   tv_null = { 0, 0 };
     int rv;
+    char filename[TRDP_MAX_FILE_NAME_LEN];
+    int ch;
 
     TRDP_MD_CONFIG_T mdConfiguration = {mdCallback, 
                                         NULL, 
@@ -318,25 +373,68 @@ int main(int argc, char** argv)
 
     TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_CALLER", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
 
-    printf("TRDP message data repetition test program CALLER, version 0\n");
-
-    if (argc < 3)
+    /* get the arguments/options */
+    while ((ch = getopt(argc, argv, "t:o:l:h?v")) != -1)
     {
-        printf("usage: %s <localip> <remoteip>\n", argv[0]);
-        printf("  <localip>  .. own IP address (ie. 10.2.24.1)\n");
-        printf("  <remoteip> .. remote peer IP address (ie. 10.2.24.2)\n");
-        return -1;
+        switch (ch)
+        {
+        case 'o':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            callerIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 't':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            replierIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 'v':    /*  version */
+        {
+            printf("%s: Version %s\t(%s - %s)\n",
+                argv[0], APP_VERSION, __DATE__, __TIME__);
+            return 0;
+            break;
+        }
+        case 'l':
+        {    /*  Log file   */
+            strncpy(filename, optarg, sizeof(filename) - 1);
+            pLogFile = fopen(optarg, "w");
+            break;
+        }
+
+        case 'h':
+        case '?':
+        default:
+            usage(argv[0]);
+            return 1;
+        }
     }
-    /* get IPs */
-    callerIP  = vos_dottedIP(argv[1]);
-    replierIP = vos_dottedIP(argv[2]);
+
+    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
 
     if ((callerIP == 0) || (replierIP ==0))
     {
-        printf("illegal IP address(es) supplied, aborting!\n");
+        usage(argv[0]);
         return -1;
     }
-    err = tlc_init(print_log, NULL, NULL);
+
+    err = tlc_init(print_log, NULL, &memcfg);
 
     /* pure MD session */
     if (tlc_openSession(&appSessionCaller,
@@ -459,7 +557,13 @@ int main(int argc, char** argv)
 
     while (1)
     {
-        static UINT32 switchTopoDiffOnOff = 0U;
+        static UINT32 cycles = 0U;
+
+        if (cycles++ % STATISTICS_CYCLE == 0)
+        {
+            printOwnStatistics(appSessionCaller, TRUE);
+        }
+
         FD_ZERO(&rfds);
 
         tlc_getInterval(appSessionCaller, &tv, &rfds, &noOfDesc);
@@ -468,8 +572,7 @@ int main(int argc, char** argv)
 
         /* very basic locking to keep everything no frenzy and simple */
         /* see mdCallback for unlocking conditions - be aware, that   */
-        /* the replier must really must be started before this pro-   */
-        /* gram! */
+        /* the replier must really be started before this program!    */
 
         manageMDCall(appSessionCaller,
                      CALLTEST_MR_COMID,
@@ -512,36 +615,17 @@ int main(int argc, char** argv)
                      0,
                      TRDP_MD_INFINITE_TIME);
 
-        if ((switchTopoDiffOnOff % 10) < 6 )
-        {
-            /* not existing topo config - replier shall asnwer with Me */
-            manageMDCall(appSessionCaller,
-                         CALLTEST_MR_TOPOX_COMID,
-                         replierIP,
-                         (const UINT8*)"WORLD",
-                         sizeof("WORLD"),
-                         callMutexTO,
-                         &callFlagTO,
-                         0,
-                         0,
-                         ONESECOND);
-            switchTopoDiffOnOff++;
-        }
-        else
-        {
-            /* not existing topo config - replier shall asnwer with Me */
-            manageMDCall(appSessionCaller,
-                         CALLTEST_MR_TOPOX_COMID,
-                         replierIP,
-                         (const UINT8*)"DLROW",
-                         sizeof("DLROW"),
-                         callMutexTO,
-                         &callFlagTO,
-                         12345,
-                         0,
-                         ONESECOND);
-            switchTopoDiffOnOff++;
-        }
+        /* existing topo config - replier shall asnwer */
+        manageMDCall(appSessionCaller,
+                     CALLTEST_MR_TOPOX_COMID,
+                     replierIP,
+                     (const UINT8*)"WORLD",
+                     sizeof("WORLD"),
+                     callMutexTO,
+                     &callFlagTO,
+                     0,
+                     0,
+                     ONESECOND);
     }
 
 CLEANUP:

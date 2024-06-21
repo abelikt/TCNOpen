@@ -16,6 +16,7 @@
  *
  * $Id$
  * 
+ *     AHW 2024-06.19: Ticket #458 Unify cmd line interfaces of tests
  *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -43,61 +44,46 @@
 #include "vos_types.h"
 #include "vos_thread.h"                           
 #include "trdp_if_light.h"
+#include "printOwnStatistics.h"
+#include "getopt.h"
 
-#define CALLTEST_MR_COMID 2000
-#define CALLTEST_MQ_COMID 2001
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool acts as a replier to execute MD tests continiously."
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
+#define STATISTICS_CYCLE    50000 /* print statistics after the given number of cycles*/
+
+#define CALLTEST_MR_COMID 0x2000
+#define CALLTEST_MQ_COMID 0x2001
 
 /* Status MR/MP tuple */
-#define CALLTEST_MR_MP_COMID 3000
-#define CALLTEST_MP_COMID 3001
+#define CALLTEST_MR_MP_COMID 0x3000
+#define CALLTEST_MP_COMID 0x3001
 
 /* No listener ever - triggers ME */
-#define CALLTEST_MR_NOLISTENER_COMID 4000
-#define CALLTEST_MP_NOLISTENER_COMID 4001
+#define CALLTEST_MR_NOLISTENER_COMID 0x4000
+#define CALLTEST_MP_NOLISTENER_COMID 0x4001
 
 /* Moving Topo - triggers ME */
-#define CALLTEST_MR_TOPOX_COMID 5000
-#define CALLTEST_MP_TOPOX_COMID 5001
+#define CALLTEST_MR_TOPOX_COMID 0x5000
+#define CALLTEST_MP_TOPOX_COMID 0x5001
 
 /* Infinity Pair - sound weird, though basically a reply after 0xFFFFFFFE usec, will proof it */
-#define CALLTEST_MR_INF_COMID 6000
-#define CALLTEST_MQ_INF_COMID 6001
+#define CALLTEST_MR_INF_COMID 0x6000
+#define CALLTEST_MQ_INF_COMID 0x6001
 
 
 static TRDP_APP_SESSION_T appSessionReplier = NULL;
 static TRDP_LIS_T         listenHandle     = NULL;
 static char               dataMQ[0x1000];
 static char               dataMP[0x1000];
+static TRDP_MEM_CONFIG_T  memcfg = { NULL, RESERVED_MEMORY, PREALLOCATE };
 
 /* --- debug log --------------------------------------------------------------- */
 #if (defined (WIN32) || defined (WIN64))
 static FILE *pLogFile;
 #endif
 
-void print_log (void *pRefCon, VOS_LOG_T category, const CHAR8 *pTime,
-                const CHAR8 *pFile, UINT16 line, const CHAR8 *pMsgStr)
-{
-    static const char *cat[] = { "ERR", "WAR", "INF", "DBG" };
-#if (defined (WIN32) || defined (WIN64))
-    if (pLogFile == NULL)
-    {
-        char        buf[1024];
-        const char  *file = strrchr(pFile, '\\');
-        _snprintf(buf, sizeof(buf), "%s %s:%d %s",
-                  cat[category], file ? file + 1 : pFile, line, pMsgStr);
-        OutputDebugString((LPCWSTR)buf);
-    }
-    else
-    {
-        fprintf(pLogFile, "%s File: %s Line: %d %s\n", cat[category], pFile, (int) line, pMsgStr);
-        fflush(pLogFile);
-    }
-#else
-    const char *file = strrchr(pFile, '/');
-    fprintf(stderr, "%s %s:%d %s",
-            cat[category], file ? file + 1 : pFile, line, pMsgStr);
-#endif
-}
 
 /******************************************************************************/
 /** Routine to put some statistics into the reply message in ASCII
@@ -145,7 +131,15 @@ static  void mdCallback(
 {   
     static UINT32 countMQ = 0;
     static UINT32 countMP = 0;
+    static UINT32 cycle = 0;
+
     TRDP_ERR_T    err;
+
+    if ((cycle++) % STATISTICS_CYCLE == 0)
+    {
+        printOwnStatistics(appHandle, TRUE);
+    }
+
     switch (pMsg->resultCode)
     {
         case TRDP_NO_ERR:
@@ -222,16 +216,68 @@ static  void mdCallback(
         case TRDP_REPLYTO_ERR:
         case TRDP_TIMEOUT_ERR:
             /* The application can decide here if old data shall be invalidated or kept    */
-            printf("Packet timed out (ComID %d, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
+            printf("Packet timed out (ComID 0x%04x, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
             break;
         case TRDP_CONFIRMTO_ERR:
             /* confirmation from caller has timed out */
-            printf("Confirmation Timed Out (ComID %d, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
+            printf("Confirmation Timed Out (ComID 0x%04x, SrcIP: %s)\n", pMsg->comId, vos_ipDotted(pMsg->srcIpAddr));
             break;
         default:
             break;
     }
 }
+
+
+/**********************************************************************************************************************/
+/* Logging function */
+static void printLog(
+    void* pRefCon,
+    VOS_LOG_T   category,
+    const CHAR8* pTime,       // timestamp string "yyyymmdd-hh:mm:ss.µs"
+    const CHAR8* pFile,
+    UINT16      line,
+    const CHAR8* pMsgStr)
+{
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG" };
+
+#if (defined (WIN32) || defined (WIN64))
+    if (pLogFile == NULL)
+    {
+        char        buf[1024];
+        const char* file = strrchr(pFile, '\\');
+        _snprintf(buf, sizeof(buf), "%s %s:%d %s",
+            cat[category], file ? file + 1 : pFile, line, pMsgStr);
+        OutputDebugString((LPCWSTR)buf);
+    }
+    else
+    {
+        fprintf(pLogFile, "%s File: %s Line: %d %s\n", cat[category], pFile, (int)line, pMsgStr);
+        fflush(pLogFile);
+    }
+#else
+    const char* file = strrchr(pFile, '/');
+    fprintf(stderr, "%s %s:%d %s",
+        cat[category], file ? file + 1 : pFile, line, pMsgStr);
+#endif
+
+}
+
+
+/**********************************************************************************************************************/
+/* Print a sensible usage message */
+void usage(const char* appName)
+{
+    printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
+    printf("Usage of %s\n", appName);
+    printf(APP_USE"\n"
+        "Arguments are:\n"
+        "-o <own IP address>       in dotted decimal (ie. 10.2.24.1)\n"
+        "-t <target IP address>    in dotted decimal (ie. 10.2.24.1)\n"
+        "-l <logfile>              file name (e.g. test.txt)\n"
+        "-v                        print version and quit\n"
+    );
+}
+
 
 /******************************************************************************/
 /** Main routine
@@ -246,6 +292,9 @@ int main(int argc, char** argv)
     TRDP_SOCK_T      noOfDesc=TRDP_INVALID_SOCKET;   /* #399 #456 */
     struct timeval   tv_null = { 0, 0 };
     int              rv;
+    char             filename[TRDP_MAX_FILE_NAME_LEN];
+    int              ch;
+
     TRDP_MD_CONFIG_T mdConfiguration = {mdCallback, 
                                         NULL, 
                                         {0u, 0u, 0u},
@@ -254,30 +303,74 @@ int main(int argc, char** argv)
                                         1000000u,
                                         1000000u,
                                         1000000u,
-                                        17225u,
+                                        TRDP_MD_UDP_PORT,
                                         0u,
                                         20u};/*have some space for sessions*/
     TRDP_PROCESS_CONFIG_T   processConfig   = {"MD_REPLIER", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
 
-    printf("TRDP message data repetition test program REPLIER, version 0\n");
-
-    if (argc < 3)
+    
+    /* get the arguments/options */
+    while ((ch = getopt(argc, argv, "t:o:l:h?v")) != -1)
     {
-        printf("usage: %s <localip> <remoteip>\n", argv[0]);
-        printf("  <localip>  .. own IP address (ie. 10.2.24.1)\n");
-        printf("  <remoteip> .. remote peer IP address (ie. 10.2.24.2)\n");
+        switch (ch)
+        {
+        case 'o':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            replierIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 't':
+        {    /*  read ip    */
+            unsigned int ip[4];
+
+            if (sscanf(optarg, "%u.%u.%u.%u",
+                &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            callerIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+            break;
+        }
+        case 'v':    /*  version */
+        {
+            printf("%s: Version %s\t(%s - %s)\n",
+                argv[0], APP_VERSION, __DATE__, __TIME__);
+            return 0;
+            break;
+        }
+        case 'l':
+        {    /*  Log file   */
+            strncpy(filename, optarg, sizeof(filename) - 1);
+            pLogFile = fopen(optarg, "w");
+            break;
+        }
+
+        case 'h':
+        case '?':
+        default:
+            usage(argv[0]);
+            return 1;
+        }
+    }
+
+    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
+
+    if ((callerIP == 0) || (replierIP == 0))
+    {
+        usage(argv[0]);
         return -1;
     }
-    /* get IPs */
-    callerIP  = vos_dottedIP(argv[2]);
-    replierIP = vos_dottedIP(argv[1]);
 
-    if ((callerIP == 0) || (replierIP ==0))
-    {
-        printf("illegal IP address(es) supplied, aborting!\n");
-        return -1;
-    }
-    err = tlc_init(print_log, NULL, NULL);
+    err = tlc_init(printLog, NULL, &memcfg);
 
     /*    Open a session for callback operation    (MD only) */
     if (tlc_openSession(&appSessionReplier,

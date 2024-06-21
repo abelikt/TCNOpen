@@ -14,6 +14,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      SB 2021-08-09: Compiler warnings
@@ -35,19 +36,21 @@
 #include "vos_thread.h"
 #include "vos_sock.h"
 #include "vos_utils.h"
+#include "printOwnStatistics.h"
 
 /***********************************************************************************************************************
  * DEFINITIONS
  */
 #define APP_VERSION         "1.5"
-
+#define APP_USE             "TRDP basic MD test tool"
 #define DATA_MAX            1000
 
 #define MD_COMID1           1001
 #define MD_COMID1_TIMEOUT   10000000            /* in us (1000000 = 1 sec) */
 
 /* We use dynamic memory    */
-#define RESERVED_MEMORY     2000000
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 #define MAX_IF              10
 
 typedef struct testData
@@ -137,12 +140,12 @@ void usage (const char *appName)
            "-o <own IP address>    in dotted decimal\n"
            "-t <target IP address> in dotted decimal\n"
            "-p <TCP|UDP>           protocol to communicate with (default UDP)\n"
-           "-d <n>                 timeout in us for expected reply (default 2s)\n"
-           "-e <n>                 expected replies\n"
-           "-r                     be responder\n"
-           "-c                     respond with confirmation\n"
-           "-n                     notify only\n"
-           "-l <n>                 send large random message (up to 65420 Bytes)\n"
+           "-d <timeout>           timeout in us for expected reply (default 2s)\n"
+           "-e <expected replies>  number of expected replies (default 1)\n"
+           "-r                     be responder (default caller)\n"
+           "-c                     respond with confirmation (default without)\n"
+           "-n                     notify only (default request)\n"
+           "-l <bytes>             send large random message (up to 65420 Bytes)\n"
            "-0                     send no data\n"
            "-1                     send only one request/notification\n"
            "-b <0|1>               blocking mode (default = 1, blocking)\n"
@@ -349,8 +352,8 @@ int main (int argc, char *argv[])
     unsigned int ip[4];
     TRDP_MD_CONFIG_T        mdConfiguration =
     {mdCallback, &sSessionData,
-     {0u, 64u, 0u}, TRDP_FLAGS_CALLBACK, 1000000u, 1000000u, 1000000u, 1000000u, 17225u, 17225u, 10};
-    TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
+     {TRDP_MD_DEFAULT_QOS, TRDP_MD_DEFAULT_TTL, TRDP_MD_DEFAULT_RETRIES}, TRDP_FLAGS_CALLBACK, 1000000u, 1000000u, 1000000u, 1000000u, TRDP_MD_UDP_PORT, TRDP_MD_TCP_PORT, 10};
+    TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
     TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     VOS_IF_REC_T            interfaces[MAX_IF];
     BOOL8           lastRun = FALSE;
@@ -502,7 +505,27 @@ int main (int argc, char *argv[])
         return 1;
     }
 
-    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
+    {
+        CHAR8 srcip[16], dstip[16];
+
+        strcpy(srcip, vos_ipDotted(ownIP));
+        strcpy(dstip, vos_ipDotted(destIP));
+        printf("\nParameters:\n  mode        = %s\n  localip     = %s\n  remoteip    = %s\n  protocol    = %s\n  timeout     = %d"
+               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  no data     = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n\n",
+            (sSessionData.sResponder == FALSE)? "caller" : "replier",
+            srcip, dstip,
+            (flags & TRDP_FLAGS_TCP)?"TCP":"UDP",
+            delay,
+            expReplies,
+            sSessionData.sConfirmRequested == TRUE ? "TRUE" : "FALSE",
+            sSessionData.sNotifyOnly == TRUE ? "TRUE" : "FALSE",
+            sSessionData.sNoData == TRUE ? "TRUE" : "FALSE",
+            sSessionData.sOnlyOnce == TRUE ? "TRUE" : "FALSE",
+            sSessionData.sDataSize,
+            sSessionData.sBlockingMode == TRUE ? "TRUE" : "FALSE");
+    }
 
     /*    Init the library  */
     if (tlc_init(dbgOut,                          /* no logging    */
@@ -643,9 +666,13 @@ int main (int argc, char *argv[])
         }
         else
         {
-            if (counter++ > 200)
+            if ((counter++ % 4000) == 0)
             {
-                counter = 0;
+                printOwnStatistics(sSessionData.appHandle, TRUE);
+            }
+
+            if (counter % 400 == 0)
+            {
                 vos_printLogStr(VOS_LOG_USR, "...\n");
                 fflush(stdout);
             }
@@ -801,16 +828,17 @@ int main (int argc, char *argv[])
 
             if (sSessionData.sOnlyOnce == TRUE)
             {
-                lastRun = TRUE;
+         //       lastRun = TRUE;
+                sSessionData.sExitAfterReply = TRUE;
             }
-
-            sSessionData.sExitAfterReply = TRUE;
-
 
             /* additional delay */
             vos_printLogStr(VOS_LOG_USR, "waiting for an answer...\n");
+            vos_threadDelay(800000);
         }
     }
+
+    printOwnStatistics(sSessionData.appHandle, TRUE);
 
     vos_printLogStr(VOS_LOG_USR, "-> finishing.\n");
     /*
