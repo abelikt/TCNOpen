@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-21: Ticket #461 statistics retrieval of joined mc addresses flags TRDP_ERR_MEN too early
  *     AHW 2024-05-08: Ticket #451 Missing nullpointer check in tlc_openSession/vlanId and type missing in statistics
  *      SB 2021-08.09: Ticket #375 Replaced parameters of vos_memCount to prevent alignment issues
  *      BL 2019-02-01: Ticket #234 Correcting Statistics ComIds & defines
@@ -191,6 +192,7 @@ EXT_DECL TRDP_ERR_T tlc_getSubsStatistics (
     {
         return TRDP_PARAM_ERR;
     }
+
     /*  Loop over our subscriptions, but do not exceed user supplied buffers!    */
     for ((void)(lIndex = 0), iter = appHandle->pRcvQueue; lIndex < *pNumSubs && iter != NULL; (void)(lIndex++), iter = iter->pNext)
     {
@@ -252,8 +254,8 @@ EXT_DECL TRDP_ERR_T tlc_getPubStatistics (
         pStatistics[lIndex].destAddr    = iter->addr.destIpAddr;    /* IP address of destination for this publishing. */
         pStatistics[lIndex].redId       = iter->redId;              /* Redundancy group id                            */
         pStatistics[lIndex].redState    = (iter->privFlags & TRDP_REDUNDANT) ? 1 : 0; /* Redundancy state:
-                                                                                        1 = Follower
-                                                                                        0 = Leader                  */
+                                                                                        0 = Follower
+                                                                                        1 = Leader                  */
 
         pStatistics[lIndex].cycle = (UINT32) iter->interval.tv_usec + (UINT32)iter->interval.tv_sec * 1000000;
         /* Interval/cycle in us. 0 = No time-out supervision */
@@ -379,7 +381,7 @@ EXT_DECL TRDP_ERR_T tlc_getTcpListStatistics (
  *  @retval         TRDP_NO_ERR         no error
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  *  @retval         TRDP_PARAM_ERR      parameter error
- *  @retval         TRDP_MEM_ERR     there are more subscriptions than requested
+ *  @retval         TRDP_MEM_ERR        there are more subscriptions than requested
  */
 EXT_DECL TRDP_ERR_T tlc_getRedStatistics (
     TRDP_APP_SESSION_T      appHandle,
@@ -388,6 +390,7 @@ EXT_DECL TRDP_ERR_T tlc_getRedStatistics (
 {
     UINT16      lIndex = 0;
     PD_ELE_T    *iterPD;
+
     if (!trdp_isValidSession(appHandle))
     {
         return TRDP_NOINIT_ERR;
@@ -453,7 +456,7 @@ EXT_DECL TRDP_ERR_T tlc_getJoinStatistics (
         *pIpAddr++ = iter->addr.mcGroup;                        /* Subscribed MC address.                       */
     }
 
-    if (lIndex >= *pNumJoin && iter != NULL)
+    if (iter != NULL)
     {
         err = TRDP_MEM_ERR;
     }
@@ -570,7 +573,7 @@ void    trdp_pdPrepareStats (
     pData = (TRDP_STATISTICS_T *) pPacket->pFrame->data;
 
     /*  Fill in the values  */
-    pData->version = vos_htonl(appHandle->stats.version);
+    pData->version          = vos_htonl(appHandle->stats.version);
     pData->timeStamp        = vos_htonll(appHandle->stats.timeStamp);
     pData->upTime           = vos_htonl(appHandle->stats.upTime); /* it will make a difference if this is a struct !!! */
     pData->statisticTime    = vos_htonl(appHandle->stats.statisticTime);
