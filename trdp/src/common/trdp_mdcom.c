@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-19: Ticket #459 'Me' shall be send to the port the related request was coming from
  *      PL 2023-10-13: Ticket #444 Lint
  *      PL 2023-10-11: Lint warnings
  *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
@@ -912,23 +913,25 @@ static TRDP_ERR_T trdp_mdCheck (TRDP_SESSION_PT appHandle,
         TRDP_MSG_T l_msgType = (TRDP_MSG_T) vos_ntohs(pPacket->msgType);
         switch (l_msgType)
         {
-           /* valid message type ident */
-           case TRDP_MSG_MN:
-           case TRDP_MSG_MR:
-           case TRDP_MSG_MP:
-           case TRDP_MSG_MQ:
-           case TRDP_MSG_MC:
-           case TRDP_MSG_ME:
-           {}
+            /* valid message type ident */
+            case TRDP_MSG_MN:
+            case TRDP_MSG_MR:
+            case TRDP_MSG_MP:
+            case TRDP_MSG_MQ:
+            case TRDP_MSG_MC:
+            {}
             break;
-           /* invalid codes */
-           default:
-           {
-               vos_printLog(VOS_LOG_ERROR, "MDframe type error, received %c%c\n",
-                            (char)(l_msgType >> 8), (char)(l_msgType & 0xFF));
-               err = TRDP_WIRE_ERR;
-           }
-           break;
+            case TRDP_MSG_ME:
+            {}
+            break;
+            /* invalid codes */
+            default:
+            {
+                vos_printLog(VOS_LOG_ERROR, "MDframe type error, received %c%c\n",
+                             (char)(l_msgType >> 8), (char)(l_msgType & 0xFF));
+                err = TRDP_WIRE_ERR;
+            }
+            break;
         }
     }
 
@@ -1879,22 +1882,24 @@ static TRDP_ERR_T trdp_mdSendME (TRDP_SESSION_PT appHandle, MD_HEADER_T *pH, INT
         if ( NULL != pSenderElement )
         {
             memset(pSenderElement, 0, sizeof(MD_ELE_T));
-            pSenderElement->addr.comId = 0u;
-            pSenderElement->addr.srcIpAddr      = mdElement->addr.destIpAddr;
-            pSenderElement->addr.destIpAddr     = mdElement->addr.srcIpAddr;
-            pSenderElement->addr.mcGroup        = 0u;
-            pSenderElement->addr.etbTopoCnt     = 0u;
-            pSenderElement->addr.opTrnTopoCnt   = 0u;
-            pSenderElement->dataSize        = 0u;
-            pSenderElement->grossSize       = trdp_packetSizeMD(0);
-            pSenderElement->socketIdx       = TRDP_INVALID_SOCKET_INDEX;
-            pSenderElement->pktFlags        = mdElement->pktFlags; /* use the senders flagset to be able to deistinguish between TCP and UDP */
-            pSenderElement->pfCbFunction    = mdElement->pfCbFunction;
-            pSenderElement->privFlags       = TRDP_PRIV_NONE;
-            pSenderElement->sendSize        = 0u;
-            pSenderElement->numReplies      = 0u;
-            pSenderElement->pCachedDS       = NULL;
-            pSenderElement->morituri        = FALSE;
+            pSenderElement->addr.comId        = 0u;
+            pSenderElement->addr.srcIpAddr    = mdElement->addr.destIpAddr;
+            pSenderElement->addr.destIpAddr   = mdElement->addr.srcIpAddr;
+            pSenderElement->addr.mcGroup      = 0u;
+            pSenderElement->addr.etbTopoCnt   = 0u;
+            pSenderElement->addr.opTrnTopoCnt = 0u;
+            pSenderElement->dataSize          = 0u;
+            pSenderElement->grossSize         = trdp_packetSizeMD(0);
+            pSenderElement->socketIdx         = TRDP_INVALID_SOCKET_INDEX;
+            pSenderElement->pktFlags          = mdElement->pktFlags; /* use the senders flagset to be able to distinguish between TCP and UDP */
+            pSenderElement->pfCbFunction      = mdElement->pfCbFunction;
+            pSenderElement->replyPort         = mdElement->replyPort;   /* #459 */
+            pSenderElement->privFlags         = TRDP_PRIV_NONE;
+            pSenderElement->sendSize          = 0u;
+            pSenderElement->numReplies        = 0u;
+            pSenderElement->pCachedDS         = NULL;
+            pSenderElement->morituri          = FALSE;
+
             trdp_mdSetSessionTimeout(pSenderElement); /* the ->interval timestruct is already memset to zero */
 
             errv = trdp_mdConnectSocket(appHandle,
@@ -2107,6 +2112,8 @@ static TRDP_ERR_T  trdp_mdRecv (
        case TRDP_MSG_MC:
        case TRDP_MSG_MQ:
        case TRDP_MSG_MP:
+           iterMD = trdp_mdHandleConfirmReply(appHandle, pH);
+           break;
        case TRDP_MSG_ME:
            iterMD = trdp_mdHandleConfirmReply(appHandle, pH);
            break;
@@ -2353,7 +2360,8 @@ TRDP_ERR_T  trdp_mdSend (
 
                     if (0u != iterMD->replyPort &&
                         (iterMD->pPacket->frameHead.msgType == vos_ntohs(TRDP_MSG_MP) ||
-                         iterMD->pPacket->frameHead.msgType == vos_ntohs(TRDP_MSG_MQ)))
+                         iterMD->pPacket->frameHead.msgType == vos_ntohs(TRDP_MSG_MQ) ||
+                         iterMD->pPacket->frameHead.msgType == vos_ntohs(TRDP_MSG_ME)))          /* #459 */
                     {
                         result = trdp_mdSendPacket(appHandle->ifaceMD[iterMD->socketIdx].sock,
                                                    iterMD->replyPort,

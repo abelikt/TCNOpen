@@ -59,4 +59,4 @@ TRDP_APP_SESSION_T *trdp_sessionQueue (void);
 }
 #endif
 
-#endif  /* TRDP_IF_LIGHT_H    */
+#endif  /* TLC_IF_H    */
