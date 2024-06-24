@@ -849,6 +849,15 @@ static void process_data()
         _set_color_default();
     }
 
+    if (printDetailedStatistics)
+    {
+        printOwnStatistics(apph, TRUE);
+    }
+    else
+    {
+        printOwnStatistics(apph, FALSE);
+    }
+
     /* increment cycle counter  */
     ++cycle;
 }
@@ -1016,7 +1025,7 @@ int main(int argc, char* argv[])
         strcpy(sourcip, vos_ipDotted(srcip));
         strcpy(destip, vos_ipDotted(dstip));
         strcpy(mcgroup, vos_ipDotted(mcast));
-        printf("\nParameters:\n  localip  = %s\n  remoteip = %s\n  mcast    = %s\n  logfile  = %s\n  mode     = %s\n\n",
+        printf("\nParameters:\n  localip    = %s\n  remoteip   = %s\n  mcast      = %s\n  logfile    = %s\n  statistics = %s\n\n",
             sourcip, destip, mcgroup,
             (pLogFile == NULL ? "" : filename),
             (printDetailedStatistics == TRUE) ? "detailed statistics" : "statistics overview");
