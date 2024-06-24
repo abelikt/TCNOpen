@@ -436,34 +436,59 @@ EXT_DECL TRDP_ERR_T tlc_getJoinStatistics (
     UINT16              *pNumJoin,
     UINT32              *pIpAddr)
 {
-    TRDP_ERR_T  err = TRDP_NO_ERR;
-    PD_ELE_T    *iter;
-    UINT16      lIndex;
+    UINT16      lIndex, llIndex;
+    UINT16      numJoin = 0;
 
     if (!trdp_isValidSession(appHandle))
     {
+        *pNumJoin = 0;
         return TRDP_NOINIT_ERR;
     }
 
     if (pNumJoin == NULL || pIpAddr == NULL || *pNumJoin == 0)
     {
+        *pNumJoin = 0;
         return TRDP_PARAM_ERR;
     }
 
-    /*  Loop over our subscriptions, but do not exceed user supplied buffers!    */
-    for ((void)(lIndex = 0), iter = appHandle->pRcvQueue; (lIndex < *pNumJoin) && (iter != NULL); (void)(lIndex++), iter = iter->pNext)
+    if (*pNumJoin < appHandle->stats.numJoin++)
     {
-        *pIpAddr++ = iter->addr.mcGroup;                        /* Subscribed MC address.                       */
+        /* supplied buffer to small */
+        *pNumJoin = 0;
+        return TRDP_MEM_ERR;
     }
 
-    if (iter != NULL)
+    /*  Read out the PD subscriptions  */
+    for (lIndex = 0u; lIndex < trdp_getCurrentMaxSocketCnt(TRDP_SOCK_PD); lIndex++)
     {
-        err = TRDP_MEM_ERR;
+        for (llIndex = 0u; (llIndex < VOS_MAX_MULTICAST_CNT) && (numJoin < *pNumJoin); llIndex++)
+        {
+            if (appHandle->ifacePD[lIndex].mcGroups[llIndex] != 0u)
+            {
+                *pIpAddr++ = appHandle->ifacePD[lIndex].mcGroups[llIndex];
+                numJoin++;
+            }
+        }
     }
 
-    *pNumJoin = lIndex;
+#if MD_SUPPORT
+    /* Read out the joins on MD sockets, as well */
+    for (lIndex = 0u; lIndex < trdp_getCurrentMaxSocketCnt(TRDP_SOCK_MD_UDP) && (numJoin < *pNumJoin); lIndex++)
+    {
+        for (llIndex = 0u; llIndex < VOS_MAX_MULTICAST_CNT; llIndex++)
+        {
+            if (appHandle->ifaceMD[lIndex].mcGroups[llIndex] != 0u)
+            {
+                *pIpAddr++ = appHandle->ifaceMD[lIndex].mcGroups[llIndex];
+                numJoin++;
+            }
+        }
+    }
+#endif
 
-    return err;
+    *pNumJoin = numJoin;
+
+    return TRDP_NO_ERR;
 }
 
 /**********************************************************************************************************************/
