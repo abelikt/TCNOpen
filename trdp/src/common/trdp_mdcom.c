@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-25: Ticket #440 etbTopoCnt and opTrnTopoCnt values in TRDP_MSG_MP/TRDP_MSG_MQ/TRDP_MSG_ME
  *     AHW 2024-06-19: Ticket #459 'Me' shall be send to the port the related request was coming from
  *      PL 2023-10-13: Ticket #444 Lint
  *      PL 2023-10-11: Lint warnings
@@ -1754,9 +1755,9 @@ static TRDP_ERR_T trdp_mdHandleRequest (TRDP_SESSION_PT     appHandle,
             iterMD->pUserRef = iterListener->pUserRef;
             iterMD->pfCbFunction        = iterListener->pfCbFunction;
             iterMD->stateEle            = state;
-            iterMD->addr.etbTopoCnt     = iterListener->addr.etbTopoCnt;
-            iterMD->addr.opTrnTopoCnt   = iterListener->addr.opTrnTopoCnt;
-            iterMD->pktFlags            = iterListener->pktFlags;           /* BL: This was missing! */
+            iterMD->addr.etbTopoCnt     = vos_ntohl(pH->etbTopoCnt);    /* #440 take over topoCount from the caller session */
+            iterMD->addr.opTrnTopoCnt   = vos_ntohl(pH->opTrnTopoCnt);  /* #440 take over topoCount from the caller session */
+            iterMD->pktFlags            = iterListener->pktFlags;       /* BL: This was missing! */
             iterMD->pListener           = iterListener;
 
 
@@ -1847,7 +1848,7 @@ static TRDP_ERR_T trdp_mdHandleRequest (TRDP_SESSION_PT     appHandle,
  *  The routine is essentially a new call like Mn, therefore it leaves no open session behind.
  *
  *  @param[in]      appHandle           the handle returned by tlc_init
- *  @param[in]      pH                  the retrieved item header, where no listener was matching
+ *  @param[in]      pH                  the retrieved item header, where no listener was matching or no more receivers
  *  @param[in]      replyStatus         must be either TRDP_REPLY_NO_REPLIER_INST or TRDP_REPLY_NO_MEM_REPL
  *
  */
@@ -1886,8 +1887,8 @@ static TRDP_ERR_T trdp_mdSendME (TRDP_SESSION_PT appHandle, MD_HEADER_T *pH, INT
             pSenderElement->addr.srcIpAddr    = mdElement->addr.destIpAddr;
             pSenderElement->addr.destIpAddr   = mdElement->addr.srcIpAddr;
             pSenderElement->addr.mcGroup      = 0u;
-            pSenderElement->addr.etbTopoCnt   = 0u;
-            pSenderElement->addr.opTrnTopoCnt = 0u;
+            pSenderElement->addr.etbTopoCnt   = mdElement->addr.etbTopoCnt;    /* #440 take over topoCount from the caller session */
+            pSenderElement->addr.opTrnTopoCnt = mdElement->addr.opTrnTopoCnt;  /* #440 take over topoCount from the caller session */
             pSenderElement->dataSize          = 0u;
             pSenderElement->grossSize         = trdp_packetSizeMD(0);
             pSenderElement->socketIdx         = TRDP_INVALID_SOCKET_INDEX;
@@ -1929,7 +1930,6 @@ static TRDP_ERR_T trdp_mdSendME (TRDP_SESSION_PT appHandle, MD_HEADER_T *pH, INT
                     vos_memFree(pSenderElement);
                     pSenderElement = NULL;
                     errv = TRDP_MEM_ERR;
-
                 }
                 else
                 {
@@ -2966,8 +2966,6 @@ void  trdp_mdCheckListenSocks (
 }
 
 
-
-
 /**********************************************************************************************************************/
 /** Checking message data timeouts
  *  Call user's callback if needed
@@ -3317,7 +3315,7 @@ TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,
     UINT32          sequenceCounter;
     TRDP_ERR_T      errv = TRDP_NOSESSION_ERR;  /* Ticket #281 */
     MD_ELE_T        *pSenderElement = NULL;
-    BOOL8 newSession = FALSE;
+    BOOL8           newSession = FALSE;
 
     /*check for valid values within msgType*/
     if ((msgType != TRDP_MSG_MP)
@@ -3494,7 +3492,6 @@ TRDP_ERR_T trdp_mdCall (
 {
     TRDP_ERR_T  errv = TRDP_NO_ERR;
     MD_ELE_T    *pSenderElement = NULL;
-
     UINT32      timeoutWire = 0U;
 
     /*check for valid values within msgType*/
@@ -3545,19 +3542,19 @@ TRDP_ERR_T trdp_mdCall (
                 ((pSendParam != NULL) ? pSendParam->retries : appHandle->mdDefault.sendParam.retries);
         } /* no else needed as memset has set all memory to zero */
           /* Prepare element data */
-        pSenderElement->addr.comId = comId;
-        pSenderElement->addr.srcIpAddr      = srcIpAddr;
-        pSenderElement->addr.destIpAddr     = destIpAddr;
-        pSenderElement->addr.etbTopoCnt     = etbTopoCnt;
-        pSenderElement->addr.opTrnTopoCnt   = opTrnTopoCnt;
-        pSenderElement->addr.mcGroup        = (vos_isMulticast(destIpAddr)) ? destIpAddr : 0u;
-        pSenderElement->privFlags           = TRDP_PRIV_NONE;
-        pSenderElement->dataSize    = dataSize;
-        pSenderElement->grossSize   = trdp_packetSizeMD(dataSize);
-        pSenderElement->sendSize    = 0u;
-        pSenderElement->numReplies  = 0u;
-        pSenderElement->pCachedDS   = NULL;
-        pSenderElement->morituri    = FALSE;
+        pSenderElement->addr.comId        = comId;
+        pSenderElement->addr.srcIpAddr    = srcIpAddr;
+        pSenderElement->addr.destIpAddr   = destIpAddr;
+        pSenderElement->addr.etbTopoCnt   = etbTopoCnt;
+        pSenderElement->addr.opTrnTopoCnt = opTrnTopoCnt;
+        pSenderElement->addr.mcGroup      = (vos_isMulticast(destIpAddr)) ? destIpAddr : 0u;
+        pSenderElement->privFlags         = TRDP_PRIV_NONE;
+        pSenderElement->dataSize          = dataSize;
+        pSenderElement->grossSize         = trdp_packetSizeMD(dataSize);
+        pSenderElement->sendSize          = 0u;
+        pSenderElement->numReplies        = 0u;
+        pSenderElement->pCachedDS         = NULL;
+        pSenderElement->morituri          = FALSE;
         if ( msgType == TRDP_MSG_MR )
         {
             /* Multiple replies expected only for multicast */
@@ -3730,10 +3727,10 @@ TRDP_ERR_T trdp_mdConfirm (
             pSenderElement->addr.mcGroup    = (vos_isMulticast(destIpAddr)) ? destIpAddr : 0u;
             pSenderElement->privFlags       = TRDP_PRIV_NONE;
 
-            pSenderElement->sendSize    = 0u;
-            pSenderElement->numReplies  = 0u;
-            pSenderElement->pCachedDS   = NULL;
-            pSenderElement->morituri    = FALSE;
+            pSenderElement->sendSize        = 0u;
+            pSenderElement->numReplies      = 0u;
+            pSenderElement->pCachedDS       = NULL;
+            pSenderElement->morituri        = FALSE;
 
             errv = trdp_mdConnectSocket(appHandle,
                                         pSendParam,

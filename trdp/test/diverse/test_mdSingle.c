@@ -14,6 +14,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-25: Ticket #440 etbTopoCnt and opTrnTopoCnt values in TRDP_MSG_MP/TRDP_MSG_MQ
  *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -69,8 +70,10 @@ typedef struct sSessionData
     BOOL8               sExitAfterReply;
     BOOL8               sLoop;
     BOOL8               sLastRun;
-    BOOL8               sNoData;
     UINT32              sComID;
+    BOOL8               sTrainwideComm;
+    UINT32              etbTopoCount;
+    UINT32              opTrainTopoCount;
     TRDP_APP_SESSION_T  appHandle;              /*    Our identifier to the library instance    */
     TRDP_LIS_T          listenUDP;              /*    Our identifier to the publication         */
     TRDP_LIS_T          listenTCP;              /*    Our identifier to the publication         */
@@ -78,7 +81,7 @@ typedef struct sSessionData
     UINT32              sDataSize;
 } SESSION_DATA_T;
 
-SESSION_DATA_T  sSessionData = {FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, MD_COMID1, NULL, NULL, NULL, TRUE, 0u};
+SESSION_DATA_T  sSessionData = {FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, MD_COMID1, FALSE, 1, 2, NULL, NULL, NULL, TRUE, 0u};
 
 UINT32          ownIP = 0u;
 
@@ -146,8 +149,8 @@ void usage (const char *appName)
            "-c                     respond with confirmation (default without)\n"
            "-n                     notify only (default request)\n"
            "-l <bytes>             send large random message (up to 65420 Bytes)\n"
-           "-0                     send no data\n"
            "-1                     send only one request/notification\n"
+           "-x                     trainwide communication (topoCounts > 0)\n"
            "-b <0|1>               blocking mode (default = 1, blocking)\n"
            "-v    print version and quit\n"
            );
@@ -356,8 +359,7 @@ int main (int argc, char *argv[])
     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, PREALLOCATE};
     TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     VOS_IF_REC_T            interfaces[MAX_IF];
-    BOOL8           lastRun = FALSE;
-    TRDP_ERR_T      err     = TRDP_NO_ERR;
+    TRDP_ERR_T              err     = TRDP_NO_ERR;
 
     int             rv = 0;
     UINT32          destIP      = 0u;
@@ -374,7 +376,7 @@ int main (int argc, char *argv[])
     }
 
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:p:d:l:e:b:h?vrcn01")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:p:d:l:e:b:h?vrxcn1")) != -1)
     {
         switch (ch)
         {
@@ -428,7 +430,7 @@ int main (int argc, char *argv[])
            }
            case 'l':
            {    /*  used data size   */
-               if (sscanf(optarg, "%u", &sSessionData.sDataSize ) < 1)
+               if (sscanf(optarg, "%u", &sSessionData.sDataSize) < 1)
                {
                    usage(argv[0]);
                    return 1;
@@ -443,6 +445,11 @@ int main (int argc, char *argv[])
            case 'n':
            {
                sSessionData.sNotifyOnly = TRUE;
+               break;
+           }
+           case 'x':
+           {
+               sSessionData.sTrainwideComm = TRUE;
                break;
            }
            case 'd':
@@ -480,11 +487,6 @@ int main (int argc, char *argv[])
                }
                break;
            }
-           case '0':
-           {
-               sSessionData.sNoData = TRUE;
-               break;
-           }
            case '1':
            {
                sSessionData.sOnlyOnce = TRUE;
@@ -512,16 +514,16 @@ int main (int argc, char *argv[])
 
         strcpy(srcip, vos_ipDotted(ownIP));
         strcpy(dstip, vos_ipDotted(destIP));
-        printf("\nParameters:\n  mode        = %s\n  localip     = %s\n  remoteip    = %s\n  protocol    = %s\n  timeout     = %d"
-               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  no data     = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n\n",
+        printf("\nParameters:\n  mode        = %s\n  localip     = %s\n  remoteip    = %s\n  protocol    = %s\n  timeout     = %d\n  trainwide   = %s"
+               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n\n",
             (sSessionData.sResponder == FALSE)? "caller" : "replier",
             srcip, dstip,
             (flags & TRDP_FLAGS_TCP)?"TCP":"UDP",
             delay,
+            sSessionData.sTrainwideComm == TRUE ? "TRUE":"FALSE",
             expReplies,
             sSessionData.sConfirmRequested == TRUE ? "TRUE" : "FALSE",
             sSessionData.sNotifyOnly == TRUE ? "TRUE" : "FALSE",
-            sSessionData.sNoData == TRUE ? "TRUE" : "FALSE",
             sSessionData.sOnlyOnce == TRUE ? "TRUE" : "FALSE",
             sSessionData.sDataSize,
             sSessionData.sBlockingMode == TRUE ? "TRUE" : "FALSE");
@@ -561,12 +563,15 @@ int main (int argc, char *argv[])
                         0,                         /* use default IP address    */
                         NULL,                      /* no Marshalling            */
                         NULL,
-                        &mdConfiguration,    /* system defaults for PD    */
+                        &mdConfiguration,          /* system defaults for MD    */
                         &processConfig) != TRDP_NO_ERR)
     {
         vos_printLogStr(VOS_LOG_ERROR, "tlc_openSession error\n");
         return 1;
     }
+
+    tlc_setETBTopoCount(sSessionData.appHandle, sSessionData.etbTopoCount);
+    tlc_setOpTrainTopoCount(sSessionData.appHandle, sSessionData.opTrainTopoCount);
 
     /*    Set up a listener  */
     if (sSessionData.sResponder == TRUE)
@@ -575,7 +580,9 @@ int main (int argc, char *argv[])
         if (tlm_addListener(sSessionData.appHandle, &sSessionData.listenUDP,
                             &sSessionData, mdCallback,
                             TRUE, sSessionData.sComID,
-                            0u, 0u, VOS_INADDR_ANY, VOS_INADDR_ANY, destIP,
+                            sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                            sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
+                            VOS_INADDR_ANY, VOS_INADDR_ANY, destIP,
                             TRDP_FLAGS_CALLBACK, NULL, NULL) != TRDP_NO_ERR)
         {
             vos_printLogStr(VOS_LOG_ERROR, "tlm_addListener error (TCP)\n");
@@ -585,7 +592,9 @@ int main (int argc, char *argv[])
         if (tlm_addListener(sSessionData.appHandle, &sSessionData.listenTCP,
                             &sSessionData, mdCallback,
                             TRUE, sSessionData.sComID,
-                            0u, 0u, VOS_INADDR_ANY, VOS_INADDR_ANY, destIP,
+                            sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                            sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
+                            VOS_INADDR_ANY, VOS_INADDR_ANY, destIP,
                             TRDP_FLAGS_TCP | TRDP_FLAGS_CALLBACK, NULL, NULL) != TRDP_NO_ERR)
         {
             vos_printLogStr(VOS_LOG_ERROR, "tlm_addListener error (UDP)\n");
@@ -678,11 +687,7 @@ int main (int argc, char *argv[])
             }
         }
 
-        if (lastRun == TRUE)
-        {
-            sSessionData.sLoop = FALSE;
-        }
-        else if ((sSessionData.sResponder == FALSE) && (sSessionData.sExitAfterReply == FALSE))
+        if ((sSessionData.sResponder == FALSE) && (sSessionData.sExitAfterReply == FALSE))
         {
             TRDP_UUID_T sessionId;
             UINT32      i, j;
@@ -692,14 +697,14 @@ int main (int argc, char *argv[])
             {
                 vos_printLog(VOS_LOG_USR, "-> sending MR Notification %u\n", sSessionData.sComID);
 
-                if (sSessionData.sNoData == TRUE)
+                if (sSessionData.sDataSize == 0)
                 {
                     tlm_notify( sSessionData.appHandle,
                                 &sSessionData,
                                 NULL,
                                 sSessionData.sComID,
-                                0,
-                                0,
+                                sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                                sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
                                 ownIP,
                                 destIP,
                                 flags,
@@ -710,7 +715,7 @@ int main (int argc, char *argv[])
                                 0);
 
                 }
-                else if (sSessionData.sDataSize > 0)
+                else if (sSessionData.sDataSize > 13)
                 {
                     for (i = 0, j = 0; i < sSessionData.sDataSize; i++)
                     {
@@ -724,8 +729,8 @@ int main (int argc, char *argv[])
                                       &sSessionData,
                                       mdCallback,
                                       sSessionData.sComID,
-                                      0,
-                                      0,
+                                      sSessionData.sTrainwideComm ? sSessionData.etbTopoCount:0,
+                                      sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount:0,
                                       ownIP,
                                       destIP,
                                       flags,
@@ -734,7 +739,6 @@ int main (int argc, char *argv[])
                                       sSessionData.sDataSize,
                                       0,
                                       0);
-
                 }
                 else
                 {
@@ -742,8 +746,8 @@ int main (int argc, char *argv[])
                                      &sSessionData,
                                      mdCallback,
                                      sSessionData.sComID,
-                                     0,
-                                     0,
+                                     sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                                     sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
                                      ownIP,
                                      destIP,
                                      flags,
@@ -762,15 +766,29 @@ int main (int argc, char *argv[])
             else
             {
                 vos_printLog(VOS_LOG_USR, "-> sending MR Request with reply %u\n", sSessionData.sComID);
-                if (sSessionData.sNoData == TRUE)
+                if (sSessionData.sDataSize == 0)
                 {
 
-                    err = tlm_request(sSessionData.appHandle, &sSessionData, mdCallback, &sessionId,
-                                      sSessionData.sComID, 0u, 0u, ownIP,
-                                      destIP, flags, expReplies, delay, NULL, NULL, 0u, NULL, NULL);
+                    err = tlm_request(sSessionData.appHandle,
+                                      &sSessionData, 
+                                      mdCallback, 
+                                      &sessionId,
+                                      sSessionData.sComID,
+                                      sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                                      sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
+                                      ownIP,
+                                      destIP,
+                                      flags,
+                                      expReplies, 
+                                      delay, 
+                                      NULL, 
+                                      NULL, 
+                                      0u,
+                                      NULL, 
+                                      NULL);
 
                 }
-                else if (sSessionData.sDataSize > 0)
+                else if (sSessionData.sDataSize > 13)
                 {
                     for (i = 0, j = 0; i < sSessionData.sDataSize; i++)
                     {
@@ -785,8 +803,8 @@ int main (int argc, char *argv[])
                                       mdCallback,
                                       &sessionId,
                                       sSessionData.sComID,
-                                      0,
-                                      0,
+                                      sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                                      sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
                                       ownIP,
                                       destIP,
                                       flags,
@@ -806,8 +824,8 @@ int main (int argc, char *argv[])
                                       mdCallback,
                                       &sessionId,
                                       sSessionData.sComID,
-                                      0,
-                                      0,
+                                      sSessionData.sTrainwideComm ? sSessionData.etbTopoCount : 0,
+                                      sSessionData.sTrainwideComm ? sSessionData.opTrainTopoCount : 0,
                                       ownIP,
                                       destIP,
                                       flags,
@@ -828,7 +846,6 @@ int main (int argc, char *argv[])
 
             if (sSessionData.sOnlyOnce == TRUE)
             {
-         //       lastRun = TRUE;
                 sSessionData.sExitAfterReply = TRUE;
             }
 
