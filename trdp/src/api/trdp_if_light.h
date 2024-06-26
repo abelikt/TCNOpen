@@ -17,9 +17,10 @@
 /*
 * $Id$
 *
+*     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
 *      PL 2023-10-05: Ticket #435 Cleanup VLAN and TSN options at different places
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
-*      A� 2023-01-13: Ticket #412 Added tlp_republishService
+*     AHW 2023-01-13: Ticket #412 Added tlp_republishService
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced
 *      BL 2020-09-08: Ticket #343 userStatus parameter size in tlm_reply and tlm_replyQuery
 *      BL 2020-08-05: tlc_freeBuffer() declaration removed, it was never defined!
@@ -278,7 +279,7 @@ EXT_DECL TRDP_ERR_T tlm_getInterval (
     TRDP_FDS_T          *pFileDesc,
     TRDP_SOCK_T         *pNoDesc);
 
-EXT_DECL TRDP_ERR_T tlm_notify (
+EXT_DECL TRDP_ERR_T tlm_notify (                 /* #261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const void              *pUserRef,
     TRDP_MD_CALLBACK_T      pfCbFunction,
@@ -288,14 +289,13 @@ EXT_DECL TRDP_ERR_T tlm_notify (
     TRDP_IP_ADDR_T          srcIpAddr,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
     const TRDP_URI_USER_T   destURI);
 
 
-EXT_DECL TRDP_ERR_T tlm_request (
+EXT_DECL TRDP_ERR_T tlm_request (                 /* #261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const void              *pUserRef,
     TRDP_MD_CALLBACK_T      pfCbFunction,
@@ -308,18 +308,17 @@ EXT_DECL TRDP_ERR_T tlm_request (
     TRDP_FLAGS_T            pktFlags,
     UINT32                  numReplies,
     UINT32                  replyTimeout,
-    const TRDP_COM_PARAM_T *pSendParam,
+    UINT8                   retries,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
     const TRDP_URI_USER_T   destURI);
 
 
-EXT_DECL TRDP_ERR_T tlm_confirm (
+EXT_DECL TRDP_ERR_T tlm_confirm (                 /* #261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
-    UINT16                  userStatus,
-    const TRDP_COM_PARAM_T *pSendParam);
+    UINT16                  userStatus);
 
 
 EXT_DECL TRDP_ERR_T tlm_abortSession (
@@ -357,23 +356,21 @@ EXT_DECL TRDP_ERR_T tlm_delListener (
     TRDP_APP_SESSION_T  appHandle,
     TRDP_LIS_T          listenHandle);
 
-EXT_DECL TRDP_ERR_T tlm_reply (
+EXT_DECL TRDP_ERR_T tlm_reply (                      /* #261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI);
 
-EXT_DECL TRDP_ERR_T tlm_replyQuery (
+EXT_DECL TRDP_ERR_T tlm_replyQuery (                 /* #261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
     UINT32                  confirmTimeout,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI);

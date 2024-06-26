@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
 *      PL 2023-10-05: Ticket #437 Loss of UDP messages if a distant equipment is not available
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -211,7 +212,6 @@ EXT_DECL TRDP_ERR_T tlm_process (
  *  @param[in]      destIpAddr          where to send the packet to
  *  @param[in]      pktFlags            OPTION:
  *                                      TRDP_FLAGS_DEFAULT, TRDP_FLAGS_NONE, TRDP_FLAGS_MARSHALL, TRDP_FLAGS_CALLBACK
- *  @param[in]      pSendParam          optional pointer to send parameter, NULL - default parameters are used
  *  @param[in]      pData               pointer to packet data / dataset
  *  @param[in]      dataSize            size of packet data
  *  @param[in]      srcURI              only functional group of source URI
@@ -232,7 +232,6 @@ EXT_DECL TRDP_ERR_T tlm_notify (
     TRDP_IP_ADDR_T          srcIpAddr,
     TRDP_IP_ADDR_T          destIpAddr,
     TRDP_FLAGS_T            pktFlags,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -268,8 +267,8 @@ EXT_DECL TRDP_ERR_T tlm_notify (
                pktFlags,
                0u,                                              /* numbber of repliers for notify */
                0u,                                              /* reply timeout for notify */
-               TRDP_REPLY_OK,                                  /* reply state */
-               pSendParam,
+               TRDP_REPLY_OK,                                   /* reply state */
+               0,                                               /* no retries */
                pData,
                dataSize,
                srcURI,
@@ -318,7 +317,7 @@ EXT_DECL TRDP_ERR_T tlm_request (
     TRDP_FLAGS_T            pktFlags,
     UINT32                  numReplies,
     UINT32                  replyTimeout,
-    const TRDP_COM_PARAM_T *pSendParam,
+    UINT8                   retries,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -358,7 +357,7 @@ EXT_DECL TRDP_ERR_T tlm_request (
     }
     else
     {
-        return trdp_mdCall(
+        return trdp_mdCall(                                              /* #261 send param replaced by retries */
                    TRDP_MSG_MR,                                           /* request with reply */
                    appHandle,
                    pUserRef,
@@ -373,7 +372,7 @@ EXT_DECL TRDP_ERR_T tlm_request (
                    numReplies,
                    mdTimeOut,
                    TRDP_REPLY_OK,                                         /* reply state */
-                   pSendParam,
+                   retries,
                    pData,
                    dataSize,
                    srcURI,
@@ -800,12 +799,11 @@ EXT_DECL TRDP_ERR_T tlm_readdListener (
  *  @retval         TRDP_NO_SESSION_ERR no such session
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  */
-EXT_DECL TRDP_ERR_T tlm_reply (
+EXT_DECL TRDP_ERR_T tlm_reply (                    /* 261 send params removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI)
@@ -822,13 +820,12 @@ EXT_DECL TRDP_ERR_T tlm_reply (
     {
         return TRDP_PARAM_ERR;
     }
-    return trdp_mdReply(TRDP_MSG_MP,
+    return trdp_mdReply(TRDP_MSG_MP,                              /* 261 send params removed */
                         appHandle,
                         (UINT8 *)pSessionId,
                         comId,
                         0u,
                         (INT32)userStatus,
-                        pSendParam,
                         pData,
                         dataSize,
                         pSrcURI);
@@ -856,13 +853,12 @@ EXT_DECL TRDP_ERR_T tlm_reply (
  *  @retval         TRDP_NO_SESSION_ERR no such session
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  */
-EXT_DECL TRDP_ERR_T tlm_replyQuery (
+EXT_DECL TRDP_ERR_T tlm_replyQuery (                /* #261 send param removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
     UINT32                  comId,
     UINT32                  userStatus,
     UINT32                  confirmTimeout,
-    const TRDP_COM_PARAM_T *pSendParam,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI)
@@ -893,13 +889,12 @@ EXT_DECL TRDP_ERR_T tlm_replyQuery (
         mdTimeOut = confirmTimeout;
     }
 
-    return trdp_mdReply(TRDP_MSG_MQ,
+    return trdp_mdReply(TRDP_MSG_MQ,      /* #261 send param removed */
                         appHandle,
                         (UINT8 *)pSessionId,
                         comId,
                         mdTimeOut,
                         (INT32)userStatus,
-                        pSendParam,
                         pData,
                         dataSize,
                         pSrcURI);
@@ -922,17 +917,16 @@ EXT_DECL TRDP_ERR_T tlm_replyQuery (
  *  @retval         TRDP_NOSESSION_ERR  no such session
  *  @retval         TRDP_NOINIT_ERR     handle invalid
  */
-EXT_DECL TRDP_ERR_T tlm_confirm (
+EXT_DECL TRDP_ERR_T tlm_confirm (                               /* #261 send param removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
-    UINT16                  userStatus,
-    const TRDP_COM_PARAM_T *pSendParam)
+    UINT16                  userStatus)
 {
     if ( !trdp_isValidSession(appHandle))
     {
         return TRDP_NOINIT_ERR;
     }
-    return trdp_mdConfirm(appHandle, pSessionId, userStatus, pSendParam);
+    return trdp_mdConfirm(appHandle, pSessionId, userStatus);   /* #261 send param removed */
 }
 
 /**********************************************************************************************************************/

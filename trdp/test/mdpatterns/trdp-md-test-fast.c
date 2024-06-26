@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2023-06-19  Ticket #458 Unify cmd line interfaces of tests
  *     CWE 2023-02-14: Ticket #419 PDTestFastBase2 failed - write timestamps to log
  *     CWE 2023-01-27: Ticket #417 Multicast-N tests always failed due to unknown number of expected multicast repliers. Expected number can now be set as param
@@ -1337,7 +1338,7 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
                     opts.msgsz, 0, sts.counter++, get_msg_type_str(msg->msgType));
            print(0, "%s", buf);
            /* send notification */
-           err = tlm_notify(
+           err = tlm_notify(                        /* #261 send params removed */
                    apph,                            /* session handle */
                    (void *) sts.test,               /* user reference */
                    NULL,                            /* callback function */
@@ -1347,7 +1348,6 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
                    msg->srcIpAddr,                  /* source IP address */
                    msg->destIpAddr,                 /* destination IP address */
                    flags,                           /* flags */
-                   NULL,                            /* send parameters */
                    (UINT8 *) buf,                   /* dataset buffer */
                    opts.msgsz,                      /* dataset size */
                    msg->srcUserURI,                 /* source URI */
@@ -1369,7 +1369,7 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
            /* send request */
            err = tlm_request(
                    apph,                            /* session handle */
-                   (void *) sts.test,        /* user reference */
+                   (void *) sts.test,               /* user reference */
                    NULL,                            /* callback function */
                    &uuid,                           /* session id */
                    msg->comId,                      /* comid */
@@ -1380,7 +1380,7 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
                    flags,                           /* flags */
                    msg->numExpReplies,              /* number of expected replies */
                    opts.tmo * 1000,                 /* reply timeout [usec] */
-                   NULL,                            /* send parameters */
+                   TRDP_MD_DEFAULT_RETRIES,         /* #261 send parameters replaced by retries */
                    (UINT8 *) buf,                   /* dataset buffer */
                    opts.msgsz,                      /* dataset size */
                    msg->srcUserURI,                 /* source URI */
@@ -1400,12 +1400,11 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
                     opts.msgsz, 0, sts.counter++, get_msg_type_str(msg->msgType));
            print(0, "%s", buf);
            /* send reply */
-           err = tlm_reply(
+           err = tlm_reply(                         /* #261 send params removed */
                    apph,                            /* session handle */
                    (const TRDP_UUID_T *) &msg->sessionId,                /* session id */
                    msg->comId,                      /* comid */
                    0,                               /* user status */
-                   NULL,                            /* send parameters */
                    (UINT8 *) buf,                   /* dataset buffer */
                    opts.msgsz,                      /* dataset size */
                    NULL);                           /* srcURI */
@@ -1424,13 +1423,12 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
                     opts.msgsz, 0, sts.counter++, get_msg_type_str(msg->msgType));
            print(0, "%s", buf);
            /* send reply */
-           err = tlm_replyQuery(
+           err = tlm_replyQuery(                   /* #261 send params removed */
                    apph,                            /* session handle */
                    (const TRDP_UUID_T *) &msg->sessionId,  /* session id */
                    msg->comId,                      /* comid */
                    0,                               /* user status */
                    opts.tmo * 1000,                 /* confirm timeout */
-                   NULL,                            /* send parameters */
                    (UINT8 *) buf,                   /* dataset buffer */
                    opts.msgsz,                      /* dataset size */
                    NULL);                           /* srcURI */
@@ -1446,12 +1444,11 @@ void send_msg (TRDP_MD_INFO_T *msg, TRDP_FLAGS_T flags)
 
        case TRDP_MSG_MC:
            /* send confirm */
-           err = tlm_confirm(
-                   apph,                            /* session handle */
-                   (const TRDP_UUID_T *) &msg->sessionId,  /* session id */
-                   (UINT16) msg->replyStatus,       /* reply status */
-                   NULL);                           /* send parameters */
-
+           err = tlm_confirm(                            /* #261 send params removed */
+                   apph,                                 /* session handle */
+                   (const TRDP_UUID_T*)&msg->sessionId,  /* session id */
+                   (UINT16)msg->replyStatus);            /* reply status */
+ 
            /* check for errors */
            if (err != TRDP_NO_ERR)
            {

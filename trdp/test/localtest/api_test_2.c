@@ -19,6 +19,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-02-02: Analyzed parameters of main() echoed to screen output
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -1287,7 +1288,7 @@ static void  test5CBFunction (
                 fprintf(gFp, "## srcUserURI wrong\n");
             }
             fprintf(gFp, "->> Sending reply\n");
-            err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST5_STRING_COMID, 0u, 500000u, NULL,
+            err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST5_STRING_COMID, 0u, 500000u,                             /* #261 send params removed */
                                  (UINT8 *)TEST5_STRING_REPLY, 63 * 1024 /*strlen(TEST5_STRING_REPLY)*/, NULL);
 
             IF_ERROR("tlm_reply");
@@ -1298,7 +1299,7 @@ static void  test5CBFunction (
     {
         fprintf(gFp, "->> Reply received (%s)\n", pData);
         fprintf(gFp, "->> Sending confirmation\n");
-        err = tlm_confirm(appHandle, &pMsg->sessionId, 0u, NULL);
+        err = tlm_confirm(appHandle, &pMsg->sessionId, 0u);               /* #261 send params removed */
 
         IF_ERROR("tlm_confirm");
     }
@@ -1354,7 +1355,7 @@ static int test5 ()
         err = tlm_request(appHandle1, NULL, test5CBFunction, &sessionId1,
                           TEST5_STRING_COMID, 0u, 0u,
                           0u, gSession2.ifaceIP,
-                          TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, NULL,
+                          TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,           /* #261 send params removed */
                           (UINT8 *)TEST5_STRING_REQUEST, 63 * 1024 /*strlen(TEST5_STRING_REQUEST)*/,
                           srcURI, destURI2);
 
@@ -1367,7 +1368,7 @@ static int test5 ()
         err = tlm_request(appHandle1, NULL, test5CBFunction, &sessionId1,
                           TEST5_STRING_COMID, 0u, 0u,
                           0u, gSession2.ifaceIP,
-                          TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, NULL,
+                          TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,        /* #261 send params removed */
                           (UINT8 *)TEST5_STRING_REQUEST, 63 * 1024 /*strlen(TEST5_STRING_REQUEST)*/,
                           srcURI, destURI2);
 
@@ -1422,7 +1423,7 @@ static int test6 ()
         err = tlm_request(appHandle1, NULL, test5CBFunction, &sessionId1,
                           TEST5_STRING_COMID, 0u, 0u,
                           0u, gSession2.ifaceIP,
-                          TRDP_FLAGS_CALLBACK, 1u, 1000000u, NULL,
+                          TRDP_FLAGS_CALLBACK, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,                          /* #261 send param replaced by retries */
                           (UINT8 *)TEST5_STRING_REQUEST, (UINT32) strlen(TEST5_STRING_REQUEST),
                           srcURI, destURI2);
 
@@ -1474,7 +1475,7 @@ static int test7 ()
         fprintf(gFp, "->> MD Listener set up\n");
 
         err = tlm_notify(appHandle1, NULL, test5CBFunction, TEST5_STRING_COMID, 0u, 0u, 0u,
-                         gSession2.ifaceIP, TRDP_FLAGS_CALLBACK, NULL,
+                         gSession2.ifaceIP, TRDP_FLAGS_CALLBACK,                                                /* #261 send params removed */
                          (UINT8 *)TEST5_STRING_REQUEST, (UINT32) strlen(TEST5_STRING_REQUEST), NULL, NULL );
 
 
@@ -2305,7 +2306,7 @@ static void  test15CBFunction (
               }
  */
             fprintf(gFp, "->> Sending reply with query (%.16s)\n", (UINT8 *)TEST15_STRING_REPLY);
-            err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST15_STRING_COMID, 0u, 0u, NULL,
+            err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST15_STRING_COMID, 0u, 0u,               /* #261 send params removed */
                                  (UINT8 *)TEST15_STRING_REPLY, TEST15_STRING_REPLY_LEN, NULL);
 
             IF_ERROR("tlm_reply");
@@ -2316,7 +2317,7 @@ static void  test15CBFunction (
     {
         fprintf(gFp, "<<- Reply received (%.16s...)\n", localData);
         fprintf(gFp, "->> Sending confirmation\n");
-        err = tlm_confirm(appHandle, &pMsg->sessionId, 0u, NULL);
+        err = tlm_confirm(appHandle, &pMsg->sessionId, 0u);                                                /* #261 send params removed */
 
         IF_ERROR("tlm_confirm");
     }
@@ -2383,7 +2384,7 @@ static int test15 ()
             err = tlm_request(appHandle1, NULL, test15CBFunction, &sessionId1,
                               TEST5_STRING_COMID, 0u, 0u,
                               0u, gSession2.ifaceIP,
-                              TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, NULL,
+                              TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,      /* #261 send params replaced by retries */
                               (UINT8 *)TEST15_STRING_REQUEST, TEST15_STRING_REQUEST_LEN,
                               srcURI, destURI2);
 
@@ -2403,7 +2404,7 @@ static int test15 ()
             err = tlm_request(appHandle1, NULL, test15CBFunction, &sessionId1,
                               TEST5_STRING_COMID, 0u, 0u,
                               0u, gSession2.ifaceIP,
-                              TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, NULL,
+                              TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,      /* #261 send params replaced by retries */
                               (UINT8 *)TEST15_STRING_REQUEST, TEST15_STRING_REQUEST_LEN,
                               srcURI, destURI2);
 
@@ -2462,7 +2463,7 @@ static int test16 ()
             err = tlm_request(appHandle1, NULL, test15CBFunction, &sessionId1,
                               TEST5_STRING_COMID, 0u, 0u,
                               0u, gSession2.ifaceIP,
-                              TRDP_FLAGS_CALLBACK, 1u, 1000000u, NULL,
+                              TRDP_FLAGS_CALLBACK, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,      /* #261 send params replaced by retries */
                               (UINT8 *)TEST15_STRING_REQUEST, TEST15_STRING_REQUEST_LEN,
                               NULL, NULL);
 
@@ -2482,7 +2483,7 @@ static int test16 ()
             err = tlm_request(appHandle1, NULL, test15CBFunction, &sessionId1,
                               TEST5_STRING_COMID, 0u, 0u,
                               0u, gSession2.ifaceIP,
-                              TRDP_FLAGS_CALLBACK, 1u, 1000000u, NULL,
+                              TRDP_FLAGS_CALLBACK, 1u, 1000000u, TRDP_MD_DEFAULT_RETRIES,      /* #261 send params replaced by retries */
                               (UINT8 *)TEST15_STRING_REQUEST, TEST15_STRING_REQUEST_LEN,
                               NULL, NULL);
 

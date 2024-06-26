@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *     AHW 2023-01-11: Lint warnigs and Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
  *     AHW 2023-01-10: Ticket #409 In updateTCNDNSentry(), the parameter noDesc of vos_select() is uninitialized if tlc_getInterval() fails
@@ -942,7 +943,7 @@ static void updateTCNDNSentry (
                         TRDP_FLAGS_CALLBACK,
                         1u,
                         TCN_DNS_REQ_TO_US,
-                        NULL,
+                        TRDP_MD_DEFAULT_RETRIES,                    /* 261 */
                         sTCN_DNS_Buffer,
                         querySize,
                         NULL,

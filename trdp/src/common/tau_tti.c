@@ -26,6 +26,7 @@
 /*
 * $Id$
 *
+*     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *     AHW 2023-02-27: tau_getCstFctInfo interface change to fit to tau_getVehInfo() and tau_getCstInfo() 
 *     AHW 2023-02-21: Lint warnings
@@ -1179,7 +1180,7 @@ static void ttiRequestTTDBdata (
             (void) tlm_request(appHandle, NULL, ttiMDCallback, NULL, TTDB_OP_DIR_INFO_REQ_COMID, appHandle->etbTopoCnt,
                                appHandle->opTrnTopoCnt, 0, tau_ipFromURI(appHandle,
                                                                      TTDB_OP_DIR_INFO_REQ_URI), TRDP_FLAGS_CALLBACK, 1,
-                               TTDB_OP_DIR_INFO_REQ_TO_US, NULL, &param, sizeof(param), NULL, NULL);
+                               TTDB_OP_DIR_INFO_REQ_TO_US, TRDP_MD_DEFAULT_RETRIES, &param, sizeof(param), NULL, NULL);     /* #261 */
             /* Make sure the request is sent: */
         }
         break;
@@ -1189,7 +1190,7 @@ static void ttiRequestTTDBdata (
             (void) tlm_request(appHandle, NULL, ttiMDCallback, NULL, TTDB_TRN_DIR_REQ_COMID, appHandle->etbTopoCnt,
                                appHandle->opTrnTopoCnt, 0, tau_ipFromURI(appHandle,
                                                                      TTDB_TRN_DIR_REQ_URI), TRDP_FLAGS_CALLBACK, 1,
-                               TTDB_TRN_DIR_REQ_TO_US, NULL, &param, sizeof(param), NULL, NULL);
+                               TTDB_TRN_DIR_REQ_TO_US, TRDP_MD_DEFAULT_RETRIES, &param, sizeof(param), NULL, NULL);        /* #261 */
         }
         break;
         case TTDB_NET_DIR_REQ_COMID:
@@ -1198,7 +1199,7 @@ static void ttiRequestTTDBdata (
             (void) tlm_request(appHandle, NULL, ttiMDCallback, NULL, TTDB_NET_DIR_REQ_COMID, appHandle->etbTopoCnt,
                                appHandle->opTrnTopoCnt, 0, tau_ipFromURI(appHandle,
                                                                      TTDB_NET_DIR_REQ_URI), TRDP_FLAGS_CALLBACK, 1,
-                               TTDB_NET_DIR_REQ_TO_US, NULL, &param, sizeof(param), NULL, NULL);
+                               TTDB_NET_DIR_REQ_TO_US, TRDP_MD_DEFAULT_RETRIES, &param, sizeof(param), NULL, NULL);        /* #261 */
         }
         break;
         case TTDB_READ_CMPLT_REQ_COMID:
@@ -1207,7 +1208,7 @@ static void ttiRequestTTDBdata (
             (void) tlm_request(appHandle, NULL, ttiMDCallback, NULL, TTDB_READ_CMPLT_REQ_COMID, appHandle->etbTopoCnt,
                                appHandle->opTrnTopoCnt, 0, tau_ipFromURI(appHandle,
                                                                      TTDB_READ_CMPLT_REQ_URI), TRDP_FLAGS_CALLBACK, 1,
-                               TTDB_READ_CMPLT_REQ_TO_US, NULL, &param, sizeof(param), NULL, NULL);
+                               TTDB_READ_CMPLT_REQ_TO_US, TRDP_MD_DEFAULT_RETRIES, &param, sizeof(param), NULL, NULL);       /* #261 */
         }
         break;
         case TTDB_STAT_CST_REQ_COMID:
@@ -1215,7 +1216,7 @@ static void ttiRequestTTDBdata (
             (void) tlm_request(appHandle, NULL, ttiMDCallback, NULL, TTDB_STAT_CST_REQ_COMID, appHandle->etbTopoCnt,
                                appHandle->opTrnTopoCnt, 0, tau_ipFromURI(appHandle,
                                                                      TTDB_STAT_CST_REQ_URI), TRDP_FLAGS_CALLBACK, 1,
-                               TTDB_STAT_CST_REQ_TO_US, NULL, cstUUID, sizeof(TRDP_UUID_T), NULL, NULL);
+                               TTDB_STAT_CST_REQ_TO_US, TRDP_MD_DEFAULT_RETRIES, cstUUID, sizeof(TRDP_UUID_T), NULL, NULL);   /* #261 */
         }
         break;
 

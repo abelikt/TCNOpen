@@ -16,6 +16,7 @@
  *
  * $Id$
  * 
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-06.19: Ticket #458 Unify cmd line interfaces of tests
  *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
@@ -145,14 +146,15 @@ static  void mdCallback(
         case TRDP_NO_ERR:
             if (pMsg->comId == CALLTEST_MR_COMID)
             {
-                err = tlm_replyQuery(appSessionReplier,
+                err = tlm_replyQuery(appSessionReplier,                                  /* #261 send params removed */
                                      (const TRDP_UUID_T*)pMsg->sessionId,
                                      CALLTEST_MQ_COMID,
                                      0,
                                      1500000,
-                                     NULL,
                                      (const UINT8*)&dataMQ,
-                                     sizeof(dataMQ), NULL);
+                                     sizeof(dataMQ),
+                                     NULL);
+
                 if (err != TRDP_NO_ERR)
                 {
                     /* echo unformatted error code */
@@ -164,11 +166,10 @@ static  void mdCallback(
             {
                 /* This ComID serves as fast statistics server, providing some load also */
                 prepareData((char*)&dataMP,appSessionReplier,countMQ,countMP);
-                err = tlm_reply(appSessionReplier,
+                err = tlm_reply(appSessionReplier,                                  /* #261 send params removed */
                                 (const TRDP_UUID_T*)pMsg->sessionId,
                                 CALLTEST_MP_COMID,
                                 0,
-                                NULL,
                                 (const UINT8*)&dataMP,
                                 sizeof(dataMP), NULL);
                 if (err != TRDP_NO_ERR)
@@ -181,11 +182,10 @@ static  void mdCallback(
             if (pMsg->comId == CALLTEST_MR_TOPOX_COMID)
             {
                 /* */
-                err = tlm_reply(appSessionReplier,
+                err = tlm_reply(appSessionReplier,                                  /* #261 send params removed */
                                 (const TRDP_UUID_T*)pMsg->sessionId,
                                 CALLTEST_MP_TOPOX_COMID,
                                 0,
-                                NULL,
                                 (const UINT8*)&dataMP,
                                 sizeof(dataMP), NULL);
                 if (err != TRDP_NO_ERR)
@@ -198,11 +198,10 @@ static  void mdCallback(
             if (pMsg->comId == CALLTEST_MR_INF_COMID)
             {
                 err = tlm_replyQuery(appSessionReplier,
-                                     (const TRDP_UUID_T*)pMsg->sessionId,
+                                     (const TRDP_UUID_T*)pMsg->sessionId,              /* #261 send params removed */
                                      CALLTEST_MQ_INF_COMID,
                                      0,
                                      1500000,
-                                     NULL,
                                      (const UINT8*)&dataMQ,
                                      sizeof(dataMQ), NULL);
                 if (err != TRDP_NO_ERR)

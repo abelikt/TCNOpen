@@ -14,6 +14,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-06-25: Ticket #440 etbTopoCnt and opTrnTopoCnt values in TRDP_MSG_MP/TRDP_MSG_MQ
  *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
@@ -152,7 +153,7 @@ void usage (const char *appName)
            "-1                     send only one request/notification\n"
            "-x                     trainwide communication (topoCounts > 0)\n"
            "-b <0|1>               blocking mode (default = 1, blocking)\n"
-           "-v    print version and quit\n"
+           "-v                     print version and quit\n"
            );
 }
 
@@ -198,12 +199,11 @@ void mdCallback (void                   *pRefCon,
                   if (sSessionData.sConfirmRequested)
                   {
                       vos_printLogStr(VOS_LOG_USR, "-> sending reply with query\n");
-                      err = tlm_replyQuery(myGlobals->appHandle,
+                      err = tlm_replyQuery(myGlobals->appHandle,                 /* #261 send params removed */
                                            &pMsg->sessionId,
                                            pMsg->comId,
                                            0u,
                                            10000000u,
-                                           NULL,
                                            (UINT8 *) "I'm fine, how are you?",
                                            23u, 
                                            "test_mdSingle"
@@ -211,12 +211,11 @@ void mdCallback (void                   *pRefCon,
                   }
                   else
                   {
-                      vos_printLogStr(VOS_LOG_USR, "-> sending reply\n");
+                      vos_printLogStr(VOS_LOG_USR, "-> sending reply\n");         /* #261 send params removed */
                       err = tlm_reply(myGlobals->appHandle,
                                       &pMsg->sessionId,
                                       pMsg->comId,
                                       0,
-                                      NULL,
                                       (UINT8 *) "I'm fine, thanx!",
                                       17,
                                       "test_mdSingle"
@@ -247,10 +246,9 @@ void mdCallback (void                   *pRefCon,
                       vos_printLog(VOS_LOG_USR, "   Data[%uB]: %.80s...\n", dataSize, pData);
                   }
                   vos_printLogStr(VOS_LOG_USR, "-> sending confirmation\n");
-                  err = tlm_confirm(myGlobals->appHandle,
+                  err = tlm_confirm(myGlobals->appHandle,                                    /* #261 send params removed */
                                     (const TRDP_UUID_T *) &pMsg->sessionId,
-                                    0,
-                                    NULL);
+                                    0);
                   if (err != TRDP_NO_ERR)
                   {
                       vos_printLog(VOS_LOG_USR, "tlm_confirm returned error %d\n", err);
@@ -699,7 +697,7 @@ int main (int argc, char *argv[])
 
                 if (sSessionData.sDataSize == 0)
                 {
-                    tlm_notify( sSessionData.appHandle,
+                    tlm_notify( sSessionData.appHandle,                 /* #261 send params removed */
                                 &sSessionData,
                                 NULL,
                                 sSessionData.sComID,
@@ -709,13 +707,12 @@ int main (int argc, char *argv[])
                                 destIP,
                                 flags,
                                 NULL,
-                                NULL,
                                 0,
                                 0,
                                 0);
 
                 }
-                else if (sSessionData.sDataSize > 13)
+                else if (sSessionData.sDataSize > 30)
                 {
                     for (i = 0, j = 0; i < sSessionData.sDataSize; i++)
                     {
@@ -725,7 +722,7 @@ int main (int argc, char *argv[])
                             j = 0;
                         }
                     }
-                    err = tlm_notify( sSessionData.appHandle,
+                    err = tlm_notify( sSessionData.appHandle,                 /* #261 send params removed */
                                       &sSessionData,
                                       mdCallback,
                                       sSessionData.sComID,
@@ -734,7 +731,6 @@ int main (int argc, char *argv[])
                                       ownIP,
                                       destIP,
                                       flags,
-                                      NULL,
                                       (const UINT8 *) gBuffer,
                                       sSessionData.sDataSize,
                                       0,
@@ -742,7 +738,7 @@ int main (int argc, char *argv[])
                 }
                 else
                 {
-                    err = tlm_notify(sSessionData.appHandle,
+                    err = tlm_notify(sSessionData.appHandle,                 /* #261 send params removed */
                                      &sSessionData,
                                      mdCallback,
                                      sSessionData.sComID,
@@ -751,7 +747,6 @@ int main (int argc, char *argv[])
                                      ownIP,
                                      destIP,
                                      flags,
-                                     NULL,
                                      (const UINT8 *) "Hello, World",
                                      13,
                                      0,
@@ -781,14 +776,14 @@ int main (int argc, char *argv[])
                                       flags,
                                       expReplies, 
                                       delay, 
-                                      NULL, 
+                                      TRDP_MD_DEFAULT_RETRIES,                    /* #261 send params replaced by retries */
                                       NULL, 
                                       0u,
                                       NULL, 
                                       NULL);
 
                 }
-                else if (sSessionData.sDataSize > 13)
+                else if (sSessionData.sDataSize > 30)
                 {
                     for (i = 0, j = 0; i < sSessionData.sDataSize; i++)
                     {
@@ -810,7 +805,7 @@ int main (int argc, char *argv[])
                                       flags,
                                       expReplies,
                                       delay,
-                                      NULL,
+                                      TRDP_MD_DEFAULT_RETRIES,                   /* #261 send params replaced by retries */
                                       (const UINT8 *) gBuffer,
                                       sSessionData.sDataSize,
                                       0,
@@ -831,7 +826,7 @@ int main (int argc, char *argv[])
                                       flags,
                                       expReplies,
                                       delay,
-                                      NULL,
+                                      TRDP_MD_DEFAULT_RETRIES,                   /* #261 send params replaced by retries */
                                       (const UINT8 *) "How are you?",
                                       13,
                                       0,

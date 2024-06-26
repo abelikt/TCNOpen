@@ -18,6 +18,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
  *      BL 2020-07-29: Ticket #286 tlm_reply() is missing a sourceURI parameter as defined in the standard
@@ -103,16 +104,14 @@ TRDP_ERR_T  trdp_mdCommonSend (
 
 TRDP_ERR_T trdp_mdConfirm (TRDP_APP_SESSION_T      appHandle,
                             const TRDP_UUID_T       *pSessionId,
-                            UINT16                  userStatus,
-                            const TRDP_COM_PARAM_T *pSendParam);
+                            UINT16                  userStatus);
 
-TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T        msgType,
+TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T        msgType,                      /* #261 send param removed */
                          TRDP_APP_SESSION_T      appHandle,
                          TRDP_UUID_T             pSessionId,
                          UINT32                  comId,
                          UINT32                  timeout,
                          INT32                   replyStatus,
-                         const TRDP_COM_PARAM_T *pSendParam,
                          const UINT8             *pData,
                          UINT32                  dataSize,
                          const TRDP_URI_USER_T   *pSourceURI);
@@ -131,7 +130,7 @@ TRDP_ERR_T trdp_mdCall (const TRDP_MSG_T        msgType,
                         UINT32                  numExpReplies,
                         UINT32                  replyTimeout,
                         INT32                   replyStatus,
-                        const TRDP_COM_PARAM_T *pSendParam,
+                        UINT8                   retries,                      /* #261 send param replaced by retries */
                         const UINT8             *pData,
                         UINT32                  dataSize,
                         const TRDP_URI_USER_T   srcURI,

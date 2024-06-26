@@ -20,6 +20,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-06-25: Ticket #440 etbTopoCnt and opTrnTopoCnt values in TRDP_MSG_MP/TRDP_MSG_MQ/TRDP_MSG_ME
  *     AHW 2024-06-19: Ticket #459 'Me' shall be send to the port the related request was coming from
  *      PL 2023-10-13: Ticket #444 Lint
@@ -187,8 +188,7 @@ static TRDP_ERR_T   trdp_mdSendME (TRDP_SESSION_PT  appHandle,
                                    MD_HEADER_T      *pH,
                                    INT32            replyStatus);
 
-static TRDP_ERR_T   trdp_mdConnectSocket (TRDP_APP_SESSION_T        appHandle,
-                                          const TRDP_COM_PARAM_T   *pSendParam,
+static TRDP_ERR_T   trdp_mdConnectSocket (TRDP_APP_SESSION_T        appHandle,       /* #261 send param removed */
                                           TRDP_IP_ADDR_T            srcIpAddr,
                                           TRDP_IP_ADDR_T            destIpAddr,
                                           BOOL8                     newSession,
@@ -1903,8 +1903,7 @@ static TRDP_ERR_T trdp_mdSendME (TRDP_SESSION_PT appHandle, MD_HEADER_T *pH, INT
 
             trdp_mdSetSessionTimeout(pSenderElement); /* the ->interval timestruct is already memset to zero */
 
-            errv = trdp_mdConnectSocket(appHandle,
-                                        &appHandle->mdDefault.sendParam,
+            errv = trdp_mdConnectSocket(appHandle,                          /* #261 send param removed */
                                         pSenderElement->addr.srcIpAddr,
                                         pSenderElement->addr.destIpAddr,
                                         TRUE,
@@ -3105,7 +3104,6 @@ void  trdp_mdCheckTimeouts (
 /**********************************************************************************************************************/
 /*reply side functions*/
 static TRDP_ERR_T trdp_mdConnectSocket (TRDP_APP_SESSION_T      appHandle,
-                                        const TRDP_COM_PARAM_T *pSendParam,
                                         TRDP_IP_ADDR_T          srcIpAddr,
                                         TRDP_IP_ADDR_T          destIpAddr,
                                         BOOL8                   newSession,
@@ -3120,8 +3118,7 @@ static TRDP_ERR_T trdp_mdConnectSocket (TRDP_APP_SESSION_T      appHandle,
             /* socket to send TCP MD for request or notify only */
             err = trdp_requestSocket(appHandle->ifaceMD,
                                      appHandle->mdDefault.tcpPort,
-                                     (pSendParam != NULL) ?
-                                     pSendParam : (&appHandle->mdDefault.sendParam),
+                                     &appHandle->mdDefault.sendParam,    /* #261 use default send param */
                                      srcIpAddr,
                                      0,
                                      0, /* no TCP multicast possible */
@@ -3157,8 +3154,7 @@ static TRDP_ERR_T trdp_mdConnectSocket (TRDP_APP_SESSION_T      appHandle,
         /* socket to send UDP MD */
         err = trdp_requestSocket(appHandle->ifaceMD,
                                  appHandle->mdDefault.udpPort,
-                                 (pSendParam != NULL) ?
-                                 pSendParam : (&appHandle->mdDefault.sendParam),
+                                 &appHandle->mdDefault.sendParam,           /* #261 use default send param */
                                  srcIpAddr,
                                  0u,
                                  vos_isMulticast(destIpAddr) ? destIpAddr : 0u,
@@ -3298,13 +3294,12 @@ static void trdp_mdDetailSenderPacket (const TRDP_MSG_T         msgType,
  *  @retval         TRDP_MEM_ERR        out of memory
  *  @retval         TRDP_NO_SESSION_ERR no such session
  */
-TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,
+TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,                      /* #261 send param removed */
                          TRDP_APP_SESSION_T         appHandle,
                          TRDP_UUID_T                pSessionId,
                          UINT32                     comId,
                          UINT32                     timeout,
                          INT32                      replyStatus,
-                         const TRDP_COM_PARAM_T    *pSendParam,
                          const UINT8                *pData,
                          UINT32                     dataSize,
                          const TRDP_URI_USER_T      *pSrcURI)
@@ -3379,8 +3374,7 @@ TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,
                     trdp_mdSetSessionTimeout(pSenderElement);
                 }
 
-                errv = trdp_mdConnectSocket(appHandle,
-                                            pSendParam,
+                errv = trdp_mdConnectSocket(appHandle,           /* #261 send param removed */
                                             srcIpAddr,
                                             destIpAddr,
                                             newSession,
@@ -3459,7 +3453,7 @@ TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,
  *  @param[in]      numExpReplies       number of expected replies, 0 if unknown
  *  @param[in]      replyTimeout        timeout for reply
  *  @param[in]      replyStatus         status to be returned
- *  @param[in]      pSendParam          Pointer to send parameters, NULL to use default send parameters
+ *  @param[in]      retries             Max number of retries, 0xff to use default number of retries
  *  @param[in]      pData               pointer to packet data / dataset
  *  @param[in]      dataSize            size of packet data
  *  @param[in]      srcURI              only functional group of source URI
@@ -3469,7 +3463,7 @@ TRDP_ERR_T trdp_mdReply (const TRDP_MSG_T           msgType,
  *  @retval         TRDP_PARAM_ERR      parameter error
  *  @retval         TRDP_MEM_ERR        out of memory
  */
-TRDP_ERR_T trdp_mdCall (
+TRDP_ERR_T trdp_mdCall (                        /* #261 send param replaced by retries */
     const TRDP_MSG_T        msgType,
     TRDP_APP_SESSION_T      appHandle,
     const void              *pUserRef,
@@ -3484,7 +3478,7 @@ TRDP_ERR_T trdp_mdCall (
     UINT32                  numExpReplies,
     UINT32                  replyTimeout,
     INT32                   replyStatus,
-    const TRDP_COM_PARAM_T *pSendParam,
+    UINT8                   retries,
     const UINT8             *pData,
     UINT32                  dataSize,
     const TRDP_URI_USER_T   srcURI,
@@ -3495,8 +3489,7 @@ TRDP_ERR_T trdp_mdCall (
     UINT32      timeoutWire = 0U;
 
     /*check for valid values within msgType*/
-    if (((msgType != TRDP_MSG_MR) && (msgType != TRDP_MSG_MN))
-        || ((pSendParam != NULL) && (pSendParam->retries > TRDP_MAX_MD_RETRIES)))
+    if ((msgType != TRDP_MSG_MR) && (msgType != TRDP_MSG_MN))    /* #261 send param removed */
     {
         return TRDP_PARAM_ERR;
     }
@@ -3538,8 +3531,8 @@ TRDP_ERR_T trdp_mdCall (
             &&
             (vos_isMulticast(destIpAddr) == FALSE))  /* no multicast addr used    */
         {
-            pSenderElement->numRetriesMax =
-                ((pSendParam != NULL) ? pSendParam->retries : appHandle->mdDefault.sendParam.retries);
+            pSenderElement->numRetriesMax =                                       /* #261 */
+                (retries <= TRDP_MAX_MD_RETRIES) ? retries : appHandle->mdDefault.sendParam.retries;
         } /* no else needed as memset has set all memory to zero */
           /* Prepare element data */
         pSenderElement->addr.comId        = comId;
@@ -3591,8 +3584,7 @@ TRDP_ERR_T trdp_mdCall (
 
         trdp_mdSetSessionTimeout(pSenderElement);
 
-        errv = trdp_mdConnectSocket(appHandle,
-                                    (pSendParam != NULL) ? pSendParam : (&appHandle->mdDefault.sendParam),
+        errv = trdp_mdConnectSocket(appHandle,              /* #261 send param removed */
                                     srcIpAddr,
                                     destIpAddr,
                                     TRUE,
@@ -3675,11 +3667,10 @@ TRDP_ERR_T trdp_mdCall (
  *  @retval         TRDP_MEM_ERR        out of memory
  *  @retval         TRDP_NOSESSION_ERR  no such session
  */
-TRDP_ERR_T trdp_mdConfirm (
+TRDP_ERR_T trdp_mdConfirm (                          /* #261 send param removed */
     TRDP_APP_SESSION_T      appHandle,
     const TRDP_UUID_T       *pSessionId,
-    UINT16                  userStatus,
-    const TRDP_COM_PARAM_T *pSendParam)
+    UINT16                  userStatus)
 {
     TRDP_IP_ADDR_T  srcIpAddr;
     TRDP_IP_ADDR_T  destIpAddr;
@@ -3732,8 +3723,7 @@ TRDP_ERR_T trdp_mdConfirm (
             pSenderElement->pCachedDS       = NULL;
             pSenderElement->morituri        = FALSE;
 
-            errv = trdp_mdConnectSocket(appHandle,
-                                        pSendParam,
+            errv = trdp_mdConnectSocket(appHandle,   /* #261 send param removed */
                                         srcIpAddr,
                                         destIpAddr,
                                         FALSE,
