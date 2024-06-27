@@ -55,6 +55,9 @@
 #define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 #define MAX_IF              10
 
+#define ETB_TOPO_COUNT      1
+#define OP_TOPO_COUNT       2
+
 typedef struct testData
 {
     UINT32  comID;
@@ -82,7 +85,7 @@ typedef struct sSessionData
     UINT32              sDataSize;
 } SESSION_DATA_T;
 
-SESSION_DATA_T  sSessionData = {FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, MD_COMID1, FALSE, 1, 2, NULL, NULL, NULL, TRUE, 0u};
+SESSION_DATA_T  sSessionData = {FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, MD_COMID1, FALSE, ETB_TOPO_COUNT, OP_TOPO_COUNT, NULL, NULL, NULL, TRUE, 0u};
 
 UINT32          ownIP = 0u;
 

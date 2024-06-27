@@ -62,6 +62,8 @@
 #define MCASTN
 #define RESERVED_MEMORY     240000
 #define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
+#define ETB_TOPO_COUNT      1
+#define OP_TOPO_COUNT       2
 
 /* --- globals ----------------------------------------------------------------- */
 
@@ -110,6 +112,7 @@ typedef struct
     Mode            mode;               /* test mode */
     int             groups;             /* test groups */
     int             once;               /* single test cycle flag */
+    int             trainwideComm;      /* use topo counts >0 */
     unsigned        msgsz;              /* message dataset size [bytes] */
     unsigned        tmo;                /* message timeout [msec] */
     TRDP_URI_USER_T uri;                /* test URI */
@@ -705,6 +708,7 @@ void usage(const char* appName)
         "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
         "-e <n>                    expected replies   (default 1)\n"
         "-r                        be responder       (default caller)\n"
+        "-x                        simulate trainwide communication with topo counts > 0\n"
         "-l <file>                 log file name      (e.g. test.txt)\n"
         "-v                        print version and quit\n"
     );
@@ -733,7 +737,7 @@ int main (int argc, char *argv[])
     opts.mcgrp = vos_dottedIP("239.2.24.1");   /* default multicast address */
  
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:m:l:e:h?vr")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:m:l:e:h?vxr")) != -1)
     {
         switch (ch)
         {
@@ -784,6 +788,11 @@ int main (int argc, char *argv[])
             opts.mode = MODE_REPLIER;
             break;
         }
+        case 'x':
+        {    /*  use topo counts > 0    */
+            opts.trainwideComm = TRUE;
+            break;
+        }
         case 'v':    /*  version */
             printf("%s: Version %s\t(%s - %s)\n",
                 argv[0], APP_VERSION, __DATE__, __TIME__);
@@ -822,9 +831,9 @@ int main (int argc, char *argv[])
         strcpy(srcip, vos_ipDotted(opts.srcip));
         strcpy(dstip, vos_ipDotted(opts.dstip));
         strcpy(mcgrp, vos_ipDotted(opts.mcgrp));
-        printf("\nParameters:\n  mode     = %s\n  localip  = %s\n  remoteip = %s\n  mcast    = %s\n  logfile  = %s\n  repliers = %d\n  msg size = %d\n\n",
+        printf("\nParameters:\n  mode      = %s\n  localip   = %s\n  remoteip  = %s\n  mcast     = %s\n  logfile   = %s\n  repliers  = %d\n  msg size  = %d\n  trainwide = %s\n\n",
             (opts.mode == MODE_CALLER ? "caller" : "replier"), srcip, dstip, mcgrp,
-            (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz);
+            (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz, (opts.trainwideComm) ? "TRUE" : "FALSE");
     }
 
     /* initialize test options */
@@ -902,6 +911,10 @@ int main (int argc, char *argv[])
         return 1;
     }
 
+    /* set topo counts */
+    tlc_setETBTopoCount(apph, ETB_TOPO_COUNT);
+    tlc_setOpTrainTopoCount(apph, OP_TOPO_COUNT);
+
     switch (opts.mode)
     {
        case MODE_CALLER:
@@ -953,7 +966,10 @@ void exec_next_test ()
     }
 
     /* prepare request message */
-    memset(&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));   
+    msg.etbTopoCnt = (opts.trainwideComm) ? tlc_getETBTopoCount(apph) : 0;        /* ETB topo count */
+    msg.opTrnTopoCnt = (opts.trainwideComm) ? tlc_getOpTrainTopoCount(apph) : 0,  /* OP topo count */
+
     strcpy(msg.destUserURI, opts.uri);
     strcpy(msg.srcUserURI, opts.uri);
 
@@ -1165,8 +1181,8 @@ void setup_listeners ()
                 NULL,                               /* callback function */
                 FALSE,                              /* no comId listener */
                 0u,                                 /* comid (0 .. take all) */
-                0u,                                 /* topo */
-                0u,                                 /* topo */
+                (opts.trainwideComm) ? tlc_getETBTopoCount(apph) : 0,   /* ETB topo count */
+                (opts.trainwideComm) ? tlc_getOpTrainTopoCount(apph) : 0,  /* OP topo count */
                 VOS_INADDR_ANY,
                 VOS_INADDR_ANY,
                 opts.srcip,                         /* destination IP address (is source of listener) */
@@ -1191,8 +1207,8 @@ void setup_listeners ()
                 NULL,                               /* callback function */
                 FALSE,                              /* no comId listener */
                 0u,                                 /* comid (0 .. take all) */
-                0u,                                 /* topo */
-                0u,                                 /* topo */
+                (opts.trainwideComm) ? tlc_getETBTopoCount(apph) : 0,   /* ETB topo count */
+                (opts.trainwideComm) ? tlc_getOpTrainTopoCount(apph) : 0,  /* OP topo count */
                 VOS_INADDR_ANY,
                 VOS_INADDR_ANY,
                 opts.srcip,                         /* destination IP address */
@@ -1217,8 +1233,8 @@ void setup_listeners ()
                 NULL,                               /* callback function */
                 FALSE,                              /* no comId listener */
                 0u,                                  /* comid (0 .. take all) */
-                0u,                                  /* topo */
-                0u,                                  /* topo */
+                (opts.trainwideComm) ? tlc_getETBTopoCount(apph) : 0,   /* ETB topo count */
+                (opts.trainwideComm) ? tlc_getOpTrainTopoCount(apph) : 0,  /* OP topo count */
                 VOS_INADDR_ANY,
                 VOS_INADDR_ANY,
                 opts.mcgrp,                         /* destination IP address */
