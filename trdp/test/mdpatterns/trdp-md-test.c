@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-27: Ticket #229 Test application to change topocounter (emulate ETB gateway)   
  *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-06.19: Ticket #458 Unify cmd line interfaces of tests
  *     AHW 2024-05-31: Ticket #456 Example crashes with memory fault
@@ -112,7 +113,9 @@ typedef struct
     Mode            mode;               /* test mode */
     int             groups;             /* test groups */
     int             once;               /* single test cycle flag */
-    int             trainwideComm;      /* use topo counts >0 */
+    int             trainwideComm;      /* use topo counts >0 for communication */
+    UINT32          etbTopoCount;
+    UINT32          opTrnTopoCount;     
     unsigned        msgsz;              /* message dataset size [bytes] */
     unsigned        tmo;                /* message timeout [msec] */
     TRDP_URI_USER_T uri;                /* test URI */
@@ -709,6 +712,7 @@ void usage(const char* appName)
         "-e <n>                    expected replies   (default 1)\n"
         "-r                        be responder       (default caller)\n"
         "-x                        simulate trainwide communication with topo counts > 0\n"
+        "-y <etbTopo>/<opTopo>     set topo counts separated by '/'\n"
         "-l <file>                 log file name      (e.g. test.txt)\n"
         "-v                        print version and quit\n"
     );
@@ -735,9 +739,12 @@ int main (int argc, char *argv[])
     pLogFile = NULL;                           /* default no log file */
     opts.multicastRepliers = 1;                /* #417 default number of multicast repliers: 1 */
     opts.mcgrp = vos_dottedIP("239.2.24.1");   /* default multicast address */
+    opts.etbTopoCount = ETB_TOPO_COUNT;
+    opts.opTrnTopoCount = OP_TOPO_COUNT;
+
  
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:m:l:e:h?vxr")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:m:l:e:y:h?vxr")) != -1)
     {
         switch (ch)
         {
@@ -793,12 +800,23 @@ int main (int argc, char *argv[])
             opts.trainwideComm = TRUE;
             break;
         }
+        case 'y':
+        {    /*  read topo counts    */
+            if (sscanf(optarg, "%u/%u",
+                &opts.etbTopoCount, &opts.opTrnTopoCount) < 2)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            break;
+        }
         case 'v':    /*  version */
+        {
             printf("%s: Version %s\t(%s - %s)\n",
                 argv[0], APP_VERSION, __DATE__, __TIME__);
             return 0;
             break;
-
+        }
         case 'l':
         {    /*  Log file   */
             strncpy(filename, optarg, sizeof(filename) - 1);
@@ -831,9 +849,10 @@ int main (int argc, char *argv[])
         strcpy(srcip, vos_ipDotted(opts.srcip));
         strcpy(dstip, vos_ipDotted(opts.dstip));
         strcpy(mcgrp, vos_ipDotted(opts.mcgrp));
-        printf("\nParameters:\n  mode      = %s\n  localip   = %s\n  remoteip  = %s\n  mcast     = %s\n  logfile   = %s\n  repliers  = %d\n  msg size  = %d\n  trainwide = %s\n\n",
+        printf("\nParameters:\n  mode      = %s\n  localip   = %s\n  remoteip  = %s\n  mcast     = %s\n"
+               "  logfile   = %s\n  repliers  = %d\n  msg size  = %d\n  trainwide = %s\n  etbTopo   = %d\n  opTrnTopo = %d\n\n",
             (opts.mode == MODE_CALLER ? "caller" : "replier"), srcip, dstip, mcgrp,
-            (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz, (opts.trainwideComm) ? "TRUE" : "FALSE");
+            (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz, (opts.trainwideComm) ? "TRUE" : "FALSE", opts.etbTopoCount,opts.opTrnTopoCount);
     }
 
     /* initialize test options */
@@ -912,8 +931,8 @@ int main (int argc, char *argv[])
     }
 
     /* set topo counts */
-    tlc_setETBTopoCount(apph, ETB_TOPO_COUNT);
-    tlc_setOpTrainTopoCount(apph, OP_TOPO_COUNT);
+    tlc_setETBTopoCount(apph, opts.etbTopoCount);
+    tlc_setOpTrainTopoCount(apph, opts.opTrnTopoCount);
 
     switch (opts.mode)
     {

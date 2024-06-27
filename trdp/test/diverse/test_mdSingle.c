@@ -14,6 +14,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-06-27: Ticket #229 Test application to change topocounter (emulate ETB gateway)   
  *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *     AHW 2024-06-25: Ticket #440 etbTopoCnt and opTrnTopoCnt values in TRDP_MSG_MP/TRDP_MSG_MQ
  *     AHW 2024-06-19: Ticket #458 Unify cmd line interfaces of tests
@@ -155,6 +156,7 @@ void usage (const char *appName)
            "-l <bytes>             send large random message (up to 65420 Bytes)\n"
            "-1                     send only one request/notification\n"
            "-x                     trainwide communication (topoCounts > 0)\n"
+           "-y <etbTopo>/<opTopo>  set topo counts separated by '/'\n"
            "-b <0|1>               blocking mode (default = 1, blocking)\n"
            "-v                     print version and quit\n"
            );
@@ -377,7 +379,7 @@ int main (int argc, char *argv[])
     }
 
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:p:d:l:e:b:h?vrxcn1")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:p:d:l:e:b:y:h?vrxcn1")) != -1)
     {
         switch (ch)
         {
@@ -453,6 +455,16 @@ int main (int argc, char *argv[])
                sSessionData.sTrainwideComm = TRUE;
                break;
            }
+           case 'y':
+           {    /*  read topo counts    */
+               if (sscanf(optarg, "%u/%u",
+                   &sSessionData.etbTopoCount, &sSessionData.opTrainTopoCount) < 2)
+               {
+                   usage(argv[0]);
+                   return 1;
+               }
+               break;
+           }
            case 'd':
            {    /*  timeout / delay for request/reply   */
                if (sscanf(optarg, "%u", &delay ) < 1)
@@ -516,7 +528,7 @@ int main (int argc, char *argv[])
         strcpy(srcip, vos_ipDotted(ownIP));
         strcpy(dstip, vos_ipDotted(destIP));
         printf("\nParameters:\n  mode        = %s\n  localip     = %s\n  remoteip    = %s\n  protocol    = %s\n  timeout     = %d\n  trainwide   = %s"
-               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n\n",
+               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n  etbTopoCnt  = %d\n  opTopoCnt   = %d\n\n",
             (sSessionData.sResponder == FALSE)? "caller" : "replier",
             srcip, dstip,
             (flags & TRDP_FLAGS_TCP)?"TCP":"UDP",
@@ -527,7 +539,9 @@ int main (int argc, char *argv[])
             sSessionData.sNotifyOnly == TRUE ? "TRUE" : "FALSE",
             sSessionData.sOnlyOnce == TRUE ? "TRUE" : "FALSE",
             sSessionData.sDataSize,
-            sSessionData.sBlockingMode == TRUE ? "TRUE" : "FALSE");
+            sSessionData.sBlockingMode == TRUE ? "TRUE" : "FALSE",
+            sSessionData.etbTopoCount,
+            sSessionData.opTrainTopoCount);
     }
 
     /*    Init the library  */
