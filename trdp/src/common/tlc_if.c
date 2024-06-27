@@ -428,7 +428,7 @@ EXT_DECL TRDP_ERR_T tlc_init (
     }
     else
     {
-        vos_printLogStr(VOS_LOG_ERROR, "TRDP already initalised\n");
+        vos_printLogStr(VOS_LOG_ERROR, "TRDP already initialised\n");
 
         ret = TRDP_INIT_ERR;
     }

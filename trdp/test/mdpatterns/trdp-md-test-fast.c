@@ -258,7 +258,7 @@ const char *get_result_string (TRDP_ERR_T err)
        case TRDP_BLOCK_ERR:
            return "TRDP_BLOCK_ERR (system call would have blocked in blocking mode)";
        case TRDP_INTEGRATION_ERR:
-           return "TRDP_INTEGRATION_ERR (alignment or endianess for selected target wrong)";
+           return "TRDP_INTEGRATION_ERR (alignment or endianness for selected target wrong)";
        case TRDP_NOCONN_ERR:
            return "TRDP_NOCONN:ERR (No TCP connection)";
        case TRDP_NOSESSION_ERR:

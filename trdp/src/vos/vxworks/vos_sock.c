@@ -408,11 +408,11 @@ EXT_DECL UINT64 vos_ntohll (
 }
 
 /**********************************************************************************************************************/
-/** Convert IP address from dotted dec. to !host! endianess
+/** Convert IP address from dotted dec. to !host! endianness
  *
  *  @param[in]          pDottedIP   IP address as dotted decimal.
  *
- *  @retval             IP address in UINT32 in host endianess
+ *  @retval             IP address in UINT32 in host endianness
  */
 EXT_DECL UINT32 vos_dottedIP (
     const CHAR8 *pDottedIP)
@@ -435,9 +435,9 @@ EXT_DECL UINT32 vos_dottedIP (
 }
 
 /**********************************************************************************************************************/
-/** Convert IP address to dotted dec. from !host! endianess
+/** Convert IP address to dotted dec. from !host! endianness
  *
- *  @param[in]          ipAddress   IP address in UINT32 in host endianess
+ *  @param[in]          ipAddress   IP address in UINT32 in host endianness
  *
  *  @retval             IP address as dotted decimal
  */

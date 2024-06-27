@@ -218,25 +218,25 @@ typedef double REAL64;
 /** Return codes for all VOS API functions  */
 typedef enum
 {
-    VOS_NO_ERR          = 0,    /**< No error                                        */
-    VOS_PARAM_ERR       = -1,   /**< Necessary parameter missing or out of range     */
-    VOS_INIT_ERR        = -2,   /**< Call without valid initialization               */
-    VOS_NOINIT_ERR      = -3,   /**< The supplied handle/reference is not valid      */
-    VOS_TIMEOUT_ERR     = -4,   /**< Timout                                          */
-    VOS_NODATA_ERR      = -5,   /**< Non blocking mode: no data received             */
-    VOS_SOCK_ERR        = -6,   /**< Socket option not supported                     */
-    VOS_IO_ERR          = -7,   /**< Socket IO error, data can't be received/sent    */
-    VOS_MEM_ERR         = -8,   /**< No more memory available                        */
-    VOS_SEMA_ERR        = -9,   /**< Semaphore not available                         */
-    VOS_QUEUE_ERR       = -10,  /**< Queue empty                                     */
-    VOS_QUEUE_FULL_ERR  = -11,  /**< Queue full                                      */
-    VOS_MUTEX_ERR       = -12,  /**< Mutex not available                             */
-    VOS_THREAD_ERR      = -13,  /**< Thread creation error                           */
-    VOS_BLOCK_ERR       = -14,  /**< System call would have blocked in blocking mode */
-    VOS_INTEGRATION_ERR = -15,  /**< Alignment or endianess for selected target wrong */
-    VOS_NOCONN_ERR      = -16,  /**< No TCP connection                               */
-    VOS_INUSE_ERR       = -49,  /**< Resource is still in use                        */
-    VOS_UNKNOWN_ERR     = -99   /**< Unknown error                                   */
+    VOS_NO_ERR          = 0,    /**< No error                                          */
+    VOS_PARAM_ERR       = -1,   /**< Necessary parameter missing or out of range       */
+    VOS_INIT_ERR        = -2,   /**< Call without valid initialization                 */
+    VOS_NOINIT_ERR      = -3,   /**< The supplied handle/reference is not valid        */
+    VOS_TIMEOUT_ERR     = -4,   /**< Timout                                            */
+    VOS_NODATA_ERR      = -5,   /**< Non blocking mode: no data received               */
+    VOS_SOCK_ERR        = -6,   /**< Socket option not supported                       */
+    VOS_IO_ERR          = -7,   /**< Socket IO error, data can't be received/sent      */
+    VOS_MEM_ERR         = -8,   /**< No more memory available                          */
+    VOS_SEMA_ERR        = -9,   /**< Semaphore not available                           */
+    VOS_QUEUE_ERR       = -10,  /**< Queue empty                                       */
+    VOS_QUEUE_FULL_ERR  = -11,  /**< Queue full                                        */
+    VOS_MUTEX_ERR       = -12,  /**< Mutex not available                               */
+    VOS_THREAD_ERR      = -13,  /**< Thread creation error                             */
+    VOS_BLOCK_ERR       = -14,  /**< System call would have blocked in blocking mode   */
+    VOS_INTEGRATION_ERR = -15,  /**< Alignment or endianness for selected target wrong */
+    VOS_NOCONN_ERR      = -16,  /**< No TCP connection                                 */
+    VOS_INUSE_ERR       = -49,  /**< Resource is still in use                          */
+    VOS_UNKNOWN_ERR     = -99   /**< Unknown error                                     */
 } VOS_ERR_T;
 
 /** Categories for logging    */

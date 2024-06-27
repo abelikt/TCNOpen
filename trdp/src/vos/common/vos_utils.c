@@ -228,7 +228,7 @@ const CHAR8         *cErrStrings[NO_OF_ERROR_STRINGS] PROGMEM =
     "TRDP_MUTEX_ERR (mutex not available)",                             /**< Mutex not available                      */
     "TRDP_THREAD_ERR (thread error)",                                   /**< Thread error                             */
     "TRDP_BLOCK_ERR (system call would have blocked)",          /**< System call would have blocked in blocking mode  */
-    "TRDP_INTEGRATION_ERR (alignment or endianess wrong)",      /**< Alignment or endianess for selected target wrong */
+    "TRDP_INTEGRATION_ERR (alignment or endianness wrong)",    /**< Alignment or endianness for selected target wrong */
     "TRDP_NOCONN_ERR (No TCP connection)",                              /**< No TCP connection                        */
     "", "", "", "", "", "", "", "", "", "", "", "", "",
     "TRDP_NOSESSION_ERR (no such session)",                             /**< No such session                          */
@@ -298,7 +298,7 @@ static void vos_printStructSizes ()
 #endif
 
 /**********************************************************************************************************************/
-/** Pre-compute alignment and endianess.
+/** Pre-compute alignment and endianness.
  *
  *  @retval        VOS_INTEGRATION_ERR or VOS_NO_ERR
  */
@@ -318,7 +318,7 @@ static VOS_ERR_T vos_initRuntimeConsts (void)
     UINT32      sAlignTIMEDATE48Array2  = 4u;
 
 
-    /*  Compute endianess  */
+    /*  Compute endianness  */
     long        one = 1;
 
     /*  Define a nice struct to determine the natural alignement */
@@ -352,7 +352,7 @@ static VOS_ERR_T vos_initRuntimeConsts (void)
 #ifndef B_ENDIAN
 #ifndef L_ENDIAN
 #error \
-    "Endianess is not set - define B_ENDIAN for big endian platforms or L_ENDIAN for little endian ones"
+    "endianness is not set - define B_ENDIAN for big endian platforms or L_ENDIAN for little endian ones"
 #endif
 #endif
 
@@ -362,7 +362,7 @@ static VOS_ERR_T vos_initRuntimeConsts (void)
     if (sIsBigEndian == TRUE)
 #endif
     {
-        vos_printLogStr(VOS_LOG_ERROR, "Endianess is not set correctly!\n");
+        vos_printLogStr(VOS_LOG_ERROR, "endianness is not set correctly!\n");
     }
 
     sAlignINT16 = ((INT8 *) &vAlignTest.word - (INT8 *) &vAlignTest.byte3) & 0xFF;       // CWE: fixed 64bit/32bit variable warnings on windows
@@ -454,7 +454,7 @@ static VOS_ERR_T vos_initRuntimeConsts (void)
 
 int vos_hostIsBigEndian ()
 {
-    /*  Compute endianess  */
+    /*  Compute endianness  */
     long one = 1;
     return !(*((char *)(&one)));
 }
@@ -465,7 +465,7 @@ int vos_hostIsBigEndian ()
  *  @param[in]          pRefCon            context for debug output function
  *  @param[in]          pDebugOutput       Pointer to debug output function.
  *  @retval             VOS_NO_ERR             no error
- *                      VOS_INTEGRATION_ERR    if endianess/alignment mismatch
+ *                      VOS_INTEGRATION_ERR    if endianness/alignment mismatch
  *                      VOS_SOCK_ERR           sockets not supported
  *                      VOS_UNKNOWN_ERR        initialisation error
  */

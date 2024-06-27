@@ -79,7 +79,7 @@ extern "C" {
     by MD 104 TTDB_STATIC_CONSIST_INFO_REQUEST...
 
     When using the TTI subsystem, PD 100 was subscribed to, already. To validate its payload (by SDT), 3 values must be
-    swapped, because they are already in host endianess:
+    swapped, because they are already in host endianness:
         opTrnState.etbTopoCnt               = vos_htonl(opTrnState.etbTopoCnt);
         opTrnTopoCnt.state.opTrnTopoCnt     = vos_htonl(opTrnState.state.opTrnTopoCnt);
         opTrnTopoCnt.state.crc              = vos_htonl(opTrnState.state.crc);
@@ -139,7 +139,7 @@ EXT_DECL TRDP_ERR_T tau_getOpTrnDirectory (
 /**********************************************************************************************************************/
 /**    Function to retrieve the operational train directory state info.
  *  Return a copy of the last received PD 100 telegram.
- *  Note: The values are in host endianess! When validating (SDTv2), network endianess must be ensured.
+ *  Note: The values are in host endianness! When validating (SDTv2), network endianness must be ensured.
  *
  *  @param[in]      appHandle               Handle returned by tlc_openSession().
  *  @param[out]     pOpTrnDirStatusInfo     Pointer to an operational train directory state structure to be returned.
