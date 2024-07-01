@@ -153,11 +153,12 @@ void usage (const char *appName)
            "-r                     be responder (default caller)\n"
            "-c                     respond with confirmation (default without)\n"
            "-n                     notify only (default request)\n"
-           "-l <bytes>             send large random message (up to 65420 Bytes)\n"
+           "-s <message size>      send large random message (up to 65420 Bytes)\n"
            "-1                     send only one request/notification\n"
            "-x                     trainwide communication (topoCounts > 0)\n"
            "-y <etbTopo>/<opTopo>  set topo counts separated by '/'\n"
            "-b <0|1>               blocking mode (default = 1, blocking)\n"
+           "-l <file>              log file name      (e.g. test.txt)\n"
            "-v                     print version and quit\n"
            );
 }
@@ -322,28 +323,49 @@ void mdCallback (void                   *pRefCon,
  *
  *  @retval         none
  */
+static FILE* pLogFile;
+
 void dbgOut (
     void        *pRefCon,
     TRDP_LOG_T  category,
     const CHAR8 *pTime,
     const CHAR8 *pFile,
-    UINT16      LineNumber,
+    UINT16      line,
     const CHAR8 *pMsgStr)
 {
-    const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:", "   User:"};
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR"};
 
-    if (category != VOS_LOG_DBG)
+#if (defined (WIN32) || defined (WIN64))
+
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-        /* we filter some more info we're not interested in */
-        if ((category != VOS_LOG_INFO) ||
-            (strstr(pFile, "vos_sock.c") == NULL))
-        {
-            printf("%s %s %s",
-                   strrchr(pTime, '-') + 1,
-                   catStr[category],
-                   pMsgStr);
-        }
+//        printf("%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
+          printf("%s %s %s",
+            strrchr(pTime, '-') + 1,
+            cat[category],
+            pMsgStr);
     }
+
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
+        fflush(pLogFile);
+    }
+#else
+    const char* file = strrchr(pFile, '/');
+
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        fprintf(stderr, "%s%s %s@%d: %s",
+            pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+    }
+
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%d: %s",
+            pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+    }
+#endif
 }
 
 
@@ -363,6 +385,7 @@ int main (int argc, char *argv[])
     TRDP_PROCESS_CONFIG_T   processConfig   = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK, 0u};
     VOS_IF_REC_T            interfaces[MAX_IF];
     TRDP_ERR_T              err     = TRDP_NO_ERR;
+    char                    filename[TRDP_MAX_FILE_NAME_LEN] = {0};
 
     int             rv = 0;
     UINT32          destIP      = 0u;
@@ -372,6 +395,8 @@ int main (int argc, char *argv[])
     TRDP_FLAGS_T    flags       = TRDP_FLAGS_CALLBACK; /* default settings: callback and UDP */
     int             ch;
 
+    pLogFile = NULL;                           /* default no log file */
+
     if (argc <= 1)
     {
         usage(argv[0]);
@@ -379,7 +404,7 @@ int main (int argc, char *argv[])
     }
 
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:p:d:l:e:b:y:h?vrxcn1")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:p:d:b:l:e:s:y:h?vrxcn1")) != -1)
     {
         switch (ch)
         {
@@ -431,8 +456,8 @@ int main (int argc, char *argv[])
                sSessionData.sResponder = TRUE;
                break;
            }
-           case 'l':
-           {    /*  used data size   */
+           case 's':
+           {    /*  used message size   */
                if (sscanf(optarg, "%u", &sSessionData.sDataSize) < 1)
                {
                    usage(argv[0]);
@@ -500,6 +525,12 @@ int main (int argc, char *argv[])
                }
                break;
            }
+           case 'l':
+           {    /*  Log file   */
+               strncpy(filename, optarg, sizeof(filename) - 1);
+               pLogFile = fopen(optarg, "w");
+               break;
+           }
            case '1':
            {
                sSessionData.sOnlyOnce = TRUE;
@@ -528,7 +559,8 @@ int main (int argc, char *argv[])
         strcpy(srcip, vos_ipDotted(ownIP));
         strcpy(dstip, vos_ipDotted(destIP));
         printf("\nParameters:\n  mode        = %s\n  localip     = %s\n  remoteip    = %s\n  protocol    = %s\n  timeout     = %d\n  trainwide   = %s"
-               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s\n  etbTopoCnt  = %d\n  opTopoCnt   = %d\n\n",
+               "\n  replies     = %d\n  confirm     = %s\n  notify only = %s\n  only once   = %s\n  msg size    = %d\n  blocking    = %s"
+               "\n  etbTopoCnt  = %d\n  opTopoCnt   = %d\n  logfile     = %s\n\n",
             (sSessionData.sResponder == FALSE)? "caller" : "replier",
             srcip, dstip,
             (flags & TRDP_FLAGS_TCP)?"TCP":"UDP",
@@ -541,7 +573,8 @@ int main (int argc, char *argv[])
             sSessionData.sDataSize,
             sSessionData.sBlockingMode == TRUE ? "TRUE" : "FALSE",
             sSessionData.etbTopoCount,
-            sSessionData.opTrainTopoCount);
+            sSessionData.opTrainTopoCount,
+            (pLogFile == NULL ? "" : filename));
     }
 
     /*    Init the library  */

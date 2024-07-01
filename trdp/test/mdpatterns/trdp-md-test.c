@@ -335,38 +335,40 @@ static FILE *pLogFile;
 void print_log (void *pRefCon, VOS_LOG_T category, const CHAR8 *pTime,   // timestamp string "yyyymmdd-hh:mm:ss.µs"
                 const CHAR8 *pFile, UINT16 line, const CHAR8 *pMsgStr)
 {
-    static const char *cat[] = { "ERR", "WAR", "INF", "DBG" };
-
-    if (category == VOS_LOG_DBG)
-    {
-        /* return; */
-    }
+    static const char *cat[] = { "ERR", "WAR", "INF", "DBG", "USR"};
 
 #if (defined (WIN32) || defined (WIN64))
-    if (pLogFile == NULL)
+
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-        char        buf[1024] = { 0 };
-        const char  *file = strrchr(pFile, '\\');
-        _snprintf(buf, sizeof(buf), "%s%s %s@%d: %s",
-                  pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
-        OutputDebugString((LPCWSTR)buf);
+        //        printf("%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
+        printf("%s %s %s",
+            strrchr(pTime, '-') + 1,
+            cat[category],
+            pMsgStr);
     }
-    else
+
+    if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int) line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
         fflush(pLogFile);
     }
 #else
-    const char *file = strrchr(pFile, '/');
+const char* file = strrchr(pFile, '/');
+
+if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+{
     fprintf(stderr, "%s%s %s@%d: %s",
-            pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
-    if (pLogFile != NULL)
-    {
-        fprintf(pLogFile, "%s%s %s@%d: %s",
-                pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
-    }
+        pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+}
+
+if (pLogFile != NULL)
+{
+    fprintf(pLogFile, "%s%s %s@%d: %s",
+        pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+}
 #endif
- }
+}
 
 /* --- platform helper functions ----------------------------------------------- */
 
@@ -710,6 +712,7 @@ void usage(const char* appName)
         "-t <target IP address>    in dotted decimal\n"
         "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
         "-e <n>                    expected replies   (default 1)\n"
+        "-s <message size>         send large random message (up to 65420 Bytes)\n"
         "-r                        be responder       (default caller)\n"
         "-x                        simulate trainwide communication with topo counts > 0\n"
         "-y <etbTopo>/<opTopo>     set topo counts separated by '/'\n"
@@ -729,7 +732,7 @@ int main (int argc, char *argv[])
     struct timeval  tv_null = { 0, 0 };
     int rv;
     int ch;
-    char filename[TRDP_MAX_FILE_NAME_LEN];
+    char filename[TRDP_MAX_FILE_NAME_LEN] = { 0 };
 
     /* initialize test status and options */
     memset(&sts, 0, sizeof(sts));
@@ -742,9 +745,15 @@ int main (int argc, char *argv[])
     opts.etbTopoCount = ETB_TOPO_COUNT;
     opts.opTrnTopoCount = OP_TOPO_COUNT;
 
+    /* initialize test options */
+    opts.groups = TST_ALL;                                  /* run all test groups */
+    opts.once = 0;                                          /* endless test */
+    opts.msgsz = 64 * 1024 - 200;                           /* message size [bytes] */
+    opts.tmo = 3000;                                        /* timeout [msec] */
+    strncpy(opts.uri, "message.test", sizeof(opts.uri));    /* test URI */
  
     /* get the arguments/options */
-    while ((ch = getopt(argc, argv, "t:o:m:l:e:y:h?vxr")) != -1)
+    while ((ch = getopt(argc, argv, "t:o:m:l:s:e:y:h?vxr")) != -1)
     {
         switch (ch)
         {
@@ -817,6 +826,15 @@ int main (int argc, char *argv[])
             return 0;
             break;
         }
+        case 's':
+        {    /*  used data size   */
+            if (sscanf(optarg, "%u", &opts.msgsz) < 1)
+            {
+                usage(argv[0]);
+                return 1;
+            }
+            break;
+        }
         case 'l':
         {    /*  Log file   */
             strncpy(filename, optarg, sizeof(filename) - 1);
@@ -854,13 +872,6 @@ int main (int argc, char *argv[])
             (opts.mode == MODE_CALLER ? "caller" : "replier"), srcip, dstip, mcgrp,
             (pLogFile == NULL ? "" : filename), opts.multicastRepliers, opts.msgsz, (opts.trainwideComm) ? "TRUE" : "FALSE", opts.etbTopoCount,opts.opTrnTopoCount);
     }
-
-    /* initialize test options */
-    opts.groups = TST_ALL;                                  /* run all test groups */
-    opts.once   = 0;                                        /* endless test */
-    opts.msgsz  = 64 * 1024 - 200;                          /* message size [bytes] */
-    opts.tmo    = 3000;                                     /* timeout [msec] */
-    strncpy(opts.uri, "message.test", sizeof(opts.uri));    /* test URI */
 
     /* initialize request queue */
     queue.head  = queue.rec;
