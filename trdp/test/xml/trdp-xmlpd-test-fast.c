@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *     AHW 2024-03-21: Ticket #450 trdp_xmlpd-test overwrites default communication parameters for pd
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
@@ -49,18 +50,19 @@
  */
 
 /*  Global constansts   */
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool tests PD using XML configuration."
 #define MAX_SESSIONS        16u      /* Maximum number of sessions (interfaces) supported */
 #define MAX_DATASET_LEN     2048u    /* Maximum supported length of dataset in bytes */
 #define MAX_DATASETS        32u      /* Maximum number of dataset types supported    */
 #define MAX_PUB_TELEGRAMS   50u      /* Maximum number of published telegrams supported  */
 #define MAX_SUB_TELEGRAMS   50u      /* Maximum number of subscribed telegrams supported  */
-#define DATA_PERIOD         10000u /* Period [us] in which tlg data are updated and printed    */
+#define DATA_PERIOD         10000u   /* Period [us] in which tlg data are updated and printed    */
+#define RESERVED_MEMORY     240000
 
 /*  General parameters from xml configuration file */
 TRDP_MEM_CONFIG_T       memConfig;
 TRDP_DBG_CONFIG_T       dbgConfig;
-UINT32                  numComPar = 0u;
-TRDP_COM_PAR_T         *pComPar = NULL;
 UINT32                  numIfConfig = 0u;
 TRDP_IF_CONFIG_T       *pIfConfig = NULL;
 UINT32                  minCycleTime = 0xFFFFFFFFu;
@@ -214,31 +216,27 @@ static void dbgOut (
     TRDP_LOG_T  category,
     const CHAR8 *pTime,
     const CHAR8 *pFile,
-    UINT16      LineNumber,
+    UINT16      line,
     const CHAR8 *pMsgStr)
 {
-    static const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:"};
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
 
     /*  Check message category*/
     if ((INT32)category > maxLogCategory)
         return;
 
-    /*  Set terminal color  */
-    if (category < VOS_LOG_INFO)
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        /*  Set terminal color  */
         setColorRed();
-
-    /*  Log time    */
-    if (dbgConfig.option & TRDP_DBG_TIME)
-        printf("%s ", pTime);
-    /*  Log category    */
-    if (dbgConfig.option & TRDP_DBG_CAT)
-        printf("%s ", catStr[category]);
-    /*  Log location    */
-    if (dbgConfig.option & TRDP_DBG_LOC)
-        printf("%s:%d ", pFile, LineNumber);
-    /*  Log message */
-    printf("%s", pMsgStr);    
-    setColorDefault();
+        printf("%s%s %16s@%-4d: %s",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+        setColorDefault();
+    }
 }
 
 /*********************************************************************************************************************/
@@ -315,11 +313,6 @@ static const char * getResultString(TRDP_ERR_T ret)
 static void freeParameters()
 {
     /*  Free allocated memory   */
-    if (pComPar)
-    {
-        free(pComPar);
-        pComPar = NULL; numComPar = 0;
-    }
     if (pIfConfig)
     {
         free(pIfConfig);
@@ -940,7 +933,6 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
         UINT32              numExchgPar = 0;
         TRDP_EXCHG_PAR_T    *pExchgPar = NULL;
 
-        printf("Read configuration for interface %s\n", pIfConfig[i].ifName);
         /*  Read telegrams configured for the interface */
         result = tau_readXmlInterfaceConfig(
             pDocHnd, pIfConfig[i].ifName, 
@@ -954,7 +946,7 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
             return result;
         }
 
-        printf("Configuring session for interface %s\n", pIfConfig[i].ifName);
+        printf("Configuring session for interface %s, ip %s \n", pIfConfig[i].ifName, vos_ipDotted(pIfConfig[i].hostIp));
 
         /*  Check for minimum cycle time    */
         if (aSessionCfg[i].processConfig.cycleTime < minCycleTime)
@@ -997,7 +989,7 @@ static void *receiverThread (void * arg)
     TRDP_FDS_T      fileDesc;
     INT32           noDesc = 0;
 
-    while (vos_threadDelay(0u) == VOS_NO_ERR)   /* this is a cancelation point! */
+    while (vos_threadDelay(1000u) == VOS_NO_ERR)   /* this is a cancelation point! */
     {
         FD_ZERO(&fileDesc);
         result = tlp_getInterval(sessionConfig->sessionhandle, &interval, &fileDesc, (TRDP_SOCK_T *) &noDesc);
@@ -1202,6 +1194,8 @@ int main(int argc, char * argv[])
     TRDP_XML_DOC_HANDLE_T   docHnd;
     UINT32                  i;
 
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
     /*  Get XML file name   */
     printf("TRDP PD test using XML configuration\n\n");
     if (argc < 2)
@@ -1215,7 +1209,7 @@ int main(int argc, char * argv[])
     {
         gVerbose = FALSE;
     }
-    vos_memInit(NULL, 2000000, NULL);
+    vos_memInit(NULL, RESERVED_MEMORY, NULL);
 
     /*  Prepare XML document    */
     result = tau_prepareXmlDoc(pFileName, &docHnd);
@@ -1226,10 +1220,9 @@ int main(int argc, char * argv[])
     }
 
     /*  Read general parameters from XML configuration*/
-    result = tau_readXmlDeviceConfig(
+    result = tau_readXmlDeviceConfig(  /* #261 com parameter removed */
         &docHnd, 
         &memConfig, &dbgConfig, 
-        &numComPar, &pComPar, 
         &numIfConfig, &pIfConfig);
     if (result != TRDP_NO_ERR)
     {

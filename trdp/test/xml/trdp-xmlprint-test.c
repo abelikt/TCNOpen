@@ -21,6 +21,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      A� 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *     AHW 2021-04-30: Ticket #349 support for parsing "dataset name" and "device type"
@@ -37,6 +38,10 @@
 
 #include "tau_xml.h"
 #include "vos_sock.h"
+
+#define APP_VERSION         "1.5"
+#define APP_USE             "TRDP xml parsing test program.\n)"
+
 
 /***********************************************************************************************************************
     Print configuration
@@ -92,8 +97,8 @@ static void printDefaultPDandMD(
     printf("\n");
 
     printf("  Default MD configuration\n");
-    printf("    QoS: %u, TTL: %u\n", 
-        pMdConfig->sendParam.qos, pMdConfig->sendParam.ttl);
+    printf("    QoS: %u, TTL: %u, Retries: %d\n", 
+        pMdConfig->sendParam.qos, pMdConfig->sendParam.ttl, pMdConfig->sendParam.retries);
     printf("    Reply tmo: %u, Confirm tmo: %u, Connect tmo: %u\n", 
         pMdConfig->replyTimeout, pMdConfig->confirmTimeout, pMdConfig->connectTimeout);
     printf("    UDP port: %u, TCP port: %u\n", 
@@ -103,18 +108,6 @@ static void printDefaultPDandMD(
         if (pMdConfig->flags & trdpFlags[i])
             printf(" %s", strtrdpFlags[i]);
     printf("\n");
-}
-
-static void printCommParams(
-    UINT32                  numComPar,
-    TRDP_COM_PAR_T         *pComPar
-    )
-{
-    UINT32  i;
-    printf("Communication parameters\n");
-    for (i = 0; i < numComPar; i++)
-        printf("  ID: %u, QoS: %u, TTL: %u\n", 
-            pComPar[i].id, pComPar[i].sendParam.qos, pComPar[i].sendParam.ttl);
 }
 
 static void printIfCfg(
@@ -208,8 +201,8 @@ static void printTelegrams(
     /*  Iterate over all telegrams  */
     for (idxExPar=0; idxExPar < numExchgPar; idxExPar++)
     {
-        printf("  Telegram  ComId: %u, DataSetId: %u, ComParId: %u\n", 
-            pExchgPar[idxExPar].comId, pExchgPar[idxExPar].datasetId, pExchgPar[idxExPar].comParId);
+        printf("  Telegram  ComId: %u, DataSetId: %u\n",                /* #261 com parameter id removed */
+            pExchgPar[idxExPar].comId, pExchgPar[idxExPar].datasetId);
         /*  MD Parameters   */
         if (pExchgPar[idxExPar].pMdPar)
         {
@@ -221,7 +214,9 @@ static void printTelegrams(
             printf("\n");
         }
         else
+        {
             printf("    MD default parameters\n");
+        }
         /*  PD Parameters   */
         if (pExchgPar[idxExPar].pPdPar)
         {
@@ -414,8 +409,6 @@ int main(int argc, char * argv[])
     TRDP_ERR_T              result;
     TRDP_MEM_CONFIG_T       memConfig;
     TRDP_DBG_CONFIG_T       dbgConfig;
-    UINT32                  numComPar = 0;
-    TRDP_COM_PAR_T         *pComPar = NULL;
     UINT32                  numIfConfig = 0;
     TRDP_IF_CONFIG_T       *pIfConfig = NULL;
 
@@ -426,7 +419,7 @@ int main(int argc, char * argv[])
     
     UINT32                  ifIndex;
 
-    printf("TRDP xml parsing test program\n");
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
 
     if (argc != 2)
     {
@@ -444,17 +437,15 @@ int main(int argc, char * argv[])
     }
 
     /*  Read general parameters from XML configuration*/
-    result = tau_readXmlDeviceConfig(
+    result = tau_readXmlDeviceConfig(    /* #261 */
         &docHandle, 
         &memConfig, &dbgConfig, 
-        &numComPar, &pComPar, 
         &numIfConfig, &pIfConfig);
     if (result == TRDP_NO_ERR)
     {
         /*  Print general parameters    */
         printf("\n***  tau_readXmlDeviceConfig results ************************************************\n\n");
         printMemConfig(&memConfig);
-        printCommParams(numComPar, pComPar);
         printIfCfg(numIfConfig, pIfConfig);
         printDbgCfg(&dbgConfig);
     }
@@ -506,11 +497,6 @@ int main(int argc, char * argv[])
     tau_freeXmlDoc(&docHandle);
 
     /*  Free allocated memory   */
-    if (pComPar)
-    {
-        free(pComPar);
-        pComPar = NULL; numComPar = 0;
-    }
     if (pIfConfig)
     {
         free(pIfConfig);

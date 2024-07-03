@@ -17,6 +17,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     AHW 2023-06-08: Ticket #435 Cleanup VLAN and TSN options at different places
  *     AHW 2023-04-12: XML config for #342 VLAN use added and Lint findings fixed
@@ -147,11 +148,9 @@ static TRDP_DATA_TYPE_T string2type (const CHAR8 *pTypeStr)
 /*
  * Set default values to device parameters
  */
-static void setDefaultDeviceValues (
+static void setDefaultDeviceValues (       /* #262 com parameter list removed */
     TRDP_MEM_CONFIG_T   *pMemConfig,
     TRDP_DBG_CONFIG_T   *pDbgConfig,
-    UINT32              *pNumComPar,
-    TRDP_COM_PAR_T      * *ppComPar,
     UINT32              *pNumIfConfig,
     TRDP_IF_CONFIG_T    * *ppIfConfig
     )
@@ -170,16 +169,6 @@ static void setDefaultDeviceValues (
         memset(pDbgConfig->fileName, 0, sizeof(TRDP_FILE_NAME_T));
         pDbgConfig->maxFileSize = TRDP_DEBUG_DEFAULT_FILE_SIZE;
         pDbgConfig->option      = TRDP_DBG_ERR;
-    }
-
-    /*  No Communication parameters*/
-    if (pNumComPar)
-    {
-        *pNumComPar = 0u;
-    }
-    if (ppComPar)
-    {
-        *ppComPar = NULL;
     }
 
     /*  No Interface configurations*/
@@ -255,9 +244,8 @@ static void dbgPrint (UINT32 num, TRDP_EXCHG_PAR_T *pArray)
     printf( "---\nExchange parameters (ComId / parId / dataSetId / type:\n");
     for (i = 0u; i < num; ++i)
     {
-        printf( "%u:  %u / %u / %u / %u\n", i,
+        printf( "%u:  %u / %u / %u\n", i,                 /* #261 com parameter removed */
                 (unsigned int)pArray[i].comId,
-                (unsigned int)pArray[i].comParId,
                 (unsigned int)pArray[i].datasetId,
                 (unsigned int)pArray[i].type);
         if (pArray[i].pMdPar != NULL)
@@ -321,10 +309,6 @@ static TRDP_ERR_T readTelegramDef (
         {
             pExchgParam->datasetId = valueInt;
         }
-        else if (vos_strnicmp(attribute, "com-parameter-id", MAX_TOK_LEN) == 0)
-        {
-            pExchgParam->comParId = valueInt;
-        }
         else if (vos_strnicmp(attribute, "type", MAX_TOK_LEN) == 0)
         {
             if (vos_strnicmp("sink", value, TRDP_MAX_LABEL_LEN) == 0)
@@ -356,7 +340,7 @@ static TRDP_ERR_T readTelegramDef (
     pDest       = NULL;
     countSdtv4SrvInstParams = (UINT32)trdp_XMLCountStartTag(pXML, "sdtv4-srv-inst-parameter");
 
-    /* Iterate thru <telegram> */
+    /* Iterate thrugh <telegram> */
 
     while (trdp_XMLSeekStartTagAny(pXML, tag, MAX_TAG_LEN) == 0)
     {
@@ -2007,13 +1991,11 @@ EXT_DECL void tau_freeTelegrams (
 
 /**********************************************************************************************************************/
 /**    Function to read the TRDP device configuration parameters out of the XML configuration file.
- *  The user must release the memory for ppComPar and ppIfConfig (using vos_memFree)
+ *  The user must release the memory for ppIfConfig (using vos_memFree)
  *
  *  @param[in]      pDocHnd           Handle of the XML document prepared by tau_prepareXmlDoc
  *  @param[out]     pMemConfig        Memory configuration
  *  @param[out]     pDbgConfig        Debug printout configuration for application use
- *  @param[out]     pNumComPar        Number of configured com parameters
- *  @param[out]     ppComPar          Pointer to array of com parameters
  *  @param[out]     pNumIfConfig      Number of configured interfaces
  *  @param[out]     ppIfConfig        Pointer to an array of interface parameter sets
  *
@@ -2022,12 +2004,10 @@ EXT_DECL void tau_freeTelegrams (
  *  @retval         TRDP_PARAM_ERR    File not existing
  *
  */
-EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
+EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (   /* #261 com parameter list removed */
     const TRDP_XML_DOC_HANDLE_T *pDocHnd,
     TRDP_MEM_CONFIG_T           *pMemConfig,
     TRDP_DBG_CONFIG_T           *pDbgConfig,
-    UINT32                      *pNumComPar,
-    TRDP_COM_PAR_T              * *ppComPar,
     UINT32                      *pNumIfConfig,
     TRDP_IF_CONFIG_T            * *ppIfConfig
     )
@@ -2040,7 +2020,7 @@ EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
     trdp_XMLRewind(pDocHnd->pXmlDocument);
 
     /*  Default all parameters    */
-    setDefaultDeviceValues(pMemConfig, pDbgConfig, pNumComPar, ppComPar, pNumIfConfig, ppIfConfig);
+    setDefaultDeviceValues(pMemConfig, pDbgConfig, pNumIfConfig, ppIfConfig);  /* com parameter list removed */
 
     trdp_XMLEnter(pDocHnd->pXmlDocument);
 
@@ -2156,52 +2136,7 @@ EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
                     }
                 }
             }
-            else if (vos_strnicmp(tag, "com-parameter-list", MAX_TAG_LEN) == 0)
-            {
-                UINT32 count = 0u;
-                trdp_XMLEnter(pDocHnd->pXmlDocument);
-
-                count = (UINT32) trdp_XMLCountStartTag(pDocHnd->pXmlDocument, "com-parameter");
-
-                *ppComPar = (TRDP_COM_PAR_T *)vos_memAlloc(count * sizeof(TRDP_COM_PAR_T));
-
-                if (*ppComPar != NULL)
-                {
-                    UINT32 i;
-                    *pNumComPar = count;
-
-                    /* Read the com params */
-                    for (i = 0u; i < count && trdp_XMLSeekStartTag(pDocHnd->pXmlDocument, "com-parameter") == 0; i++)
-                    {
-                        /* Set some defaults */
-                        (*ppComPar)[i].sendParam.ttl = TRDP_MD_DEFAULT_TTL;
-                        (*ppComPar)[i].sendParam.retries = TRDP_MD_DEFAULT_RETRIES;
-
-                        while (trdp_XMLGetAttribute(pDocHnd->pXmlDocument, attribute, &valueInt,
-                                                    value) == TOK_ATTRIBUTE)
-                        {
-                            if (vos_strnicmp(attribute, "id", MAX_TOK_LEN) == 0)
-                            {
-                                (*ppComPar)[i].id = valueInt;
-                            }
-                            else if (vos_strnicmp(attribute, "qos", MAX_TOK_LEN) == 0)
-                            {
-                                (*ppComPar)[i].sendParam.qos = (UINT8) valueInt;
-                            }
-                            else if (vos_strnicmp(attribute, "ttl", MAX_TOK_LEN) == 0)
-                            {
-                                (*ppComPar)[i].sendParam.ttl = (UINT8) valueInt;
-                            }
-                            else if (vos_strnicmp(attribute, "retries", MAX_TOK_LEN) == 0)
-                            {
-                                (*ppComPar)[i].sendParam.retries = (UINT8) valueInt;
-                            }
-                        }
-                    }
-                }
-                trdp_XMLLeave(pDocHnd->pXmlDocument);
-            }
-            else if (vos_strnicmp(tag, "bus-interface-list", MAX_TAG_LEN) == 0)
+            else if (vos_strnicmp(tag, "bus-interface-list", MAX_TAG_LEN) == 0)  /* #261 com parameter list removed */
             {
                 UINT32 count = 0u;
                 trdp_XMLEnter(pDocHnd->pXmlDocument);

@@ -19,6 +19,7 @@
  /*
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      A� 2023-03-22: Ticket #423 and #424 Spitted sdtv2 and sdtv4 parameters, added sdtv4-srv-inst-parameter for service instances
  *      AR 2020-05-08: Added attribute 'name' to event, method, field and instance structures used for service oriented interface
@@ -157,11 +158,10 @@ typedef struct
     TRDP_URI_HOST_T  *pUriHost2;    /**< Pointer to a second device URI host parts or IP, used eg. for red. devices */
 } TRDP_SRC_T;
 
-typedef struct
+typedef struct   /* #261 com parameter id removed */
 {
     UINT32                    comId;              /**< source filter identifier                         */
     UINT32                    datasetId;          /**< data set identifier                              */
-    UINT32                    comParId;           /**< communication parameter id                       */
     TRDP_MD_PAR_T             *pMdPar;            /**< Pointer to MD Parameters for this connection     */
     TRDP_PD_PAR_T             *pPdPar;            /**< Pointer to PD Parameters for this connection     */
     UINT32                    destCnt;            /**< number of destinations                           */
@@ -183,12 +183,6 @@ typedef struct
     TRDP_IP_ADDR_T  hostIp;       /**< host IP address   */
     TRDP_IP_ADDR_T  leaderIp;     /**< Leader IP address dependant on redundancy concept   */
 } TRDP_IF_CONFIG_T;
-
-typedef struct
-{
-    UINT32              id;       /**< communication parameter identifier */
-    TRDP_COM_PARAM_T   sendParam; /**< Send parameter (TTL, QoS) */
-} TRDP_COM_PAR_T;
 
 typedef struct
 {
@@ -354,8 +348,6 @@ EXT_DECL void tau_freeXmlDoc (
  *  @param[in]      pDocHnd           Handle of the XML document prepared by tau_prepareXmlDoc
  *  @param[out]     pMemConfig        Memory configuration
  *  @param[out]     pDbgConfig        Debug printout configuration for application use
- *  @param[out]     pNumComPar        Number of configured com parameters
- *  @param[out]     ppComPar          Pointer to array of com parameters
  *  @param[out]     pNumIfConfig      Number of configured interfaces
  *  @param[out]     ppIfConfig        Pointer to an array of interface parameter sets
  *
@@ -364,12 +356,10 @@ EXT_DECL void tau_freeXmlDoc (
  *  @retval         TRDP_PARAM_ERR    File not existing
  *
  */
-EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (
+EXT_DECL TRDP_ERR_T tau_readXmlDeviceConfig (   /* #261 com parameter list removed */
     const TRDP_XML_DOC_HANDLE_T *pDocHnd,
     TRDP_MEM_CONFIG_T           *pMemConfig,
     TRDP_DBG_CONFIG_T           *pDbgConfig,
-    UINT32                      *pNumComPar,
-    TRDP_COM_PAR_T              * *ppComPar,
     UINT32                      *pNumIfConfig,
     TRDP_IF_CONFIG_T            * *ppIfConfig
     );

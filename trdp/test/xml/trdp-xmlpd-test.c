@@ -1,4 +1,4 @@
-/**********************************************************************************************************************/
+﻿/**********************************************************************************************************************/
 /**
  * @file            trdp-xmlpd-test.c
  *
@@ -17,6 +17,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *     AHW 2024-03-21: Ticket #450 trdp_xmlpd-test overwrites default communication parameters for pd
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *      BL 2019-06-13: 'quiet' parameter to supress screen output (for performance measurements)
@@ -47,18 +48,19 @@
  */
 
 /*  Global constansts   */
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool tests PD using XML configuration."
 #define MAX_SESSIONS        16u      /* Maximum number of sessions (interfaces) supported */
 #define MAX_DATASET_LEN     2048u    /* Maximum supported length of dataset in bytes */
 #define MAX_DATASETS        32u      /* Maximum number of dataset types supported    */
 #define MAX_PUB_TELEGRAMS   50u      /* Maximum number of published telegrams supported  */
 #define MAX_SUB_TELEGRAMS   50u      /* Maximum number of subscribed telegrams supported  */
 #define DATA_PERIOD         10000u /* Period [us] in which tlg data are updated and printed    */
+#define RESERVED_MEMORY     240000
 
 /*  General parameters from xml configuration file */
 TRDP_MEM_CONFIG_T       memConfig;
 TRDP_DBG_CONFIG_T       dbgConfig;
-UINT32                  numComPar = 0u;
-TRDP_COM_PAR_T         *pComPar = NULL;
 UINT32                  numIfConfig = 0u;
 TRDP_IF_CONFIG_T       *pIfConfig = NULL;
 UINT32                  minCycleTime = 0xFFFFFFFFu;
@@ -212,7 +214,7 @@ static void dbgOut (
     UINT16      LineNumber,
     const CHAR8 *pMsgStr)
 {
-    static const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:"};
+    static const char *catStr[] = { "ERR", "WAR", "INF", "DBG", "USR" };
 
     /*  Check message category*/
     if ((INT32)category > maxLogCategory)
@@ -310,11 +312,6 @@ static const char * getResultString(TRDP_ERR_T ret)
 static void freeParameters()
 {
     /*  Free allocated memory   */
-    if (pComPar)
-    {
-        free(pComPar);
-        pComPar = NULL; numComPar = 0;
-    }
     if (pIfConfig)
     {
         free(pIfConfig);
@@ -955,12 +952,6 @@ static TRDP_ERR_T configureSessions(TRDP_XML_DOC_HANDLE_T *pDocHnd)
         if (aSessionCfg[i].processConfig.cycleTime < minCycleTime)
             minCycleTime = aSessionCfg[i].processConfig.cycleTime;
 
-        if (!(&aSessionCfg[i].pdConfig.sendParam))
-        {
-            printf("Unknown comParId %u for comID %u\n", pExchgPar->comParId, pExchgPar->comId);
-            return TRDP_PARAM_ERR;
-        }
-
         /*  Open session for the interface  */
         result = tlc_openSession(
             &aSessionCfg[i].sessionhandle, pIfConfig[i].hostIp, pIfConfig[i].leaderIp, 
@@ -1124,8 +1115,8 @@ int main(int argc, char * argv[])
     TRDP_XML_DOC_HANDLE_T   docHnd;
     UINT32                  i;
 
-    /*  Get XML file name   */
-    printf("TRDP PD test using XML configuration\n\n");
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
     if (argc < 2)
     {
         printf("usage: %s <xmlfilename> [quiet]\n", argv[0]);
@@ -1137,21 +1128,20 @@ int main(int argc, char * argv[])
     {
         gVerbose = FALSE;
     }
-    vos_memInit(NULL, 2000000, NULL);
+    vos_memInit( NULL, RESERVED_MEMORY, NULL );
 
     /*  Prepare XML document    */
     result = tau_prepareXmlDoc(pFileName, &docHnd);
     if (result != TRDP_NO_ERR)
     {
-        printf("Failed to prepare XML document: %s\n", getResultString(result));
+        printf("Failed to prepare XML document %s: %s\n", pFileName, getResultString(result));
         return 1;
     }
 
     /*  Read general parameters from XML configuration*/
-    result = tau_readXmlDeviceConfig(
+    result = tau_readXmlDeviceConfig(      /* #261 com parameter removed */
         &docHnd, 
         &memConfig, &dbgConfig, 
-        &numComPar, &pComPar, 
         &numIfConfig, &pIfConfig);
     if (result != TRDP_NO_ERR)
     {
