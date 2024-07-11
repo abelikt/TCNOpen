@@ -445,7 +445,17 @@ EXT_DECL TRDP_ERR_T tlc_getJoinStatistics (
         return TRDP_NOINIT_ERR;
     }
 
-    if (pNumJoin == NULL || pIpAddr == NULL || *pNumJoin == 0)
+    if (pNumJoin == NULL)
+    {
+        return TRDP_PARAM_ERR;
+    }
+
+    if (*pNumJoin == 0)
+    {
+        return TRDP_PARAM_ERR;
+    }
+
+    if (pIpAddr == NULL)
     {
         *pNumJoin = 0;
         return TRDP_PARAM_ERR;
