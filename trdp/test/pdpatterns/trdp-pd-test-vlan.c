@@ -882,12 +882,44 @@ static void printLog(
     UINT16      line,
     const CHAR8 *pMsgStr)
 {
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
+
+#if (defined (WIN32) || defined (WIN64))
+
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        printf("%s%s %16s@%-4d: %s\n",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+    }
+
     if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, category == VOS_LOG_ERROR ? "ERR " : (category == VOS_LOG_WARNING ? "WAR " : (category == VOS_LOG_INFO ? "INFO" : "DBG ")), pFile, (int)line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%-4d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
+
         fflush(pLogFile);
     }
+#else
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        fprintf(stderr, "%s%s %16s@%-4d: %s",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+    }
+
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%-4d: %s", pTime, cat[category], pFile, (int)line, pMsgStr);
+    }
+#endif
 }
+
 
 /**********************************************************************************************************************/
 /* Print a sensible usage message */

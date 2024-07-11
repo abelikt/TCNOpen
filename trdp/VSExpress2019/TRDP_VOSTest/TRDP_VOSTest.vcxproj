@@ -190,7 +190,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\test\diverse;..\..\src\api;..\..\src\vos\api;..\..\src\vos\windows;..\..\resources\windows\getopt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\resources\windows;..\..\src\common;..\..\test\diverse;..\..\src\api;..\..\src\vos\api;..\..\src\vos\windows;..\..\resources\windows\getopt</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN64;MD_SUPPORT=1;L_ENDIAN;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>

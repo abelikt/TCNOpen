@@ -24,7 +24,13 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <trdp_if_light.h>
 #include "tau_marshall.h"
+
+#define APP_VERSION         "1.5"
+#define APP_USE             "TRDP marshalling test tool"
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 
 /*    Test data sets    */
 TRDP_DATASET_T  gDataSet1990 =
@@ -1061,11 +1067,45 @@ static int test2()
     return 0;
 }
 
+static FILE* pLogFile = NULL;
+
+static void printLog(
+    void* pRefCon,
+    VOS_LOG_T   category,
+    const CHAR8* pTime,       // timestamp string "yyyymmdd-hh:mm:ss.µs"
+    const CHAR8* pFile,
+    UINT16      line,
+    const CHAR8* pMsgStr)
+{
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
+
+//    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        printf("%s%s %16s@%-4d: %s\n",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+    }
+
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, cat[category], pFile, (int)line, pMsgStr);
+        fflush(pLogFile);
+    }
+}
+
 /******/
-int main ()
+int main(int argc, char* argv[])
 {
     TRDP_ERR_T  err;
+    static TRDP_MEM_CONFIG_T  memcfg = { NULL, RESERVED_MEMORY, PREALLOCATE };
 
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
+
+    err = tlc_init(printLog, NULL, &memcfg);
+    
     err = tau_initMarshall((void *)&gpRefCon, sizeof(gComIdMap)/sizeof(TRDP_COMID_DSID_MAP_T), gComIdMap, 8, gDataSets);
 
     if (err == TRDP_NO_ERR)

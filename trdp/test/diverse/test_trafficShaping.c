@@ -43,33 +43,32 @@
 
 #define PD_COMID1          1001
 #define PD_COMID_CYCLE1    1000000             /* in us (1000000 = 1 sec) */
-#define PD_SIZE1        1000
+#define PD_SIZE1           1000
 #define PD_COMID2          1002
 #define PD_COMID_CYCLE2    100000              /* in us (100000 = 0.1 sec) */
-#define PD_SIZE2        1000
+#define PD_SIZE2           1000
 #define PD_COMID3          1003
 #define PD_COMID_CYCLE3    20000               /* in us (20000 = 0.02 sec) */
-#define PD_SIZE3        1000
+#define PD_SIZE3           1000
 #define PD_COMID4          1004
 #define PD_COMID_CYCLE4    50000                /* in us (50000 = 0.05 sec) */
-#define PD_SIZE4        1000
+#define PD_SIZE4           1000
 #define PD_COMID5          1005
 #define PD_COMID_CYCLE5    20000               /* in us (20000 = 0.02 sec) */
-#define PD_SIZE5        1000
+#define PD_SIZE5           1000
 #define PD_COMID6          1006
 #define PD_COMID_CYCLE6    10000000             /* in us (10000000 = 10 sec) */
-#define PD_SIZE6        1000
+#define PD_SIZE6           1000
 #define PD_COMID7          1007
 #define PD_COMID_CYCLE7    5000000             /* in us (5000000 = 5 sec) */
-#define PD_SIZE7        1000
+#define PD_SIZE7           1000
 #define PD_COMID8          1008
 #define PD_COMID_CYCLE8    1000000             /* in us (1000000 = 1 sec) */
-#define PD_SIZE8        1000
+#define PD_SIZE8           1000
 
 /* We use dynamic memory    */
-#define RESERVED_MEMORY  200000
-
-
+#define RESERVED_MEMORY    240000
+#define PREALLOCATE        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 typedef struct testData {
     UINT32    comID;
     UINT32  cycle;
@@ -125,22 +124,20 @@ void dbgOut (
              TRDP_LOG_T  category,
              const CHAR8 *pTime,
              const CHAR8 *pFile,
-             UINT16      LineNumber,
+             UINT16      line,
              const CHAR8 *pMsgStr)
 {
-    const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:", "   User:"};
+    const char *cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
     
-    if (category == VOS_LOG_DBG)
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-        return;
+        printf("%s%s %16s@%-4d: %s\n",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
     }
-
-    printf("%s %s %16s:%-4d %s",
-           strrchr(pTime, '-') + 1,
-           catStr[category],
-          (strrchr(pFile, '/') == NULL)? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
-           LineNumber,
-           pMsgStr);
 }
 
 
@@ -157,7 +154,7 @@ int main (int argc, char *argv[])
     TRDP_PUB_T              pubHandle;  /*    Our identifier to the publication    */
     TRDP_ERR_T              err = TRDP_NO_ERR;
     TRDP_PD_CONFIG_T        pdConfiguration = {NULL, NULL, TRDP_PD_DEFAULT_SEND_PARAM, TRDP_FLAGS_NONE, 1000u, TRDP_TO_SET_TO_ZERO, TRDP_PD_UDP_PORT};
-    TRDP_MEM_CONFIG_T       dynamicConfig = {NULL, RESERVED_MEMORY, {0}};
+    TRDP_MEM_CONFIG_T       dynamicConfig = {NULL, RESERVED_MEMORY, PREALLOCATE};
     TRDP_PROCESS_CONFIG_T   processConfig = {"Me", "", "", 0, 0, TRDP_OPTION_BLOCK | TRDP_OPTION_TRAFFIC_SHAPING, 0u};
     TRDP_SOCK_T             noDesc = TRDP_INVALID_SOCKET; /* #456 */
     int                     rv = 0;
@@ -217,14 +214,22 @@ int main (int argc, char *argv[])
         }
     }
 
-    if (destIP == 0)
+    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
+  
     {
-        fprintf(stderr, "No destination address given!\n");
+        CHAR8 sourcip[16], destip[16];
+
+        strcpy(sourcip, vos_ipDotted(ownIP));
+        strcpy(destip, vos_ipDotted(destIP));
+        printf("\nParameters:\n  localip    = %s\n  remoteip   = %s\n\n", sourcip, destip);
+    }
+
+    if (!ownIP || !destIP)
+    {
+        printf("invalid input arguments\n");
         usage(argv[0]);
         return 1;
     }
-    
-    printf("%s: Version %s\t(%s - %s)\n", argv[0], APP_VERSION, __DATE__, __TIME__);
 
     /*    Init the library  */
     if (tlc_init(dbgOut,                          /* no logging    */

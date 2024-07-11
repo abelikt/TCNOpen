@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-o 10.53.66.50 -t 10.53.66.50 -m 239.2.24.1 -l pdtestfastbase10.log</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-o 10.53.67.250 -t 10.53.67.250 -m 239.2.24.1 -l pdtestfastbase10.log</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugSim|x64'">

@@ -159,9 +159,11 @@ void dbgOut (
              UINT16      line,
              const CHAR8 *pMsgStr)
 {
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
+
     if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, category == VOS_LOG_ERROR ? "ERR " : (category == VOS_LOG_WARNING ? "WAR " : (category == VOS_LOG_INFO ? "INFO" : "DBG ")), pFile, (int)line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%-4d: %s", pTime, cat[category], pFile, (int)line, pMsgStr);
         fflush(pLogFile);
     }
 }

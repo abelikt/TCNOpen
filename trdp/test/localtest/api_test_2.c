@@ -19,6 +19,7 @@
  *
  * $Id$
  *
+ *     AHW 2024-07-03: Ticket #261 MD reply/​add listener does not use send parameters
  *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
  *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
  *     CWE 2023-02-02: Analyzed parameters of main() echoed to screen output
@@ -48,6 +49,7 @@
 #include "trdp_if_light.h"
 #include "vos_sock.h"
 #include "vos_utils.h"
+#include "tlc_if.h"
 
 #include "tau_xml.h"
 #include "vos_shared_mem.h"
@@ -56,6 +58,7 @@
  * DEFINITIONS
  */
 #define APP_VERSION  "2.0"
+#define APP_USE      "TRDP API test tool"
 
 typedef int (test_func_t)(void);
 
@@ -317,7 +320,7 @@ static char xmlBuffer[] =
     {                                                                           \
         gFullLog = FALSE;                                                       \
         gCatMask = 0;                                                           \
-        fprintf(gFp, "\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
+        vos_printLog(VOS_LOG_USR, "\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
         appHandle1 = test_init(dbgOut, &gSession1, (b), (c));                   \
         if (appHandle1 == NULL)                                                 \
         {                                                                       \
@@ -342,7 +345,7 @@ static char xmlBuffer[] =
     {                                                                           \
         gFullLog = FALSE;                                                       \
         gCatMask = 0;                                                           \
-        fprintf(gFp, "\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
+        printf("\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
         appHandle1 = test_init(dbgOut, &gSession1, (b), 10000u);                \
         if (appHandle1 == NULL)                                                 \
         {                                                                       \
@@ -367,7 +370,7 @@ static char xmlBuffer[] =
     {                                                                           \
         gFullLog = FALSE;                                                       \
         gCatMask = 0;                                                           \
-        fprintf(gFp, "\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
+        vos_printLog(VOS_LOG_USR, "\n---- Start of %s (%s) ---------\n\n", __FUNCTION__, a); \
         appHandle1 = test_init(dbgOut, &gSession1, "", 10000u);                 \
         if (appHandle1 == NULL)                                                 \
         {                                                                       \
@@ -397,15 +400,15 @@ static char xmlBuffer[] =
 #define CLEANUP                                                                             \
 end:                                                                                        \
     {                                                                                       \
-        fprintf(gFp, "\n-------- Cleaning up %s ----------\n", __FUNCTION__);               \
+        vos_printLog(VOS_LOG_USR, "\n-------- Cleaning up %s ----------\n", __FUNCTION__);               \
         test_deinit(&gSession1, &gSession2);                                                \
                                                                                             \
         if (gFailed) {                                                                      \
-            fprintf(gFp, "\n###########  FAILED!  ###############\nlasterr = %d\n", err); } \
+            vos_printLog(VOS_LOG_USR, "\n###########  FAILED!  ###############\nlasterr = %d\n", err); } \
         else{                                                                               \
-            fprintf(gFp, "\n-----------  Success  ---------------\n"); }                    \
+            vos_printLog(VOS_LOG_USR, "\n-----------  Success  ---------------\n"); }                    \
                                                                                             \
-        fprintf(gFp, "--------- End of %s --------------\n\n", __FUNCTION__);               \
+        vos_printLog(VOS_LOG_USR, "\n--------- End of %s --------------\n\n", __FUNCTION__);               \
                                                                                             \
         return gFailed;                                                                     \
     }
@@ -416,7 +419,7 @@ end:                                                                            
 #define IF_ERROR(message)                                                                           \
     if (err != TRDP_NO_ERR)                                                                         \
     {                                                                                               \
-        fprintf(gFp, "### %s (error: %d, %s)\n", message, err, vos_getErrorString((VOS_ERR_T)err)); \
+        vos_printLog(VOS_LOG_USR, "### %s (error: %d, %s)\n", message, err, vos_getErrorString((VOS_ERR_T)err)); \
         gFailed = 1;                                                                                \
         goto end;                                                                                   \
     }
@@ -425,7 +428,7 @@ end:                                                                            
 /*  Macro to terminate the test                                                                                       */
 /**********************************************************************************************************************/
 #define FAILED(message)                \
-    fprintf(gFp, "### %s\n", message); \
+    vos_printLog(VOS_LOG_USR, "### %s\n", message); \
     gFailed = 1;                       \
     goto end;                          \
 
@@ -433,7 +436,7 @@ end:                                                                            
 /*  Macro to terminate the test                                                                                       */
 /**********************************************************************************************************************/
 #define PRINT(message) \
-    fprintf(gFp, "### %s\n", message);
+    vos_printLog(VOS_LOG_USR, "### %s\n", message);
 
 /**********************************************************************************************************************/
 /*  Macro to set logging                                                                                       */
@@ -448,8 +451,8 @@ end:                                                                            
 /**********************************************************************************************************************/
 #define ADD_LOG(mask)          \
     { gFullLog = FALSE;        \
-      gCatMask = mask;          \
-}
+      gCatMask = mask;         \
+    }
 
 /**********************************************************************************************************************/
 /** callback routine for TRDP logging/error output
@@ -467,27 +470,33 @@ static void dbgOut (
     TRDP_LOG_T  category,
     const CHAR8 *pTime,
     const CHAR8 *pFile,
-    UINT16      lineNumber,
+    UINT16      line,
     const CHAR8 *pMsgStr)
 {
-    const char  *catStr[]   = {"**Error:", "Warning:", "   Info:", "  Debug:", "   User:"};
-    CHAR8       *pF         = strrchr(pFile, VOS_DIR_SEP);
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR"};
 
-    if (gFullLog ||
+    if (gFullLog || 
+      //  ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG)) ||
+        (category != VOS_LOG_INFO) || (category == VOS_LOG_DBG) ||
         (category == VOS_LOG_USR) ||
-        (category != VOS_LOG_DBG && category != VOS_LOG_INFO) ||
         (category == gCatMask))
     {
-        fprintf(gFp, "%s %s %s:%d\t%s",
-                strrchr(pTime, '-') + 1,
-                catStr[category],
-                (pF == NULL) ? "" : pF + 1,
-                lineNumber,
+        printf("%s%s %16s@%-4d: %s",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+
+        if (gFp)
+        {
+            vos_printLog(VOS_LOG_USR, "%s%s %16s@%-4d: %s\n",
+                pTime,
+                cat[category],
+                (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+                (int)line,
                 pMsgStr);
-    }
-    /* else if (strstr(pMsgStr, "vos_mem") != NULL) */
-    {
-        /* fprintf(gFp, "### %s", pMsgStr); */
+        }
     }
 }
 
@@ -508,8 +517,9 @@ static void *receiverThreadPD (void *pArg)
 
     /* vos_printLogStr(VOS_LOG_USR, "receiver thread started...\n"); */
 
-    while (pSession->threadRun &&
-           (vos_threadDelay(0u) == VOS_NO_ERR))   /* this is a cancelation point! */
+    while ((vos_threadDelay(1000u) == VOS_NO_ERR) && 
+            trdp_isValidSession(pSession->appHandle) &&
+            pSession->threadRun)   /* this is a cancelation point! */
     {
         FD_ZERO(&fileDesc);
         result = tlp_getInterval(pSession->appHandle, &interval, &fileDesc, (TRDP_SOCK_T *) &noDesc);
@@ -557,9 +567,9 @@ static void *transceiverThreadMD (void *pArg)
     /*
      Enter the main processing loop.
      */
-    while (1/*pSession->threadRun &&
+    while (pSession->threadRun &&
            pSession->threadIdMD &&
-           (vos_threadDelay(0u) == VOS_NO_ERR)*/)   /* this is a cancelation point! */
+           trdp_isValidSession(pSession->appHandle))   /* this is a cancelation point! */
     {
         FD_ZERO(&fileDesc);
         result = tlm_getInterval(pSession->appHandle, &interval, &fileDesc, (TRDP_SOCK_T *) &noDesc);
@@ -568,12 +578,22 @@ static void *transceiverThreadMD (void *pArg)
             vos_printLog(VOS_LOG_ERROR, "tlm_getInterval failed: %s\n", vos_getErrorString((VOS_ERR_T) result));
         }
         noDesc  = vos_select(noDesc, &fileDesc, NULL, NULL, &interval);
-        result  = tlm_process(pSession->appHandle, &fileDesc, &noDesc);
+
+        if (trdp_isValidSession(pSession->appHandle))
+        {
+            result = tlm_process(pSession->appHandle, &fileDesc, &noDesc);
+        }
+        else
+        {
+            break;
+        }
+
         if ((result != TRDP_NO_ERR) && (result != TRDP_BLOCK_ERR))
         {
             vos_printLog(VOS_LOG_ERROR, "tlm_process failed: %s\n", vos_getErrorString((VOS_ERR_T) result));
         }
     }
+
     return NULL;
 }
 
@@ -587,12 +607,13 @@ static void usage (const char *appName)
            "This version uses separate communication threads for PD and MD.\n"
            "Pre-condition: There must be two IP addresses/interfaces configured and connected by a switch.\n"
            "Arguments are:\n"
-           "-o <own IP address> (default 10.0.1.100)\n"
-           "-i <second IP address> (default 10.0.1.101)\n"
-           "-t <destination MC> (default 239.0.1.1)\n"
-           "-m number of test to run (1...n, default 0 = run all tests)\n"
-           "-v print version and quit\n"
-           "-h this list\n"
+           "-o <own IP address>       in dotted decimal\n"
+           "-t <target IP address>    in dotted decimal\n"
+           "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
+           "-n <umber of test to run> 1...n, default 0 = run all tests\n"
+           "-l <file>                 log file name (e.g. test.txt)\n"
+           "-v                        print version and quit\n"
+           "-h                        this list\n"
            );
 }
 
@@ -631,20 +652,20 @@ static TRDP_APP_SESSION_T test_init (
 
     if (err == TRDP_NO_ERR)
     {
-        printf("Creating PD Receiver task ...\n");
+        vos_printLog(VOS_LOG_USR,"Creating PD Receiver task ...\n");
         /* Receiver thread runs until cancel */
         err = (TRDP_ERR_T) vos_threadCreate(&pSession->threadIdRxPD,
                                             "Receiver Task",
                                             VOS_THREAD_POLICY_OTHER,
                                             (VOS_THREAD_PRIORITY_T) VOS_THREAD_PRIORITY_DEFAULT,
-                                            0u,
-                                            0u,
+                                            0u,                             /* interval */
+                                            0u,                             /* stack size */
                                             (VOS_THREAD_FUNC_T) receiverThreadPD,
                                             pSession);
     }
     if (err == TRDP_NO_ERR)
     {
-        printf("Creating PD Sender task with cycle time:\t%uµs\n", procConf.cycleTime);
+        vos_printLog(VOS_LOG_USR, "Creating PD Sender task with cycle time:\t%uµs\n", procConf.cycleTime);
         /* Send thread is a cyclic thread, runs until cancel */
         err = (TRDP_ERR_T) vos_threadCreate(&pSession->threadIdTxPD,
                                             "Sender Task",
@@ -658,7 +679,7 @@ static TRDP_APP_SESSION_T test_init (
     if (err == TRDP_NO_ERR)
     {
         /* Receiver thread runs until cancel */
-        printf("Creating MD Transceiver task ...\n");
+        vos_printLog(VOS_LOG_USR,"Creating MD Transceiver task ...\n");
         err = (TRDP_ERR_T) vos_threadCreate(&pSession->threadIdMD,
                                             "Transceiver Task",
                                             VOS_THREAD_POLICY_OTHER,
@@ -671,7 +692,7 @@ static TRDP_APP_SESSION_T test_init (
     }
     if (err != TRDP_NO_ERR)
     {
-        printf("Error initing session:\t%d\n", err);
+        vos_printLog(VOS_LOG_USR, "Error initing session:\t%d\n", err);
     }
     return pSession->appHandle;
 }
@@ -688,6 +709,7 @@ static void test_deinit (
 {
     if (pSession1)
     {
+        pSession1->threadRun = FALSE;
         vos_threadTerminate(pSession1->threadIdTxPD);
         vos_threadDelay(100000);
         pSession1->threadIdTxPD = 0;
@@ -701,6 +723,7 @@ static void test_deinit (
     }
     if (pSession2)
     {
+        pSession1->threadRun = FALSE;
         vos_threadTerminate(pSession2->threadIdTxPD);
         vos_threadDelay(100000);
         pSession2->threadIdTxPD = 0;
@@ -752,21 +775,38 @@ static int test1 ()
 
         /*    Copy the packet into the internal send queue, prepare for sending.    */
 
-        err = tlp_publish(gSession1.appHandle, &pubHandle, NULL, NULL, 0u, TEST1_COMID, 0u, 0u,
-                          0u, /* gSession1.ifaceIP,                   / * Source * / */
-                          gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
+        err = tlp_publish(gSession1.appHandle, 
+                          &pubHandle, 
+                          NULL,                               /* user ref */
+                          NULL,                               /* call back */
+                          0u,                                 /* service id */
+                          TEST1_COMID, 
+                          0u,                                 /* ETB tpo */
+                          0u,                                 /* OP topo */
+                          0u, /* gSession1.ifaceIP,           / * Source * / */
+                          gDestMC, /* gDestMC,  gSession2.ifaceIP  / * Destination * / */
                           TEST1_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, TEST1_DATA_LEN);
+                          0u,                                  /* red id */
+                          TRDP_FLAGS_DEFAULT,
+                          NULL,                                /* data */
+                          0);                                  /* data len */
 
         IF_ERROR("tlp_publish");
 
-        err = tlp_subscribe(gSession2.appHandle, &subHandle, NULL, NULL, 0u,
-                            TEST1_COMID, 0u, 0u,
-                            0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
-                            0u, /* gDestMC,                            / * Destination * / */
+        err = tlp_subscribe(gSession2.appHandle, 
+                            &subHandle, 
+                            NULL,                                 /* user ref */
+                            NULL,                                 /* call back */
+                            0u,                                   /* service id */
+                            TEST1_COMID, 
+                            0u,                                   /* ETB topo */
+                            0u,                                   /* OP topo */
+                            0u, /* gSession1.ifaceIP,             / * Source1 * / */
+                            0u, /* gSession1.ifaceIP,             / * Source2 * / */
+                            gDestMC, /* gDestMC,                  / * Destination * / */
                             TRDP_FLAGS_DEFAULT,
-                            TEST1_INTERVAL * 3, TRDP_TO_DEFAULT);
-
+                            TEST1_INTERVAL * 3,
+                            TRDP_TO_DEFAULT);
 
         IF_ERROR("tlp_subscribe");
 
@@ -804,7 +844,7 @@ static int test1 ()
 
             if (err != TRDP_NO_ERR)
             {
-                vos_printLog(VOS_LOG_INFO, "### tlp_get error: %s\n", vos_getErrorString((VOS_ERR_T)err));
+                vos_printLog(VOS_LOG_USR, "### tlp_get error: %s\n", vos_getErrorString((VOS_ERR_T)err));
 
                 gFailed = 1;
                 /* goto end; */
@@ -814,7 +854,7 @@ static int test1 ()
             {
                 if (memcmp(data1, data2, dataSize2) == 0)
                 {
-                    fprintf(gFp, "received data matches (seq: %u, size: %u)\n", pdInfo.seqCount, dataSize2);
+                    vos_printLog(VOS_LOG_USR, "received data matches (seq: %u, size: %u)\n", pdInfo.seqCount, dataSize2);
                 }
             }
         }
@@ -848,17 +888,17 @@ static void test2PDcallBack (
         case TRDP_NO_ERR:
             if ((pSentdata != NULL) && (pData != NULL) && (memcmp(pData, pSentdata, dataSize) == 0))
             {
-                fprintf(gFp, "received data matches (seq: %u, size: %u, src: %s)\n",
+                vos_printLog(VOS_LOG_USR, "received data matches (seq: %u, size: %u, src: %s)\n",
                         pMsg->seqCount, dataSize, vos_ipDotted(pMsg->srcIpAddr));
             }
             break;
 
         case TRDP_TIMEOUT_ERR:
             /* The application can decide here if old data shall be invalidated or kept    */
-            fprintf(gFp, "Packet timed out (ComId %d)\n", pMsg->comId);
+            vos_printLog(VOS_LOG_USR, "Packet timed out (ComId %d)\n", pMsg->comId);
             break;
         default:
-            fprintf(gFp, "Error on packet received (ComId %d), err = %d\n",
+            vos_printLog(VOS_LOG_USR, "Error on packet received (ComId %d), err = %d\n",
                     pMsg->comId,
                     pMsg->resultCode);
             break;
@@ -882,20 +922,38 @@ static int test2 ()
 
         /*    Copy the packet into the internal send queue, prepare for sending.    */
 
-        err = tlp_publish(gSession1.appHandle, &pubHandle, NULL, NULL, 0u, TEST2_COMID, 0u, 0u,
+        err = tlp_publish(gSession1.appHandle,
+                          &pubHandle,
+                          NULL,                                       /* user ref */
+                          NULL,                                       /* call back */
+                          0u,                                         /* service id */
+                          TEST2_COMID,
+                          0u,                                         /* ETB topo */
+                          0u,                                         /* OP topo */
                           0u, /* gSession1.ifaceIP,                   / * Source * / */
-                          gSession2.ifaceIP, /* gDestMC,               / * Destination * / */
-                          TEST2_INTERVAL,
-                          0u, TRDP_FLAGS_DEFAULT, NULL, 0u);
+                          gSession2.ifaceIP, /* gDestMC,              / * Destination * / */
+                          TEST2_INTERVAL,                             /* interval */
+                          0u,                                         /* red id */
+                          TRDP_FLAGS_DEFAULT,
+                          NULL,                                       /* data */
+                          0u);                                        /* data size */
 
         IF_ERROR("tlp_publish");
 
-        err = tlp_subscribe(gSession2.appHandle, &subHandle, data1, test2PDcallBack, 0u,
-                            TEST2_COMID, 0u, 0u,
-                            0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
+        err = tlp_subscribe(gSession2.appHandle, 
+                            &subHandle, 
+                            data1,                                     /* user ref */
+                            test2PDcallBack,
+                            0u,                                        /* service id */
+                            TEST2_COMID,
+                            0u,                                        /* ETB topo */
+                            0u,                                        /* OP topo */
+                            0u, /* gSession1.ifaceIP,                  / * Source1 * / */
+                            0u,                                        /* Source2 */
                             0u, /* gDestMC,                            / * Destination * / */
                             TRDP_FLAGS_CALLBACK,
-                            TEST2_INTERVAL * 3, TRDP_TO_DEFAULT);
+                            TEST2_INTERVAL * 3,
+                            TRDP_TO_DEFAULT);
 
 
         IF_ERROR("tlp_subscribe");
@@ -912,7 +970,7 @@ static int test2 ()
         while (counter < 5)         /* 0.5 seconds */
         {
 
-            fprintf(gFp, "Update data no. %d\n", counter);
+            vos_printLog(VOS_LOG_USR, "Update data no. %d\n", counter);
             sprintf(data1, "Just a Counter: %08d", counter++);
 
             err = tlp_put(gSession1.appHandle, pubHandle, (UINT8 *) data1, (UINT32) strlen(data1));
@@ -970,9 +1028,9 @@ char    numericString[256];
 #define IF_ERR(txt)                                                \
     if (err != TRDP_NO_ERR)                                       \
     {                                                              \
-    printf("### %s (error: %d)\n", txt, err);                  \
-    goto end;                                                  \
-}
+        vos_printLog(VOS_LOG_USR, "### %s (error: %d)\n", txt, err);                  \
+        goto end;                                                  \
+    }
 
 #define IF_ERR_NUM(txt, num)                       \
     if (err != TRDP_NO_ERR)                       \
@@ -1045,7 +1103,7 @@ static int test3b ()
         /* calculate the elapsed time from the subscription until the timeout recognition */
         vos_subTime(&time, &startTime);
 
-        printf("delta = %lds %dms\n", time.tv_sec, time.tv_usec / 1000);
+        vos_printLog(VOS_LOG_USR, "delta = %lds %dms\n", time.tv_sec, time.tv_usec / 1000);
 
         err = ((((time.tv_sec * 1000000) + time.tv_usec) - (10 * TLG_2_CYCLE_TIME)) <= TLG_2_CYCLE_TIME) ? TRDP_NO_ERR : TRDP_UNKNOWN_ERR;
         //err = ((time.tv_usec - (10 * TLG_2_CYCLE_TIME)) <= TLG_2_CYCLE_TIME) ? TRDP_NO_ERR : TRDP_UNKNOWN_ERR;
@@ -1109,14 +1167,14 @@ static int test3 ()
             err = tlp_get(gSession2.appHandle, subHandle, &pdInfo, (UINT8 *) data2, &dataSize2);
             if (err == TRDP_NODATA_ERR)
             {
-                fprintf(gFp, ".");
+                vos_printLog(VOS_LOG_USR, ".");
                 fflush(gFp);
                 continue;
             }
 
             if (err != TRDP_NO_ERR)
             {
-                fprintf(gFp, "\n### tlp_get error: %d\n", err);
+                vos_printLog(VOS_LOG_USR, "\n### tlp_get error: %d\n", err);
 
                 gFailed = 1;
                 goto end;
@@ -1124,7 +1182,7 @@ static int test3 ()
             }
 
         }
-        fprintf(gFp, "\n");
+        vos_printLog(VOS_LOG_USR, "\n");
     }
 
     /* ------------------------- test code ends here --------------------------- */
@@ -1223,7 +1281,7 @@ static int test4 ()
 
                 if (err != TRDP_NO_ERR)
                 {
-                    fprintf(gFp, "### tlp_get error: %d\n", err);
+                    vos_printLog(VOS_LOG_USR, "### tlp_get error: %d\n", err);
 
                     gFailed = 1;
                     goto end;
@@ -1231,7 +1289,7 @@ static int test4 ()
                 }
                 else
                 {
-                    fprintf(gFp, "received data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount, dataSize2);
+                    vos_printLog(VOS_LOG_USR, "received data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount, dataSize2);
                     gFailed = 0;
                     goto end;
                 }
@@ -1268,7 +1326,7 @@ static void  test5CBFunction (
 
     if (pMsg->resultCode == TRDP_REPLYTO_ERR)
     {
-        fprintf(gFp, "->> Reply timed out (ComId %u)\n", pMsg->comId);
+        vos_printLog(VOS_LOG_USR, "->> Reply timed out (ComId %u)\n", pMsg->comId);
         gFailed = 1;
     }
     else if ((pMsg->msgType == TRDP_MSG_MR) &&
@@ -1276,18 +1334,18 @@ static void  test5CBFunction (
     {
         if (pMsg->resultCode == TRDP_TIMEOUT_ERR)
         {
-            fprintf(gFp, "->> Request timed out (ComId %u)\n", pMsg->comId);
+            vos_printLog(VOS_LOG_USR, "->> Request timed out (ComId %u)\n", pMsg->comId);
             gFailed = 1;
         }
         else
         {
-            /* fprintf(gFp, "->> Request received (%s)\n", pData); */
+            /* vos_printLog(VOS_LOG_USR, "->> Request received (%s)\n", pData); */
             if (memcmp(srcURI, pMsg->srcUserURI, 32u) != 0)
             {
                 gFailed = 1;
-                fprintf(gFp, "## srcUserURI wrong\n");
+                vos_printLog(VOS_LOG_USR, "## srcUserURI wrong\n");
             }
-            fprintf(gFp, "->> Sending reply\n");
+            vos_printLog(VOS_LOG_USR, "->> Sending reply\n");
             err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST5_STRING_COMID, 0u, 500000u,                             /* #261 send params removed */
                                  (UINT8 *)TEST5_STRING_REPLY, 63 * 1024 /*strlen(TEST5_STRING_REPLY)*/, NULL);
 
@@ -1297,15 +1355,15 @@ static void  test5CBFunction (
     else if ((pMsg->msgType == TRDP_MSG_MQ) &&
              (pMsg->comId == TEST5_STRING_COMID))
     {
-        fprintf(gFp, "->> Reply received (%s)\n", pData);
-        fprintf(gFp, "->> Sending confirmation\n");
+        vos_printLog(VOS_LOG_USR, "->> Reply received (%s)\n", pData);
+        vos_printLog(VOS_LOG_USR, "->> Sending confirmation\n");
         err = tlm_confirm(appHandle, &pMsg->sessionId, 0u);               /* #261 send params removed */
 
         IF_ERROR("tlm_confirm");
     }
     else if (pMsg->msgType == TRDP_MSG_MC)
     {
-        fprintf(gFp, "->> Confirmation received (status = %u)\n", pMsg->userStatus);
+        vos_printLog(VOS_LOG_USR, "->> Confirmation received (status = %u)\n", pMsg->userStatus);
     }
     else if ((pMsg->msgType == TRDP_MSG_MN) &&
              (pMsg->comId == TEST5_STRING_COMID))
@@ -1313,17 +1371,17 @@ static void  test5CBFunction (
         if (strlen((char *)pMsg->sessionId) > 0)
         {
             gFailed = 1;
-            fprintf(gFp, "#### ->> Notification received, sessionID = %16s\n", pMsg->sessionId);
+            vos_printLog(VOS_LOG_USR, "#### ->> Notification received, sessionID = %16s\n", pMsg->sessionId);
         }
         else
         {
             gFailed = 0;
-            fprintf(gFp, "->> Notification received, sessionID == 0\n");
+            vos_printLog(VOS_LOG_USR, "->> Notification received, sessionID == 0\n");
         }
     }
     else
     {
-        fprintf(gFp, "->> Unsolicited Message received (type = %0xhx)\n", pMsg->msgType);
+        vos_printLog(VOS_LOG_USR, "->> Unsolicited Message received (type = %0xhx)\n", pMsg->msgType);
         gFailed = 1;
     }
 end:
@@ -1350,7 +1408,7 @@ static int test5 ()
                               VOS_INADDR_ANY, VOS_INADDR_ANY,
                               TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, NULL, destURI1);
         IF_ERROR("tlm_addListener1");
-        fprintf(gFp, "->> MD TCP Listener1 set up\n");
+        vos_printLog(VOS_LOG_USR, "->> MD TCP Listener1 set up\n");
 
         err = tlm_request(appHandle1, NULL, test5CBFunction, &sessionId1,
                           TEST5_STRING_COMID, 0u, 0u,
@@ -1360,7 +1418,7 @@ static int test5 ()
                           srcURI, destURI2);
 
         IF_ERROR("tlm_request1");
-        fprintf(gFp, "->> MD TCP Request1 sent\n");
+        vos_printLog(VOS_LOG_USR, "->> MD TCP Request1 sent\n");
 
         vos_threadDelay(2000000u);
 
@@ -1373,7 +1431,7 @@ static int test5 ()
                           srcURI, destURI2);
 
         IF_ERROR("tlm_request2");
-        fprintf(gFp, "->> MD TCP Request2 sent\n");
+        vos_printLog(VOS_LOG_USR, "->> MD TCP Request2 sent\n");
 
         vos_threadDelay(2000000u);
 
@@ -1412,7 +1470,7 @@ static int test6 ()
                               TEST5_STRING_COMID, 0u, 0u, 0u,
                               VOS_INADDR_ANY, VOS_INADDR_ANY, TRDP_FLAGS_CALLBACK, NULL, destURI1);
         IF_ERROR("tlm_addListener");
-        fprintf(gFp, "->> MD Listener set up\n");
+        vos_printLog(VOS_LOG_USR, "->> MD Listener set up\n");
 
         /*
          Finished setup.
@@ -1428,7 +1486,7 @@ static int test6 ()
                           srcURI, destURI2);
 
         IF_ERROR("tlm_request");
-        fprintf(gFp, "->> MD Request sent\n");
+        vos_printLog(VOS_LOG_USR, "->> MD Request sent\n");
 
         vos_threadDelay(5000000u);
 
@@ -1472,7 +1530,7 @@ static int test7 ()
                               TEST5_STRING_COMID, 0u, 0u, 0u, VOS_INADDR_ANY, VOS_INADDR_ANY, TRDP_FLAGS_CALLBACK,
                               NULL, NULL);
         IF_ERROR("tlm_addListener");
-        fprintf(gFp, "->> MD Listener set up\n");
+        vos_printLog(VOS_LOG_USR, "->> MD Listener set up\n");
 
         err = tlm_notify(appHandle1, NULL, test5CBFunction, TEST5_STRING_COMID, 0u, 0u, 0u,
                          gSession2.ifaceIP, TRDP_FLAGS_CALLBACK,                                                /* #261 send params removed */
@@ -1480,7 +1538,7 @@ static int test7 ()
 
 
         IF_ERROR("tlm_notify");
-        fprintf(gFp, "->> MD Request sent\n");
+        vos_printLog(VOS_LOG_USR, "->> MD Request sent\n");
 
         vos_threadDelay(5000000u);
 
@@ -1561,20 +1619,20 @@ static int test8 ()
             err = tlp_get(gSession2.appHandle, subHandle, &pdInfo, (UINT8 *) data2, &dataSize2);
             if (err == TRDP_NODATA_ERR)
             {
-                fprintf(gFp, ".");
+                vos_printLog(VOS_LOG_USR, ".");
                 continue;
             }
 
             if (err == TRDP_TIMEOUT_ERR)
             {
-                fprintf(gFp, ".");
+                vos_printLog(VOS_LOG_USR, ".");
                 fflush(gFp);
                 continue;
             }
 
             if (err != TRDP_NO_ERR)
             {
-                fprintf(gFp, "\n### tlp_get error: %d\n", err);
+                vos_printLog(VOS_LOG_USR, "\n### tlp_get error: %d\n", err);
 
                 gFailed = 1;
                 goto end;
@@ -1582,7 +1640,7 @@ static int test8 ()
             }
             else
             {
-                fprintf(gFp, "\nreceived data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount, dataSize2);
+                vos_printLog(VOS_LOG_USR, "\nreceived data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount, dataSize2);
                 gFailed = 0;
                 goto end;
             }
@@ -1649,7 +1707,7 @@ static int test9 ()
         tlc_updateSession(gSession1.appHandle);
         tlc_updateSession(gSession2.appHandle);
 
-        fprintf(gFp, "\nInitialized %u publishers & subscribers!\n", i);
+        vos_printLog(VOS_LOG_USR, "\nInitialized %u publishers & subscribers!\n", i);
 
         /*
          Enter the main processing loop.
@@ -1673,22 +1731,21 @@ static int test9 ()
                 err = tlp_get(gSession2.appHandle, subHandle[i], &pdInfo, (UINT8 *) data2, &dataSize2);
                 if (err == TRDP_NODATA_ERR)
                 {
-                    /* fprintf(gFp, "."); */
+                    /* vos_printLog(VOS_LOG_USR, "."); */
                     continue;
                 }
 
                 if (err == TRDP_TIMEOUT_ERR)
                 {
                     /*
-                       fprintf(gFp, ".");
-                       fflush(gFp);
+                       vos_printLog(VOS_LOG_USR, ".");
                      */
                     continue;
                 }
 
                 if (err != TRDP_NO_ERR)
                 {
-                    fprintf(gFp, "\n### tlp_get error: %d\n", err);
+                    vos_printLog(VOS_LOG_USR, "\n### tlp_get error: %d\n", err);
 
                     gFailed = 1;
                     goto end;
@@ -1696,7 +1753,7 @@ static int test9 ()
                 }
                 else
                 {
-                    /* fprintf(gFp, "\nreceived data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount,
+                    /* vos_printLog(VOS_LOG_USR, "\nreceived data from pull: %s (seq: %u, size: %u)\n", data2, pdInfo.seqCount,
                        dataSize2); */
                     gFailed = 0;
                     /* goto end; */
@@ -1724,7 +1781,7 @@ static int test10 ()
 
     {
         err = 0;
-        fprintf(gFp, "TRDP Version %s\n", tlc_getVersionString());
+        vos_printLog(VOS_LOG_USR, "TRDP Version %s\n", tlc_getVersionString());
     }
 
     /* ------------------------- test code ends here --------------------------- */
@@ -1978,7 +2035,7 @@ static int test12 ()
             {
                 if (memcmp(data1, data2, dataSize2) == 0)
                 {
-                    fprintf(gFp, "receiving data ..\n");
+                    vos_printLog(VOS_LOG_USR, "receiving data ..\n");
                 }
             }
         }
@@ -2050,19 +2107,16 @@ static int test13 ()
         TRDP_SUB_T subHandle;
 
         /*    Copy the packet into the internal send queue, prepare for sending.    */
-
         err = tlp_publish(gSession1.appHandle,
                           &pubHandle,
                           NULL,
                           (TRDP_PD_CALLBACK_T) cbIncrement,
                           0u,
                           TEST13_COMID,
-                          0u,
-                          0u,
-                          0u,
-                          /* gSession1.ifaceIP,                   / * Source * / */
-                          gSession2.ifaceIP,
-                          /* gDestMC,               / * Destination * / */
+                          0u,                /* ETB topo */
+                          0u,                /* OP topo */
+                          0u,                /* gSession1.ifaceIP, */     /* Source */
+                          gSession2.ifaceIP, /* gSession2.ifaceIP, gDestMC*/       /* Destination */
                           TEST13_INTERVAL,
                           0u,
                           TRDP_FLAGS_DEFAULT,
@@ -2072,11 +2126,15 @@ static int test13 ()
         IF_ERROR("tlp_publish");
 
         err = tlp_subscribe(gSession2.appHandle, &subHandle, NULL, NULL, 0u,
-                            TEST13_COMID, 0u, 0u,
-                            0u, 0u, /* gSession1.ifaceIP,                  / * Source * / */
-                            0u, /* gDestMC,                            / * Destination * / */
+                            TEST13_COMID,
+                            0u,                              /* ETB topo */
+                            0u,                              /* OP topo */
+                            gSession1.ifaceIP,   /* gSession1.ifaceIP,      / * Source IP 1 * / */
+                            0u,                              /* Source IP 2 */
+                            gSession2.ifaceIP,   /* gSession1.ifaceIP, gDestMC */ /* Destination */
                             TRDP_FLAGS_DEFAULT,
-                            TEST13_INTERVAL * 3, TRDP_TO_DEFAULT);
+                            TEST13_INTERVAL * 3, 
+                            TRDP_TO_DEFAULT);
 
 
         IF_ERROR("tlp_subscribe");
@@ -2088,7 +2146,6 @@ static int test13 ()
         tlc_updateSession(gSession2.appHandle);
 
         /* We need to call put once to start the transmission! */
-
         (void) tlp_put(gSession1.appHandle, pubHandle, (UINT8 *)TEST13_DATA, TEST13_DATA_LEN);
 
         /*
@@ -2113,7 +2170,7 @@ static int test13 ()
 
             if (err != TRDP_NO_ERR)
             {
-                vos_printLog(VOS_LOG_INFO, "### tlp_get error: %s\n", vos_getErrorString((VOS_ERR_T)err));
+                vos_printLog(VOS_LOG_USR, "### tlp_get error: %s\n", vos_getErrorString((VOS_ERR_T)err));
 
                 gFailed = 1;
                 /* goto end; */
@@ -2121,14 +2178,13 @@ static int test13 ()
             }
             else
             {
-                fprintf(gFp, "Receiving (seq: %u): %s\n", pdInfo.seqCount, data2);
+                vos_printLog(VOS_LOG_USR, "Receiving (seq: %u): %s\n", pdInfo.seqCount, data2);
             }
         }
     }
 
 
     /* ------------------------- test code ends here --------------------------- */
-
     CLEANUP;
 }
 
@@ -2158,22 +2214,22 @@ static void test14PDcallBack (
         case TRDP_NO_ERR:
             if ((pSentdata != NULL) && (pData != NULL) && (memcmp(pData, pSentdata, dataSize) == 0))
             {
-                fprintf(gFp, "received data matches (seq: %u, size: %u)\n", pMsg->seqCount, dataSize);
+                vos_printLog(VOS_LOG_USR, "received data matches (seq: %u, size: %u)\n", pMsg->seqCount, dataSize);
             }
             else
             {
-                fprintf(gFp, "some data received (seq: %u, size: %u)\n", pMsg->seqCount, dataSize);
+                vos_printLog(VOS_LOG_USR, "some data received (seq: %u, size: %u)\n", pMsg->seqCount, dataSize);
             }
             break;
 
         case TRDP_TIMEOUT_ERR:
             /* The application can decide here if old data shall be invalidated or kept    */
-            fprintf(gFp, "Packet timed out (ComId %d, SrcIP: %s)\n",
+            vos_printLog(VOS_LOG_USR, "Packet timed out (ComId %d, SrcIP: %s)\n",
                     pMsg->comId,
                     vos_ipDotted(pMsg->srcIpAddr));
             break;
         default:
-            fprintf(gFp, "Error on packet received (ComId %d), err = %d\n",
+            vos_printLog(VOS_LOG_USR, "Error on packet received (ComId %d), err = %d\n",
                     pMsg->comId,
                     pMsg->resultCode);
             break;
@@ -2245,7 +2301,7 @@ static int test14 ()
         /* test if no of callbacks equals no of sent packets (bug report Bryce Jensen) */
         /* wait a bit */
         vos_threadDelay(TEST14_WAIT);
-        fprintf(gFp,
+        vos_printLog(VOS_LOG_USR,
                 "%u max. expected, %u callbacks received\n",
                 (unsigned int)(counter * TEST14_LOOP + TEST14_WAIT) / TEST14_INTERVAL,
                 gTest14CBCounter);
@@ -2284,7 +2340,7 @@ static void  test15CBFunction (
 
     if (pMsg->resultCode == TRDP_REPLYTO_ERR)
     {
-        fprintf(gFp, "->> Reply timed out (ComId %u)\n", pMsg->comId);
+        vos_printLog(VOS_LOG_USR, "->> Reply timed out (ComId %u)\n", pMsg->comId);
         gFailed = 1;
     }
     else if ((pMsg->msgType == TRDP_MSG_MR) &&
@@ -2292,20 +2348,20 @@ static void  test15CBFunction (
     {
         if (pMsg->resultCode == TRDP_TIMEOUT_ERR)
         {
-            fprintf(gFp, "->> Request timed out (ComId %u)\n", pMsg->comId);
+            vos_printLog(VOS_LOG_USR, "->> Request timed out (ComId %u)\n", pMsg->comId);
             gFailed = 1;
         }
         else
         {
-            fprintf(gFp, "<<- Request received (%.16s...)\n", localData);
+            vos_printLog(VOS_LOG_USR, "<<- Request received (%.16s...)\n", localData);
 /*
               if (memcmp(srcURI, pMsg->srcUserURI, 32u) != 0)
               {
                   gFailed = 1;
-                  fprintf(gFp, "### srcUserURI wrong\n");
+                  vos_printLog(VOS_LOG_USR, "### srcUserURI wrong\n");
               }
  */
-            fprintf(gFp, "->> Sending reply with query (%.16s)\n", (UINT8 *)TEST15_STRING_REPLY);
+            vos_printLog(VOS_LOG_USR, "->> Sending reply with query (%.16s)\n", (UINT8 *)TEST15_STRING_REPLY);
             err = tlm_replyQuery(appHandle, &pMsg->sessionId, TEST15_STRING_COMID, 0u, 0u,               /* #261 send params removed */
                                  (UINT8 *)TEST15_STRING_REPLY, TEST15_STRING_REPLY_LEN, NULL);
 
@@ -2315,15 +2371,15 @@ static void  test15CBFunction (
     else if ((pMsg->msgType == TRDP_MSG_MQ) &&
              (pMsg->comId == TEST15_STRING_COMID))
     {
-        fprintf(gFp, "<<- Reply received (%.16s...)\n", localData);
-        fprintf(gFp, "->> Sending confirmation\n");
+        vos_printLog(VOS_LOG_USR, "<<- Reply received (%.16s...)\n", localData);
+        vos_printLog(VOS_LOG_USR, "->> Sending confirmation\n");
         err = tlm_confirm(appHandle, &pMsg->sessionId, 0u);                                                /* #261 send params removed */
 
         IF_ERROR("tlm_confirm");
     }
     else if (pMsg->msgType == TRDP_MSG_MC)
     {
-        fprintf(gFp, "<<- Confirmation received (status = %u)\n", pMsg->userStatus);
+        vos_printLog(VOS_LOG_USR, "<<- Confirmation received (status = %u)\n", pMsg->userStatus);
     }
     else if ((pMsg->msgType == TRDP_MSG_MN) &&
              (pMsg->comId == TEST15_STRING_COMID))
@@ -2331,17 +2387,17 @@ static void  test15CBFunction (
         if (strlen((char *)pMsg->sessionId) > 0)
         {
             gFailed = 1;
-            fprintf(gFp, "#### ->> Notification received, sessionID = %16s\n", pMsg->sessionId);
+            vos_printLog(VOS_LOG_USR, "#### ->> Notification received, sessionID = %16s\n", pMsg->sessionId);
         }
         else
         {
             gFailed = 0;
-            fprintf(gFp, "->> Notification received, sessionID == 0\n");
+            vos_printLog(VOS_LOG_USR, "->> Notification received, sessionID == 0\n");
         }
     }
     else
     {
-        fprintf(gFp, "<<- Unsolicited Message received (type = %0xhx)\n", pMsg->msgType);
+        vos_printLog(VOS_LOG_USR, "<<- Unsolicited Message received (type = %0xhx)\n", pMsg->msgType);
         gFailed = 1;
     }
 end:
@@ -2376,7 +2432,7 @@ static int test15 ()
                               VOS_INADDR_ANY, VOS_INADDR_ANY,
                               TRDP_FLAGS_CALLBACK | TRDP_FLAGS_TCP, NULL, destURI1);
         IF_ERROR("tlm_addListener1");
-        fprintf(gFp, "<<- MD TCP Listener1 set up\n");
+        vos_printLog(VOS_LOG_USR, "<<- MD TCP Listener1 set up\n");
 
         /* try to connect (request) some data */
         for (i = 0; i < 10; i++)
@@ -2389,12 +2445,12 @@ static int test15 ()
                               srcURI, destURI2);
 
             IF_ERROR("tlm_request1");
-            fprintf(gFp, "->> MD TCP Request1 sent\n");
+            vos_printLog(VOS_LOG_USR, "->> MD TCP Request1 sent\n");
 
             vos_threadDelay(500000u);
         }
 
-        fprintf(gFp, "Waiting 6s ... \n");
+        vos_printLog(VOS_LOG_USR, "Waiting 6s ... \n");
         /* Wait until listener connection times out */
         vos_threadDelay(6000000u);
 
@@ -2409,7 +2465,7 @@ static int test15 ()
                               srcURI, destURI2);
 
             IF_ERROR("tlm_request2");
-            fprintf(gFp, "->> MD TCP Request2 sent\n");
+            vos_printLog(VOS_LOG_USR, "->> MD TCP Request2 sent\n");
 
             vos_threadDelay(500000u);
         }
@@ -2455,7 +2511,7 @@ static int test16 ()
                               VOS_INADDR_ANY, VOS_INADDR_ANY,
                               TRDP_FLAGS_CALLBACK, NULL, NULL);
         IF_ERROR("tlm_addListener1");
-        fprintf(gFp, "->> MD UDP Listener1 set up\n");
+        vos_printLog(VOS_LOG_USR, "->> MD UDP Listener1 set up\n");
 
         /* try to connect (request) some data */
         for (i = 0; i < 10; i++)
@@ -2468,12 +2524,12 @@ static int test16 ()
                               NULL, NULL);
 
             IF_ERROR("tlm_request1");
-            fprintf(gFp, "->> MD UDP Request1 sent\n");
+            vos_printLog(VOS_LOG_USR, "->> MD UDP Request1 sent\n");
 
             vos_threadDelay(500000u);
         }
 
-        fprintf(gFp, "Waiting 6s for connection close... \n");
+        vos_printLog(VOS_LOG_USR, "Waiting 6s for connection close... \n");
         /* Wait until listener connection times out */
         vos_threadDelay(6000000u);
 
@@ -2488,7 +2544,7 @@ static int test16 ()
                               NULL, NULL);
 
             IF_ERROR("tlm_request2");
-            fprintf(gFp, "->> MD UDP Request2 sent\n");
+            vos_printLog(VOS_LOG_USR, "->> MD UDP Request2 sent\n");
 
             vos_threadDelay(500000u);
         }
@@ -2527,7 +2583,7 @@ static int test17 ()
             /* CRC of the string "123456789" is 0x1697d06a ??? */
             seed    = 0;
             result  = vos_sc32(seed, str, (UINT32)len);
-            fprintf(gFp, "sc32 of '%s' (seed = %0x) is 0x%08x\n", str, seed, result);
+            vos_printLog(VOS_LOG_USR, "sc32 of '%s' (seed = %0x) is 0x%08x\n", str, seed, result);
         }
         {
             UINT8 str[] = "123456789";
@@ -2536,7 +2592,7 @@ static int test17 ()
             /* CRC of the string "123456789" is 0x1697d06a ??? */
             seed    = 0xFFFFFFFF;
             result  = vos_sc32(seed, str, (UINT32)len);
-            fprintf(gFp, "sc32 of '%s' (seed = %0x) is 0x%08x\n", str, seed, result);
+            vos_printLog(VOS_LOG_USR, "sc32 of '%s' (seed = %0x) is 0x%08x\n", str, seed, result);
         }
 
     }
@@ -2567,7 +2623,6 @@ static int test18 ()
         TRDP_MEM_CONFIG_T memConfig;
         TRDP_DBG_CONFIG_T dbgConfig;
         UINT32 numComPar;
-        TRDP_COM_PAR_T *pComPar;
         UINT32 numIfConfig;
         TRDP_IF_CONFIG_T *pIfConfig;
         unsigned int i;
@@ -2575,16 +2630,16 @@ static int test18 ()
         err = tau_prepareXmlMem(xmlBuffer, strlen(xmlBuffer), &docHnd);
         IF_ERROR("tau_prepareXmlMem");
 
-        err = tau_readXmlDeviceConfig(&docHnd, &memConfig, &dbgConfig, &numComPar, &pComPar, &numIfConfig, &pIfConfig);
+        err = tau_readXmlDeviceConfig(&docHnd, &memConfig, &dbgConfig, &numIfConfig, &pIfConfig);   /* 261 com parameters removed */
         IF_ERROR("tau_readXmlDeviceConfig");
 
         for (i = 0u; i < numIfConfig; i++)
         {
-            fprintf(gFp, "interface label: %s\n", pIfConfig[i].ifName);             /**< interface name   */
-            fprintf(gFp, "network ID     : %u\n", pIfConfig[i].networkId);          /**< used network on the device
+            vos_printLog(VOS_LOG_USR, "interface label: %s\n", pIfConfig[i].ifName);             /**< interface name   */
+            vos_printLog(VOS_LOG_USR, "network ID     : %u\n", pIfConfig[i].networkId);          /**< used network on the device
                                                                                       (1...4)   */
-            fprintf(gFp, "host IP        : 0x%08x\n", pIfConfig[i].hostIp);         /**< host IP address   */
-            fprintf(gFp, "leader IP      : 0x%08x\n", pIfConfig[i].leaderIp);       /**< Leader IP address dependant on
+            vos_printLog(VOS_LOG_USR, "host IP        : 0x%08x\n", pIfConfig[i].hostIp);         /**< host IP address   */
+            vos_printLog(VOS_LOG_USR, "leader IP      : 0x%08x\n", pIfConfig[i].leaderIp);       /**< Leader IP address dependant on
                                                                                       redundancy concept   */
         }
     }
@@ -2785,7 +2840,7 @@ static int test19 ()
 
         }
 
-        fprintf(gFp, "\nInitialized %u publishers!\n", i);
+        vos_printLog(VOS_LOG_USR, "\nInitialized %u publishers!\n", i);
 
         err = tlc_updateSession(gSession1.appHandle);
 
@@ -2795,8 +2850,8 @@ static int test19 ()
          Enter the main processing loop.
          */
         /*
-           fprintf(gFp, "Transmission is going on...\n");
-           fprintf(gFp, "...changing some data...\n");
+           vos_printLog(VOS_LOG_USR, "Transmission is going on...\n");
+           vos_printLog(VOS_LOG_USR, "...changing some data...\n");
          */
         int counter = 0;
         while (counter++ < 10)         /* 1 * TEST9_NO_OF_TELEGRAMS seconds -> 200s */
@@ -2812,7 +2867,7 @@ static int test19 ()
         }
 
         vos_threadDelay(10000000);   /* Let it run for 10s */
-        fprintf(gFp, "\n...transmission is finished\n");
+        vos_printLog(VOS_LOG_USR, "\n...transmission is finished\n");
         FULL_LOG(FALSE);
     }
 
@@ -2841,7 +2896,7 @@ static void  test20CBFunction (
     switch (pMsg->resultCode)
     {
         case TRDP_NO_ERR:
-            //fprintf(gFp, ".");
+            //vos_printLog(VOS_LOG_USR, ".");
             //vos_printLog(VOS_LOG_USR, "received comId: %u (seq: %u, size: %u, src: %s)\n",
             //             pMsg->comId, pMsg->seqCount, dataSize, vos_ipDotted(pMsg->srcIpAddr));
             break;
@@ -3185,7 +3240,7 @@ static int test20 ()
 
         }
 
-        fprintf(gFp, "\nInitialized %u publishers!\n", i);
+        vos_printLog(VOS_LOG_USR, "\nInitialized %u publishers!\n", i);
 
         err = tlc_updateSession(gSession1.appHandle);
 
@@ -3197,8 +3252,8 @@ static int test20 ()
         /*
          Enter the main processing loop.
          */
-        fprintf(gFp, "Transmission is going on...\n");
-        fprintf(gFp, "...changing some data...\n");
+        vos_printLog(VOS_LOG_USR, "Transmission is going on...\n");
+        vos_printLog(VOS_LOG_USR, "...changing some data...\n");
         int counter = 0;
         UINT8 buffer[2000];
         UINT32 size = 2000;
@@ -3225,7 +3280,7 @@ static int test20 ()
         }
 
         vos_threadDelay(10000000);   /* Let it run for 100s */
-        fprintf(gFp, "\n...transmission is finished\n");
+        vos_printLog(VOS_LOG_USR, "\n...transmission is finished\n");
         /* FULL_LOG(FALSE); */
     }
 
@@ -3263,7 +3318,7 @@ static void  test21CBFunction (
     switch (pMsg->resultCode)
     {
         case TRDP_NO_ERR:
-            //fprintf(gFp, ".");
+            //vos_printLog(VOS_LOG_USR, ".");
             vos_printLog(VOS_LOG_USR, "received comId: %u (seq: %u, size: %u, src: %s)\n",
                          pMsg->comId, pMsg->seqCount, dataSize, vos_ipDotted(pMsg->srcIpAddr));
             break;
@@ -3418,7 +3473,7 @@ static int test21 ()
 
         }
 
-        fprintf(gFp, "\nInitialized %u publishers!\n", i);
+        vos_printLog(VOS_LOG_USR, "\nInitialized %u publishers!\n", i);
 
         err = tlc_updateSession(gSession1.appHandle);
 
@@ -3430,8 +3485,8 @@ static int test21 ()
         /*
          Enter the main processing loop.
          */
-        fprintf(gFp, "Transmission is going on...\n");
-        fprintf(gFp, "...changing some data...\n");
+        vos_printLog(VOS_LOG_USR, "Transmission is going on...\n");
+        vos_printLog(VOS_LOG_USR, "...changing some data...\n");
         int counter = 0;
         UINT8 buffer[2000];
         UINT32 size = 2000;
@@ -3465,7 +3520,7 @@ static int test21 ()
         }
 
         vos_threadDelay(5000000); /* Let it run for 5s */  
-        fprintf(gFp, "\n...transmission is finished\n");
+        vos_printLog(VOS_LOG_USR, "\n...transmission is finished\n");
         /* FULL_LOG(FALSE); */
     }
 
@@ -3519,14 +3574,13 @@ int main (int argc, char *argv[])
     int ch;
     unsigned int ip[4];
     UINT32 testNo = 0;
+    char filename[TRDP_MAX_FILE_NAME_LEN] = { 0 };
 
-    if (gFp == NULL)
-    {
-        /* gFp = fopen("/tmp/trdp.log", "w+"); */
-        gFp = stdout;
-    }
+    gDestMC = vos_dottedIP("239.2.24.1");
+    gSession1.ifaceIP = vos_dottedIP("10.0.1.100");
+    gSession1.ifaceIP = vos_dottedIP("10.0.1.101");
 
-    while ((ch = getopt(argc, argv, "d:i:t:o:m:h?v")) != -1)
+    while ((ch = getopt(argc, argv, "n:t:o:m:l:h?v")) != -1)
     {
         switch (ch)
         {
@@ -3541,7 +3595,7 @@ int main (int argc, char *argv[])
                 gSession1.ifaceIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                 break;
             }
-            case 'i':
+            case 't':
             {   /*  read alternate ip    */
                 if (sscanf(optarg, "%u.%u.%u.%u",
                            &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
@@ -3552,7 +3606,7 @@ int main (int argc, char *argv[])
                 gSession2.ifaceIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                 break;
             }
-            case 't':
+            case 'm':
             {   /*  read target ip (MC)   */
                 if (sscanf(optarg, "%u.%u.%u.%u",
                            &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
@@ -3563,7 +3617,13 @@ int main (int argc, char *argv[])
                 gDestMC = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
                 break;
             }
-            case 'm':
+            case 'l':
+            {    /*  Log file   */
+                strncpy(filename, optarg, sizeof(filename) - 1);
+                gFp = fopen(optarg, "w");
+                break;
+            }
+            case 'n':
             {   /*  read test number    */
                 if (sscanf(optarg, "%u",
                            &testNo) < 1)
@@ -3593,14 +3653,20 @@ int main (int argc, char *argv[])
         exit(1);
     }
 
-    CHAR8 srcip1[16], srcip2[16], dstip[16];
-    strcpy(srcip1, vos_ipDotted(gSession1.ifaceIP));
-    strcpy(srcip2, vos_ipDotted(gSession2.ifaceIP));
-    strcpy(dstip, vos_ipDotted(gDestMC));
-    printf("\nLocaltest 2 / API-Test 2 parameters:\n  localip 1 = %s\n  localip 2 = %s\n  remoteip  = %s\n  run test  = %d (0=all)\n\n",
-        srcip1, srcip2, dstip, testNo);
+    printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
 
-    printf("TRDP Stack Version %s\n", tlc_getVersionString());
+    {
+        CHAR8 srcip1[16], srcip2[16], dstip[16];
+
+        strcpy(srcip1, vos_ipDotted(gSession1.ifaceIP));
+        strcpy(srcip2, vos_ipDotted(gSession2.ifaceIP));
+        strcpy(dstip, vos_ipDotted(gDestMC));
+        printf("\nParameters:\n  localip 1 = %s\n  localip 2 = %s\n  remoteip  = %s\n  run test  = %d (0=all)\n  log file  = %s\n\n",
+            srcip1, srcip2, dstip, testNo, (gFp)?filename:"");
+    }
+
+    printf("TRDP Stack Version %s\n\n", tlc_getVersionString());
+
     if (testNo == 0)    /* Run all tests in sequence */
     {
         while (1)
@@ -3612,11 +3678,11 @@ int main (int argc, char *argv[])
             }
             if (ret == 0)
             {
-                fprintf(gFp, "All tests passed!\n");
+                vos_printLog(VOS_LOG_USR, "All tests passed!\n");
             }
             else
             {
-                fprintf(gFp, "### %d test(s) failed! ###\n", ret);
+                vos_printLog(VOS_LOG_USR, "### %d test(s) failed! ###\n", ret);
             }
             return ret;
         }

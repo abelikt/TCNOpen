@@ -339,31 +339,34 @@ void dbgOut (
 
     if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-//        printf("%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
-          printf("%s %s %s",
-            strrchr(pTime, '-') + 1,
-            cat[category],
+        printf("%s%s %16s@%-4d: %s\n", 
+            pTime, 
+            cat[category], 
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1, 
+            (int) line, 
             pMsgStr);
     }
 
     if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s\n", pTime, cat[category], pFile, (int)line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%-4d: %s\n", pTime, cat[category], pFile, (int) line, pMsgStr);
+
         fflush(pLogFile);
     }
 #else
-    const char* file = strrchr(pFile, '/');
-
     if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-        fprintf(stderr, "%s%s %s@%d: %s",
-            pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+        fprintf(stderr, "%s%s %16s@%-4d: %s",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int) line,
+            pMsgStr);
     }
 
     if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s",
-            pTime, cat[category], file ? file + 1 : pFile, line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%-4d: %s", pTime, cat[category], pFile, (int) line, pMsgStr);
     }
 #endif
 }

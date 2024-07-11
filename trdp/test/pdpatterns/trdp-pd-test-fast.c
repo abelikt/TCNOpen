@@ -840,7 +840,7 @@ static void *receiverThread (void * pArg)
     TRDP_FDS_T      fileDesc;
     INT32           noDesc = 0;
 
-    while (vos_threadDelay(0u) == VOS_NO_ERR)   /* this is a cancelation point! */
+    while (vos_threadDelay(1000u) == VOS_NO_ERR)   /* this is a cancelation point! */
     {
         FD_ZERO(&fileDesc);
         result = tlp_getInterval(apphandle, &interval, &fileDesc, (TRDP_SOCK_T *) &noDesc);
@@ -892,9 +892,11 @@ static void printLog(
     UINT16      line,
     const CHAR8 *pMsgStr)
 {
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
+
     if (pLogFile != NULL)
     {
-        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, category==VOS_LOG_ERROR?"ERR ":(category==VOS_LOG_WARNING?"WAR ":(category==VOS_LOG_INFO?"INFO":"DBG ")), pFile, (int) line, pMsgStr);
+        fprintf(pLogFile, "%s%s %s@%d: %s", pTime, cat[category], pFile, (int)line, pMsgStr);
         fflush(pLogFile);
     }
 }

@@ -67,20 +67,19 @@ void dbgOut (
     TRDP_LOG_T  category,
     const CHAR8 *pTime,
     const CHAR8 *pFile,
-    UINT16      LineNumber,
+    UINT16      line,
     const CHAR8 *pMsgStr)
 {
-    const char *catStr[] = {"**Error:", "Warning:", "   Info:", "  Debug:", "   User:"};
-    CHAR8       *pF = strrchr(pFile, VOS_DIR_SEP);
+    static const char *cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
 
-    if (category != VOS_LOG_DBG)
+    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
     {
-        printf("%s %s %s:%d %s",
-               pTime,
-               catStr[category],
-               (pF == NULL)? "" : pF + 1,
-               LineNumber,
-               pMsgStr);
+        printf("%s%s %16s@%-4d: %s\n",
+            pTime,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
     }
 }
 

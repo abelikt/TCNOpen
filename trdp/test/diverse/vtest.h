@@ -20,7 +20,8 @@
 /* error flags definition */
 /**************************/
 /* We use dynamic memory    */
-#define RESERVED_MEMORY  200000
+#define RESERVED_MEMORY     240000
+#define PREALLOCATE         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
 #define MAXKEYSIZE 25
 #define cBufSize 1
 /* define output detail level */

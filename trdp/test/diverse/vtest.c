@@ -24,6 +24,11 @@
  */
 
 #include "vtest.h"
+#include "printOwnStatistics.h"
+#include "getopt.h"
+
+#define APP_VERSION         "1.5"
+#define APP_USE             "This tool tests the VOS layer."
 
 static FILE *pLogFile;
 
@@ -44,25 +49,33 @@ void dbgOut(
    TRDP_LOG_T  category,
    const CHAR8 *pTime,
    const CHAR8 *pFile,
-   UINT16      LineNumber,
+   UINT16      line,
    const CHAR8 *pMsgStr)
 {
-   const char *catStr[] = { "**Error:", "Warning:", "   Info:", "  Debug:", "        " };
+    static const char* cat[] = { "ERR", "WAR", "INF", "DBG", "USR" };
 
-   {
-      printf("%s %s %s",
-         strrchr(pTime, '-') + 1,
-         catStr[category],
-         pMsgStr);
 
-       if (pLogFile != NULL)
-       {
-           fprintf(pLogFile, "%s %s %s",
-                   strrchr(pTime, '-') + 1,
-                   catStr[category],
-                   pMsgStr);
-       }
-   }
+//    if ((category != VOS_LOG_INFO) && (category != VOS_LOG_DBG))
+    {
+        printf("%s%s %16s@%-4d: %s\n",
+            strrchr(pTime, '-') + 1,
+            cat[category],
+            (strrchr(pFile, '/') == NULL) ? strrchr(pFile, '\\') + 1 : strrchr(pFile, '/') + 1,
+            (int)line,
+            pMsgStr);
+    }
+
+    if (pLogFile != NULL)
+    {
+        fprintf(pLogFile, "%s%s %s@%-4d: %s", 
+             strrchr(pTime, '-') + 1,
+             cat[category], 
+             pFile,
+             (int)line,
+             pMsgStr);
+
+        fflush(pLogFile);
+    }
 }
 
 
@@ -1183,7 +1196,7 @@ THREAD_ERR_T L3_test_thread_mutex()
 
    vos_mutexDelete(mutex);
 
-   if ((arg.result == VOS_NO_ERR) || (arg.result == VOS_NO_ERR))
+   if (arg.result == VOS_NO_ERR)
    {
       vos_printLogStr(VOS_LOG_USR, "[THREAD_MUTEX] finished OK\n");
    }
@@ -1361,7 +1374,7 @@ THREAD_ERR_T L3_test_thread_sema()
 
    vos_semaDelete(sema);
 
-   if ((arg.result == VOS_NO_ERR) || (arg.result == VOS_NO_ERR))
+   if (arg.result == VOS_NO_ERR)
    {
       vos_printLogStr(VOS_LOG_USR, "[THREAD_MUTEX] finished OK\n");
    }
@@ -1561,6 +1574,8 @@ SOCK_ERR_T L3_test_sock_UDPMC(UINT8 sndBufStartVal, UINT8 rcvBufExpVal, TEST_IP_
          vos_printLog(VOS_LOG_USR, "[SOCK_UDPMC] IF IP: %s\n", vos_ipDotted(srcIFIP));
          received = TRUE;
       }
+ 
+#ifdef COUNTERPART_IN_PLACE
       /*and now here we get the response from our counterpart */
       vos_printLog(VOS_LOG_USR, "[SOCK_UDPMC] vos_sockReceive() retVal bisher = %u\n", retVal);
       res = vos_sockReceiveUDP(sockDesc, &rcvBuf, &bufSize, &gTestIP, &gTestPort, &destIP, &srcIFIP, FALSE);
@@ -1582,6 +1597,7 @@ SOCK_ERR_T L3_test_sock_UDPMC(UINT8 sndBufStartVal, UINT8 rcvBufExpVal, TEST_IP_
          vos_printLog(VOS_LOG_USR, "[SOCK_UDPMC] IF IP: %s\n", vos_ipDotted(srcIFIP));
          received = TRUE;
       }
+#endif
    }
 
    /************/
@@ -2780,6 +2796,7 @@ UINT32 L1_test_basic(UINT32 testCnt, TEST_IP_CONFIG_T ipCfg)
    UINT32 errcnt = 0;
 
    errcnt = VOS_NO_ERR;
+   gPDebugFunction = dbgOut;
    vos_printLogStr(VOS_LOG_USR, "Test start\n");
    vos_printLogStr(VOS_LOG_USR, "\n\n\n");
    vos_printLogStr(VOS_LOG_USR, "#####################################################################\n");
@@ -2828,6 +2845,21 @@ UINT32 L1_test_basic(UINT32 testCnt, TEST_IP_CONFIG_T ipCfg)
    return errcnt;
 }
 
+/**********************************************************************************************************************/
+/* Print a sensible usage message */
+void usage(const char* appName)
+{
+    printf("%s: Version %s\t(%s - %s)\n", appName, APP_VERSION, __DATE__, __TIME__);
+    printf("Usage of %s\n", appName);
+    printf(APP_USE"\n"
+        "Arguments are:\n"
+        "-o <own IP address>       in dotted decimal\n"
+        "-t <target IP address>    in dotted decimal\n"
+        "-m <multicast IP address> in dotted decimal  (default 239.2.24.1)\n"
+        "-l <file>                 log file name      (e.g. test.txt)\n"
+        "-v                        print version and quit\n"
+    );
+}
 
 
 #ifdef VXWORKS
@@ -2840,42 +2872,94 @@ int main(int argc, char *argv[])
    struct timeval    tv_null = { 0, 0 };
    UINT32 testCnt = 0;
    UINT32 totalErrors = 0;
+   int ch;
+   char filename[TRDP_MAX_FILE_NAME_LEN] = { 0 };
 
    printf("TRDP VOS test program, version 0\n");
 
-   if (argc < 4)
+   /* initialize test options */
+   ipCfg.mcIP = vos_dottedIP("239.2.24.1");                /* default multicast address */
+   pLogFile   = NULL;
+
+   /* get the arguments/options */
+   while ((ch = getopt(argc, argv,
+       "t:o:m:l:h?v"
+   )) != -1)
    {
-      printf("usage: %s <localip> <remoteip> <mcast>\n", argv[0]);
-      printf("  <localip>  .. own IP address (ie. 10.2.24.1)\n");
-      printf("  <remoteip> .. remote IP address (ie. 10.2.24.2)\n");
-      printf("  <mcast>    .. multicast group address (ie. 239.2.24.1)\n");
-      printf("  <logfile>  .. file name for logging (ie. test.txt)\n");
+       switch (ch)
+       {
+       case 'o':
+       {    /*  read ip    */
+           unsigned int ip[4];
+
+           if (sscanf(optarg, "%u.%u.%u.%u",
+               &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+           {
+               usage(argv[0]);
+               return 1;
+           }
+           ipCfg.srcIP = ipCfg.mcIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+           break;
+       }
+       case 't':
+       {    /*  read ip    */
+           unsigned int ip[4];
+
+           if (sscanf(optarg, "%u.%u.%u.%u",
+               &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+           {
+               usage(argv[0]);
+               return 1;
+           }
+           ipCfg.dstIP = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+           break;
+       }
+       case 'm':
+       {    /*  read ip    */
+           unsigned int ip[4];
+
+           if (sscanf(optarg, "%u.%u.%u.%u",
+               &ip[3], &ip[2], &ip[1], &ip[0]) < 4)
+           {
+               usage(argv[0]);
+               return 1;
+           }
+           ipCfg.mcGrp = (ip[3] << 24) | (ip[2] << 16) | (ip[1] << 8) | ip[0];
+           break;
+       }
+      case 'v':    /* version */
+       {
+           printf("%s: Version %s\t(%s - %s)\n",
+               argv[0], APP_VERSION, __DATE__, __TIME__);
+           return 0;
+           break;
+       }
+       case 'l':
+       {    /*  Log file   */
+           strncpy(filename, optarg, sizeof(filename) - 1);
+           pLogFile = fopen(optarg, "w");
+           break;
+       }
+
+       case 'h':
+       case '?':
+       default:
+           usage(argv[0]);
+           return 1;
+       }
+   }
+
 #ifdef SIM
       printf("  <prefix>  .. instance prefix in simulation mode (ie. CCU1)\n");
 #endif
-      return 1;
-   }
 
-   /* initialize test options */
-   ipCfg.srcIP = vos_dottedIP(argv[1]);                    /* source (local) IP address */
-   ipCfg.dstIP = vos_dottedIP(argv[2]);                    /* destination (remote) IP address */
-   ipCfg.mcIP = vos_dottedIP(argv[1]);
-   ipCfg.mcGrp = vos_dottedIP(argv[3]);                    /* multicast group */
+   printf("%s: Version %s\t(%s - %s)\n%s\n", argv[0], APP_VERSION, __DATE__, __TIME__, APP_USE);
 
    if (!ipCfg.srcIP || !ipCfg.dstIP || !vos_isMulticast(ipCfg.mcGrp))
    {
       printf("invalid input arguments\n");
+      usage(argv[0]);
       return 1;
-   }
-
-   if (argc >= 4)
-   {
-      pLogFile = fopen(argv[4], "w");
-      gPDebugFunction = dbgOut;
-   }
-   else
-   {
-      pLogFile = NULL;
    }
 
 #ifdef SIM
