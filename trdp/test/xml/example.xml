@@ -36,9 +36,10 @@
             <pd-com-parameter marshall="off" port="21548" qos="4" ttl="64" timeout-value="500000" validity-behavior="keep" callback="on" />
             <md-com-parameter udp-port="21550" tcp-port="21550"
                               confirm-timeout="1500000" connect-timeout="65000000" reply-timeout="5500000"
-                              marshall="off" protocol="TCP" qos="1" retries="4" ttl="64" callback="on" />
+                              marshall="on" protocol="TCP" qos="1" retries="4" ttl="64" callback="on" />
             <telegram name="tlg1004" com-id="1004" data-set-id="1004">
-                <source id="5" uri1="192.168.13.50" />
+				<md-parameter confirm-timeout="150000" reply-timeout="160000" marshall="on" callback="on" protocol="TCP"/>
+				<source id="5" uri1="192.168.13.50" />
                 <destination id="5" uri="192.168.13.50" />
             </telegram>
         </bus-interface>

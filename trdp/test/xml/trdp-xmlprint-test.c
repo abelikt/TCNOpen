@@ -104,7 +104,7 @@ static void printDefaultPDandMD(
     printf("    UDP port: %u, TCP port: %u\n", 
         pMdConfig->udpPort, pMdConfig->tcpPort);
     printf("    Flags:");
-    for (i=0; i < 4; i++)
+    for (i=0; i < 5; i++)
         if (pMdConfig->flags & trdpFlags[i])
             printf(" %s", strtrdpFlags[i]);
     printf("\n");
@@ -225,7 +225,7 @@ static void printTelegrams(
                 pExchgPar[idxExPar].pPdPar->redundant);
             printf("      Behavior: %s, Flags:", 
                 pExchgPar[idxExPar].pPdPar->toBehav==1 ? "TRDP_TO_SET_TO_ZERO" : "TRDP_TO_KEEP_LAST_VALUE");
-            for (i=0; i < 4; i++)
+            for (i=0; i < 5; i++)
                 if (pExchgPar[idxExPar].pPdPar->flags & trdpFlags[i])
                     printf(" %s", strtrdpFlags[i]);
             printf("\n");
