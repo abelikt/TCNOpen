@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      CK 2024-11-26: Ticket #469 Receiving ECSP Status PD over multicast instead of unicast
 *     AHW 2024-06-26: Ticket #261 MD reply/add listener does not use send parameters
 *      PL 2023-07-13: Ticket #435 Cleanup VLAN and TSN for options for Linux systems
 *      CK 2023-04-12: Ticket #422 Include redundancy support in ECSP control
@@ -146,6 +147,7 @@ static void ecspConfRepMDCallback(
  *  @param[in]      appHandle           Application handle
  *  @param[in]      ecspIpAddr          ECSP address
  *  @param[in]      redId               redId, if redundancy needed for ECSP control publisher
+ *  @param[in]      ecscIpAddr          ECSC address, optional to receive ECSP status over multicast group
  *
  *  @retval         TRDP_NO_ERR     no error
  *  @retval         TRDP_INIT_ERR   initialisation error
@@ -153,7 +155,8 @@ static void ecspConfRepMDCallback(
  */
 EXT_DECL TRDP_ERR_T tau_initEcspCtrl ( TRDP_APP_SESSION_T   appHandle,
                                        TRDP_IP_ADDR_T       ecspIpAddr,
-                                       UINT32               redId)
+                                       UINT32               redId,
+                                       TRDP_IP_ADDR_T       ecscIpAddr)
 {
     /* session already opened, handle publish/subscribe */
     TRDP_ERR_T err;
@@ -198,7 +201,7 @@ EXT_DECL TRDP_ERR_T tau_initEcspCtrl ( TRDP_APP_SESSION_T   appHandle,
                          0,                         /*    ecnTopoCounter                        */
                          0,                         /*    opTopoCounter                         */
                          0, 0,                      /*    Source IP filter                      */
-                         appHandle->realIP,         /*    Default destination    (or MC Group)  */
+                         ecscIpAddr,                /*    Optional Multicast Address            */
                                                     /*    #356 switched to manual unmarshalling */
                          0,                         /*    packet flags - UDP, no call back      */
                          ECSP_STAT_TIMEOUT,         /*    Time out in us                        */
