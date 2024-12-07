@@ -14,5 +14,7 @@ CFILES = ipt_test_functions.c\
 
 
 all:
-	gcc -m32 -Wall -O2 $(CFILES) ../output/linux-x86-rel/libsdt.a -o test
-	gcc -g -m32 $(CFILES) ../output/linux-x86-dbg/libsdt.a -o test_dbg
+	# gcc -m32 -Wall -O2 $(CFILES) ../output/linux-x86-rel/libsdt.a -o test
+	# gcc -g -m32 $(CFILES) ../output/linux-x86-dbg/libsdt.a -o test_dbg
+	gcc -Wall -O2 $(CFILES) ../output/linux-x86-rel/libsdt.a -o test
+	# gcc -g $(CFILES) ../output/linux-x86-dbg/libsdt.a -o test_dbg
