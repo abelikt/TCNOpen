@@ -41,7 +41,8 @@ MD = mkdir -p
 CP = cp -f
 RM = rm -rf
 TAR = tar czf
-DLU = makedlu
+# TODO What's makedlu ?
+# DLU = makedlu
 LN = ln -s
 FLINT = flint
 endif
@@ -140,9 +141,11 @@ $(OUTDIR)/$(NAME_SO).$(VER_MIN): 	$(addprefix $(OUTDIR)/,$(notdir $(OBJS)))
 			$(MD) $(OUTDIR)/dl2/lib; cp $(OUTDIR)/$(NAME_SO).$(VER_MIN) $(OUTDIR)/dl2/lib
 			cd $(OUTDIR)/dl2/lib; $(LN) $(NAME_SO).$(VER_MIN) $(NAME_SO);$(LN) $(NAME_SO).$(VER_MIN) $(NAME_SO_ONLY)
 			cd $(OUTDIR)/dl2; tar cf sdtv2.tar lib
-			cd $(OUTDIR)/dl2; makedlu sdtv2.tar sdtv2 $(VER_MAJ).$(VER_MIN).1 DLU_TYPE_LINUX_TAR TPATH /usr/local/sdtv2.tar OUTFILE sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2
-			cd $(OUTDIR)/dl2; md5sum sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2 > sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2.md5
-			cp $(OUTDIR)/dl2/sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2* $(OUTDIR)
+
+			# TODO See above about makedlu
+			# cd $(OUTDIR)/dl2; makedlu sdtv2.tar sdtv2 $(VER_MAJ).$(VER_MIN).1 DLU_TYPE_LINUX_TAR TPATH /usr/local/sdtv2.tar OUTFILE sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2
+			# cd $(OUTDIR)/dl2; md5sum sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2 > sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2.md5
+			# cp $(OUTDIR)/dl2/sdtv2_$(VER_MAJ).$(VER_MIN).1.dl2* $(OUTDIR)
 		
 
 #
