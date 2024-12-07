@@ -85,3 +85,13 @@ Run Test
     cd test
     ./test
 
+Run Test "IPT Latency Run ok"
+
+    ./test/test -a
+    ./test/test -a | grep EXCEL > test_a_output.csv
+    libreoffice test_a_output.csv
+
+The big question is now how do we interpret the output.
+Aka what is the expection?
+
+
