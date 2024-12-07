@@ -19,8 +19,12 @@ Copied from the SF website:
 * TRDPSpy: GPL http://www.gnu.org/licenses/gpl.html
 
 
-Build
------
+Build TRDP
+----------
+
+This was tested on v 2.1.0.0
+
+    git checkout experiments_2100
 
     cd trdp
     make LINUX_config
@@ -29,8 +33,12 @@ Build
     make pdtest
 
 
-Run
----
+Run TRDP Examples
+-----------------
+
+This was tested on v 2.1.0.0
+
+    git checkout experiments_2100
 
 Add second IP address. E.g.:
 
@@ -50,3 +58,30 @@ Run local tests:
 
     bld/output/linux-rel/localtest -o 192.168.53.103 -i 192.168.53.104
     bld/output/linux-rel/localtest2 -o 192.168.53.103 -i 192.168.53.104
+
+
+Build SDTv2
+-----------
+
+This was tested on main aka SDTv2 SDK 2.4.0.1
+
+    git checkout main
+
+    cd SDTv2
+    rm -rf output
+    make
+
+
+Run SDTv2 Tests
+------------------
+
+Build Tests
+
+    cd test
+    make
+
+Run Test
+
+    cd test
+    ./test
+
