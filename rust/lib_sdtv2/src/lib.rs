@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn test_sdt_ipt_secure_pd() {
         let bus_type: sdt_bus_type_t = sdt_bus_type_t_SDT_IPT;
-        let sid1: u32 = 1;
+        let sid1: u32 = 1001;
         let sid2: u32 = 2;
         let sid2red: u8 = 8;
         let version: u16 = 2;
@@ -105,9 +105,31 @@ mod tests {
         let p_ssc = &mut ssc as *mut u32;
         let p_buf: *mut ::std::os::raw::c_void = p_buffer as *mut std::os::raw::c_void;
         let len = 32;
-        let sid = 33;
+        let sid = 1001;
         let udv = 2;
+
         let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
         assert_eq!(result, sdt_result_t_SDT_OK);
+
+        // Returns SDT_ERROR
+        let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
+        println!("Validate: {:?}", result);
+        assert_eq!(result, sdt_validity_t_SDT_ERROR);
+
+        let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
+        assert_eq!(result, sdt_result_t_SDT_OK);
+
+        // Returns SDT_FRESH
+        let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
+        println!("Validate: {:?}", result);
+        assert_eq!(result, sdt_validity_t_SDT_FRESH);
+
+        let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
+        assert_eq!(result, sdt_result_t_SDT_OK);
+
+        // Returns SDT_FRESH
+        let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
+        println!("Validate: {:?}", result);
+        assert_eq!(result, sdt_validity_t_SDT_FRESH);
     }
 }
