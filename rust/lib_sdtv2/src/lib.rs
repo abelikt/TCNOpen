@@ -82,10 +82,11 @@ mod tests {
         let mut sdt_handle: i32 = 88;
 
         let p_handle: *mut sdt_handle_t = &mut sdt_handle as *mut i32;
+
         let result = unsafe { sdt_get_validator(bus_type, sid1, sid2, sid2red, version, p_handle) };
+        assert_eq!(result, sdt_result_t_SDT_OK);
 
         assert_ne!(sdt_handle, 88);
-        assert_eq!(result, sdt_result_t_SDT_OK);
 
         let result = unsafe {
             sdt_set_sdsink_parameters(
@@ -113,7 +114,7 @@ mod tests {
 
         // Returns SDT_ERROR
         let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
-        println!("Validate: {:?}", result);
+        println!("Validate: {:?} SSC {}", result, ssc);
         assert_eq!(result, sdt_validity_t_SDT_ERROR);
 
         let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
@@ -121,7 +122,7 @@ mod tests {
 
         // Returns SDT_FRESH
         let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
-        println!("Validate: {:?}", result);
+        println!("Validate: {:?} SSC {}", result, ssc);
         assert_eq!(result, sdt_validity_t_SDT_FRESH);
 
         let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
@@ -129,7 +130,7 @@ mod tests {
 
         // Returns SDT_FRESH
         let result = unsafe { sdt_validate_pd(sdt_handle, p_buf, len) };
-        println!("Validate: {:?}", result);
+        println!("Validate: {:?} SSC {}", result, ssc);
         assert_eq!(result, sdt_validity_t_SDT_FRESH);
     }
 }
