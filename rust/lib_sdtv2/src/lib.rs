@@ -44,20 +44,6 @@ mod tests {
         assert_eq!(result, sdt_result_t_SDT_OK);
     }
 
-    /*
-    unsafe extern "C" {
-        pub fn sdt_set_sdsink_parameters(
-            handle: sdt_handle_t,
-            rx_period: u16,
-            tx_period: u16,
-            n_rxsafe: u8,
-            n_guard: u16,
-            cmthr: u32,
-            lmi_max: u16,
-        ) -> sdt_result_t;
-    }
-    */
-
     #[test]
     fn test_sdt_set_sdsink_parameters() {
         let bus_type: sdt_bus_type_t = sdt_bus_type_t_SDT_IPT;
@@ -83,6 +69,45 @@ mod tests {
                 200,  /*lmi_max*/
             )
         };
+        assert_eq!(result, sdt_result_t_SDT_OK);
+    }
+
+    #[test]
+    fn test_sdt_ipt_secure_pd() {
+        let bus_type: sdt_bus_type_t = sdt_bus_type_t_SDT_IPT;
+        let sid1: u32 = 1;
+        let sid2: u32 = 2;
+        let sid2red: u8 = 8;
+        let version: u16 = 2;
+        let mut sdt_handle: i32 = 88;
+
+        let p_handle: *mut sdt_handle_t = &mut sdt_handle as *mut i32;
+        let result = unsafe { sdt_get_validator(bus_type, sid1, sid2, sid2red, version, p_handle) };
+
+        assert_ne!(sdt_handle, 88);
+        assert_eq!(result, sdt_result_t_SDT_OK);
+
+        let result = unsafe {
+            sdt_set_sdsink_parameters(
+                sdt_handle, 100,  /*ms Trx*/
+                120,  /*ms Ttx*/
+                5,    /*n_rxsafe*/
+                2,    /*n_guard*/
+                1000, /*cmthr*/
+                200,  /*lmi_max*/
+            )
+        };
+        assert_eq!(result, sdt_result_t_SDT_OK);
+
+        let mut buffer: [u8; 32] = [0; 32];
+        let p_buffer = buffer.as_mut_ptr();
+        let mut ssc: u32 = 88;
+        let p_ssc = &mut ssc as *mut u32;
+        let p_buf: *mut ::std::os::raw::c_void = p_buffer as *mut std::os::raw::c_void;
+        let len = 32;
+        let sid = 33;
+        let udv = 2;
+        let result = unsafe { sdt_ipt_secure_pd(p_buf, len, sid, udv, p_ssc) };
         assert_eq!(result, sdt_result_t_SDT_OK);
     }
 }
