@@ -24,7 +24,7 @@ pub extern "C" fn call_from_c() {
 // >;
 
 #[no_mangle]
-pub extern "C" fn debug_callback(
+pub unsafe extern "C" fn debug_callback(
         pRefCon: *mut raw::c_void,
         categrory: u32,
         pTime: *const i8,
@@ -65,9 +65,13 @@ mod tests {
         //let pPrintDebugString= ptr::null() as std::os::raw::c_void;
         let pRefCon: *mut raw::c_void = ptr::null_mut();
 
-        // `Option<unsafe extern "C" fn(*mut c_void, u32, *const i8, *const i8, u16, *const i8)>`
-        let debug = Some(debug_callback);
-        let debug = None;
+
+        // Todo direct assignment fails, so we pipe through callback
+        // = note: expected enum `Option<unsafe extern "C" fn(_, _, _, _, _, _)>`
+        // found enum `Option<unsafe extern "C" fn(_, _, _, _, _, _) {debug_callback}>`
+        // let debug = Some( debug_callback );
+        let callback : unsafe extern "C" fn(_, _, _, _, _, _)  = debug_callback;
+        let debug = Some( callback );
 
         //     TRDP_MEM_CONFIG_T       dynamicConfig   = {NULL, RESERVED_MEMORY, {0}};
         let memConfig = TRDP_MEM_CONFIG_T {
@@ -77,9 +81,8 @@ mod tests {
         };
         let pMemConfig = &memConfig as *const TRDP_MEM_CONFIG_T;
 
-        //let pMemConfig : *const TRDP_MEM_CONFIG_T  = ptr::null();
         let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
 
-        println!("{:?}", err);
+        println!("The error {:?}", err);
     }
 }
