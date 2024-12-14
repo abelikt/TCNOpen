@@ -78,7 +78,8 @@ mod tests {
         let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
         let mut psession: *mut TRDP_SESSION = &mut session;
         let mut pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
-        let ownIpAddr: TRDP_IP_ADDR_T = 0x11223344;
+        // 192.168.53.104
+        let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
         let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
         let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
 
