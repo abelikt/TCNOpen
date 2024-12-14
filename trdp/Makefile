@@ -223,7 +223,7 @@ $(OUTDIR)/libtrdp.a:		$(addprefix $(OUTDIR)/,$(notdir $(TRDP_OBJS)))
 			$(AR) cq $@ $^
 
 $(OUTDIR)/libtrdp.so:		$(addprefix $(OUTDIR)/,$(notdir $(TRDP_OBJS)))
-			$(CC) $(LDFLAGS) -shared -o $(@) $^
+			$(CC) $(LDFLAGS) -luuid -shared -o $(@) $^
 			
 $(OUTDIR)/libtrdpap.a:		$(addprefix $(OUTDIR)/,$(notdir $(TRDP_OBJS))) $(addprefix $(OUTDIR)/,$(notdir $(TRDP_OPT_OBJS)))
 			@$(ECHO) ' ### Building the lib $(@F)'

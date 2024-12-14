@@ -7,6 +7,7 @@ fn main() {
 
     // Tell cargo to tell rustc to link the shared library.
     println!("cargo:rustc-link-lib=trdp");
+    println!("cargo:rustc-link-lib=uuid");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -20,6 +21,7 @@ fn main() {
         .clang_arg("-DPOSIX")
         .clang_arg("-DTARGET_VOS=posix")
         .clang_arg("-DTARGET_OS=LINUX")
+        .clang_arg("-DHAS_UUID")
         // The input header we would like to generate
         // bindings for.
         .header("wrapper.h")
