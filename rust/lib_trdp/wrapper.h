@@ -18,4 +18,5 @@
 #include "vos_thread.h"
 #include "vos_types.h"
 #include "vos_utils.h"
+#include "trdp_private.h"
 

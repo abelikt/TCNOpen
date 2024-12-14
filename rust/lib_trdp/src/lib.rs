@@ -28,6 +28,7 @@ mod tests {
 
     // cargo test -- --nocapture
 
+    use std::ptr;
     use super::*;
 
     #[test]

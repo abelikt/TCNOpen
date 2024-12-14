@@ -22,6 +22,7 @@ fn main() {
         .clang_arg("-v")
         .clang_arg("-I../../trdp/src/api")
         .clang_arg("-I../../trdp/src/vos/api")
+        .clang_arg("-I../../trdp/src/common")
         .clang_arg("-DLINUX")
         .clang_arg("-D_GNU_SOURCE")
         .clang_arg("-DPOSIX")
