@@ -56,7 +56,7 @@
  *  @retval         VOS_PARAM_ERR   appHadle == NULL
  *  @retval         VOS_NO_INIT_ERR no valid appHandle
  */
-TRDP_ERR_T printOwnStatistics(TRDP_APP_SESSION_T  appHandle, BOOL details)
+TRDP_ERR_T printOwnStatistics(TRDP_APP_SESSION_T  appHandle, BOOL8 details)
 {
     TRDP_STATISTICS_T statistics;
     UINT32 i;
