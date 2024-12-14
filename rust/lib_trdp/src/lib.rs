@@ -24,13 +24,19 @@ pub unsafe extern "C" fn debug_callback(
 
 #[cfg(test)]
 mod tests {
+
+    // cargo test -- --nocapture
+    
     use super::*;
 
     #[test]
     fn test_tlc_init() {
+
         let err: TRDP_ERR_T;
         let pRefCon: *mut raw::c_void = ptr::null_mut();
-        
+
+
+
         // Todo direct assignment fails, so we pipe through callback
         // = note: expected enum `Option<unsafe extern "C" fn(_, _, _, _, _, _)>`
         // found enum `Option<unsafe extern "C" fn(_, _, _, _, _, _) {debug_callback}>`

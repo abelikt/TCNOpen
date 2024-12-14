@@ -5,5 +5,8 @@ edition = "2021"
 
 [dependencies]
 
+[env]
+LD_LIBRARY_PATH = "../../trdp/bld/output/linux-rel/"
+
 [build-dependencies]
 bindgen = "0.71.1"
