@@ -113,6 +113,22 @@ mod tests {
         let pPdDefault: *const TRDP_PD_CONFIG_T = &pdDefault as *const TRDP_PD_CONFIG_T;
 
         let pMdDefault: *const TRDP_MD_CONFIG_T = ptr::null();
-        //pProcessConfig: *const TRDP_PROCESS_CONFIG_T=;
+        let processConfig : TRDP_PROCESS_CONFIG_T = unsafe{mem::zeroed()};
+        let pProcessConfig: *const TRDP_PROCESS_CONFIG_T= &processConfig;
+
+
+        let err = unsafe {
+            tlc_openSession(
+                pAppHandle,
+                ownIpAddr,
+                leaderIpAddr,
+                pMarshall,
+                pPdDefault,
+                pMdDefault,
+                pProcessConfig
+            )
+        };
+        println!("The error {:?}", err);
+
     }
 }
