@@ -1,6 +1,9 @@
 use std::env;
 use std::path::PathBuf;
 
+// ldd target/debug/deps/lib_trdp-5264ca412fdf29cf
+// export LD_LIBRARY_PATH=../../trdp/bld/output/linux-rel/
+
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
     println!("cargo:rustc-link-search=../../trdp/bld/output/linux-rel/");
