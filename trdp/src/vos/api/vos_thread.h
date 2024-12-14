@@ -294,7 +294,7 @@ EXT_DECL VOS_ERR_T vos_threadRegisterExisting(
 */
 EXT_DECL VOS_ERR_T vos_threadRegister(
     const CHAR* pName,
-    BOOL bStart);
+    BOOL8 bStart);
 
 /**********************************************************************************************************************/
 /** Set a instance prefix string.
