@@ -6,22 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use std::os::raw;
 use std::ptr;
-
-#[no_mangle]
-pub extern "C" fn call_from_c() {
-    println!("Just called a Rust function from C!");
-}
-
-// pub type VOS_PRINT_DBG_T = ::std::option::Option<
-//     unsafe extern "C" fn(
-//         pRefCon: *mut ::std::os::raw::c_void,
-//         category: VOS_LOG_T,
-//         pTime: *const CHAR8,
-//         pFile: *const CHAR8,
-//         LineNumber: UINT16,
-//         pMsgStr: *const CHAR8,
-//     ),
-// >;
+use std::ffi::CStr;
 
 #[no_mangle]
 pub unsafe extern "C" fn debug_callback(
@@ -32,7 +17,9 @@ pub unsafe extern "C" fn debug_callback(
         LineNumber: u16,
         pMsgStr: *const i8,
     ) {
-        println!("Whatever");
+        let msg_str : &str = CStr::from_ptr(pMsgStr).to_str().unwrap();
+        let msg: &str  = msg_str.strip_suffix("\n").unwrap();
+        println!("Log: {}", msg);
     }
 
 #[cfg(test)]
