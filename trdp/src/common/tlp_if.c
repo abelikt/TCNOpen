@@ -17,6 +17,7 @@
 /*
 * $Id$*
 *
+*      CK 2024-12-13: Ticket #468 Fix regarding KEEP behaviour after PD Timeout
 *      CK 2023-10-17: Ticket #437 Loss of UDP messages if a distant equipment is not available - tlp_republish updated
 *      PL 2023-10-13: Ticket #444 Lint
 *	   MM 2023-10-09: Ticket #441 added needed packet header handling to tlp_putImmediate
@@ -1863,49 +1864,68 @@ EXT_DECL TRDP_ERR_T tlp_get (
 
         if (ret == TRDP_NO_ERR)
         {
-			/*    Get the current time    */
-			vos_getTime(&now);
+            /*    Get the current time    */
+            vos_getTime(&now);
 
-			/*    Check time out    */
-			if (timerisset(&pElement->interval) &&
-				timercmp(&pElement->timeToGo, &now, <))
-			{
-				/*    Packet is late    */
-				if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
-					pData != NULL && pDataSize != NULL)
-				{
-					memset(pData, 0, *pDataSize);
-				}
-				else /* TRDP_TO_KEEP_LAST_VALUE */
-				{
-					;
-				}
-				ret = TRDP_TIMEOUT_ERR;
-			}
-			else
-			{
-				ret = trdp_pdGet(pElement,
-								 appHandle->marshall.pfCbUnmarshall,
-								 appHandle->marshall.pRefCon,
-								 pData,
-								 pDataSize);
-			}
+            /*    Check time out    */
+            if (timerisset(&pElement->interval) &&
+                timercmp(&pElement->timeToGo, &now, <))
+            {
+                /*    Packet is late    */
+                if (pElement->toBehavior == TRDP_TO_SET_TO_ZERO &&
+                    pData != NULL && pDataSize != NULL)
+                {
+                    memset(pData, 0, *pDataSize);
+                    ret = TRDP_TIMEOUT_ERR;
+                }
+                else /* TRDP_TO_KEEP_LAST_VALUE */
+                {
+                    /* Setting ignoreTimeout to TRUE here as it is known data has timedout, but
+                       still last KEPT data is needed*/
+                    ret = trdp_pdGet(pElement,
+                                     appHandle->marshall.pfCbUnmarshall,
+                                     appHandle->marshall.pRefCon,
+                                     pData,
+                                     pDataSize,
+                                     TRUE);
+                    
+                    if (ret == TRDP_NO_ERR)
+                    {
+                        /* This is done to still return TRDP_TIMEOUT_ERR if no error is returned 
+                        by trdp_pdGet in case when the validity behaviour is selected as "KEEP".
+                        If any other error like TRDP_PARAM_ERR etc. is returned, that would be 
+                        returned as it is*/
+                        ret = TRDP_TIMEOUT_ERR;
+                    }
 
-			if (pPdInfo != NULL)
-			{
-				pPdInfo->comId          = pElement->addr.comId;
-				pPdInfo->srcIpAddr      = pElement->lastSrcIP;
-				pPdInfo->destIpAddr     = pElement->addr.destIpAddr;
-				pPdInfo->etbTopoCnt     = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
-				pPdInfo->opTrnTopoCnt   = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
-				pPdInfo->msgType        = (TRDP_MSG_T) vos_ntohs(pElement->pFrame->frameHead.msgType);
-				pPdInfo->seqCount       = pElement->curSeqCnt;
-				pPdInfo->protVersion    = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
-				pPdInfo->replyComId     = vos_ntohl(pElement->pFrame->frameHead.replyComId);
-				pPdInfo->replyIpAddr    = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
-				pPdInfo->pUserRef       = pElement->pUserRef;
-				pPdInfo->resultCode     = ret;
-			}
+                }
+            }
+            else
+            {
+                /* Setting ignoreTimeout to FALSE here as it is known data hasn't timedout*/
+                ret = trdp_pdGet(pElement,
+                                 appHandle->marshall.pfCbUnmarshall,
+                                 appHandle->marshall.pRefCon,
+                                 pData,
+                                 pDataSize,
+                                 FALSE);
+            }
+
+            if (pPdInfo != NULL)
+            {
+                pPdInfo->comId          = pElement->addr.comId;
+                pPdInfo->srcIpAddr      = pElement->lastSrcIP;
+                pPdInfo->destIpAddr     = pElement->addr.destIpAddr;
+                pPdInfo->etbTopoCnt     = vos_ntohl(pElement->pFrame->frameHead.etbTopoCnt);
+                pPdInfo->opTrnTopoCnt   = vos_ntohl(pElement->pFrame->frameHead.opTrnTopoCnt);
+                pPdInfo->msgType        = (TRDP_MSG_T) vos_ntohs(pElement->pFrame->frameHead.msgType);
+                pPdInfo->seqCount       = pElement->curSeqCnt;
+                pPdInfo->protVersion    = vos_ntohs(pElement->pFrame->frameHead.protocolVersion);
+                pPdInfo->replyComId     = vos_ntohl(pElement->pFrame->frameHead.replyComId);
+                pPdInfo->replyIpAddr    = vos_ntohl(pElement->pFrame->frameHead.replyIpAddress);
+                pPdInfo->pUserRef       = pElement->pUserRef;
+                pPdInfo->resultCode     = ret;
+            }
         }
 
         if (vos_mutexUnlock(appHandle->mutexRxPD) != VOS_NO_ERR)

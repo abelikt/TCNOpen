@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      CK 2024-12-13: Ticket #468 Fix regarding KEEP behaviour after PD Timeout
 *      AM 2022-12-01: Ticket #399 Abstract socket type (VOS_SOCK_T, TRDP_SOCK_T) introduced, vos_select function is not anymore called with '+1'
 *      BL 2019-06-17: Ticket #264 Provide service oriented interface
 *      BL 2019-06-17: Ticket #162 Independent handling of PD and MD to reduce jitter
@@ -87,7 +88,8 @@ TRDP_ERR_T trdp_pdGet (
     TRDP_UNMARSHALL_T   unmarshall,
     void                *refCon,
     const UINT8         *pData,
-    UINT32              *pDataSize);
+    UINT32              *pDataSize,
+    BOOL8               ignoreTimeout);
 
 TRDP_ERR_T  trdp_pdSendElement (
     TRDP_SESSION_PT appHandle,

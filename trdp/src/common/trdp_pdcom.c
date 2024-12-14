@@ -17,6 +17,7 @@
 /*
 * $Id$
 *
+*      CK 2024-12-13: Ticket #468 Fix regarding KEEP behaviour after PD Timeout
 *      PL 2023-05-19: Ticket #434 Code adaption due to TSN header version 2 removal.
 *     AHW 2023-05-15: Ticket #433 TSN PD shall use the same header like non-TSN PD
 *     AHW 2023-05-15: Ticket #432 Update reserved statistics ComIds
@@ -379,7 +380,8 @@ TRDP_ERR_T trdp_pdGet (
     TRDP_UNMARSHALL_T   unmarshall,
     void                *refCon,
     const UINT8         *pData,
-    UINT32              *pDataSize)
+    UINT32              *pDataSize,
+    BOOL8               ignoreTimeout)
 {
     if (pPacket == NULL)
     {
@@ -394,7 +396,9 @@ TRDP_ERR_T trdp_pdGet (
         return TRDP_NODATA_ERR;
     }
 
-    if ((pPacket->privFlags & TRDP_TIMED_OUT) != 0)
+    /* If ignoreTimeOut is set, regardless we go ahead and still return last
+       received data */
+    if ((!ignoreTimeout) && (pPacket->privFlags & TRDP_TIMED_OUT) != 0)
     {
         return TRDP_TIMEOUT_ERR;
     }
