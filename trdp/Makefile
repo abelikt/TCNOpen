@@ -301,6 +301,7 @@ $(OUTDIR)/sendData:   sendData.c  $(OUTDIR)/libtrdp.a
 $(OUTDIR)/getStats:   diverse/getStats.c  $(OUTDIR)/libtrdp.a
 			@$(ECHO) ' ### Building statistics commandline tool $(@F)'
 			$(CC) test/diverse/getStats.c \
+			    test/diverse/printOwnStatistics.c \
 			    -ltrdp \
 			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
 			    -o $@
@@ -359,6 +360,7 @@ $(OUTDIR)/mdTest4: mdTest4.c  $(OUTDIR)/libtrdp.a
 $(OUTDIR)/test_mdSingle: test_mdSingle.c $(OUTDIR)/libtrdp.a
 			@$(ECHO) ' ### Building MD single test application $(@F)'
 			$(CC) test/diverse/test_mdSingle.c \
+			    test/diverse/printOwnStatistics.c \
 			    -ltrdp \
 			    $(LDFLAGS) $(CFLAGS) $(INCLUDES) \
 			    -o $@
