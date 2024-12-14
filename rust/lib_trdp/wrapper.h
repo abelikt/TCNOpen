@@ -18,5 +18,6 @@
 #include "vos_thread.h"
 #include "vos_types.h"
 #include "vos_utils.h"
+#include "iec61375-2-3.h"
 #include "trdp_private.h"
 
