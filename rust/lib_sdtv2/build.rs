@@ -7,8 +7,7 @@ fn main() {
     // Tell cargo to look for shared libraries in the specified directory
     println!("cargo:rustc-link-search=../../SDTv2/output/linux-x86-rel/");
 
-    // Tell cargo to tell rustc to link the system bzip2
-    // shared library.
+    // Tell cargo to tell rustc to link the shared library.
     println!("cargo:rustc-link-lib=sdt");
 
     // The bindgen::Builder is the main entry point
