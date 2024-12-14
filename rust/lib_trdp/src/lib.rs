@@ -131,5 +131,55 @@ mod tests {
         };
         println!("The error {:?}", err);
 
+
+        /*
+            /*    Copy the packet into the internal send queue, prepare for sending.    */
+    /*    If we change the data, just re-publish it    */
+    err = tlp_publish(  appHandle,                  /*    our application identifier    */
+                        &pubHandle,                 /*    our pulication identifier     */
+                        NULL, NULL,
+                        0u,
+                        comId,                      /*    ComID to send                 */
+                        0,                          /*    local consist only            */
+                        0,
+                        ownIP,                      /*    default source IP             */
+                        destIP,                     /*    where to send to              */
+                        interval,                   /*    Cycle time in us              */
+                        0,                          /*    not redundant                 */
+                        TRDP_FLAGS_NONE,            /*    Use callback for errors       */
+                        gData,                      /*    initial data                  */
+                        dataSize                    /*    data size                     */
+                        );
+
+         */
+        let mut ele : PD_ELE =  unsafe{mem::zeroed()};
+        // pub type TRDP_PUB_T = *mut PD_ELE;
+        let mut pubHandle : TRDP_PUB_T = &mut ele;
+        let mut pPubHandle: *mut TRDP_PUB_T  = &mut pubHandle;
+        let comid = 1001;
+        let interval = 1000000;
+        let data:  [u8; 32]= [0;32];
+        let pData = &data as *const u8;
+        let data_size= 32;
+        let err = unsafe {tlp_publish
+            (
+                psession, // appHandle: TRDP_APP_SESSION_T,
+                pPubHandle,
+                ptr::null(), //pUserRef: *const ::std::os::raw::c_void,
+                None, //pfCbFunction: TRDP_PD_CALLBACK_T,
+                0, //serviceId: UINT32,
+                comid, //comId: UINT32,
+                0, //etbTopoCnt: UINT32,
+                0, //opTrnTopoCnt: UINT32,
+                ownIpAddr, //srcIpAddr: TRDP_IP_ADDR_T,
+                0, //destIpAddr: TRDP_IP_ADDR_T,
+                interval, //interval: UINT32,
+                0, //redId: UINT32,
+                TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
+                pData, //pData: *const UINT8,
+                data_size, //dataSize: UINT32,
+        )};
+
+        println!("The error {:?}", err);
     }
 }
