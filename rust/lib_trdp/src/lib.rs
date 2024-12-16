@@ -178,12 +178,15 @@ mod tests {
                 )
             };
 
-            let delay = time::Duration::from_millis(1000);
+            let delay = time::Duration::from_millis(100);
             thread::sleep(delay);
 
             unsafe {
                 tlc_process(psession, &mut rfds, &mut rv as *mut i32);
             }
         }
+        unsafe { tlp_unpublish(psession, pubHandle)};
+        unsafe { tlc_closeSession(psession)};
+        unsafe { tlc_terminate()};
     }
 }
