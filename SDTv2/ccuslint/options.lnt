@@ -1,0 +1,40 @@
+/*******************************************************************************
+ * COPYRIGHT: (c) 2009 Bombardier Transportation
+ *******************************************************************************
+ * %PCMS_HEADER_SUBSTITUTION_START%
+ * COMPONENT:   TCMS Platform
+ *
+ * ITEM-SPEC:   %PID%
+ *
+ * FILE:        %PM%
+ *
+ * REQ DOC:     <Requirements document identity>
+ * REQ ID:      <list of requirement identities>
+ *
+ * ABSTRACT:    PC-lint configuration file for general options.
+ *
+ * $Id: options.lnt 2681 2011-06-19 12:14:07Z jaerikss $
+ *
+ *******************************************************************************
+ * HISTORY:
+ *
+ %PL%
+ *%PCMS_HEADER_SUBSTITUTION_END%
+ ******************************************************************************/
+
+
+/* Please note -- this is a representative set of error suppression
+ *                options.  Please adjust to suit your own policies
+ *                See  manual (chapter LIVING WITH LINT)
+ *                for further details.
+ */
+-d"__STDC__=1"
+-frl
++flm
++fce
++libclass()
++bypclass()
+-passes=8
+
+
+/******************************************************************************/

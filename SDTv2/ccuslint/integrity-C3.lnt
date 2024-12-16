@@ -1,0 +1,30 @@
+/*******************************************************************************
+ * COPYRIGHT: (c) 2009 Bombardier Transportation
+ *******************************************************************************
+ * %PCMS_HEADER_SUBSTITUTION_START%
+ * COMPONENT:   TCMS Platform
+ *
+ * ITEM-SPEC:   %PID%
+ *
+ * FILE:        %PM%
+ *
+ * REQ DOC:     <Requirements document identity>
+ * REQ ID:      <list of requirement identities>
+ *
+ * ABSTRACT:    PC-lint configuration file for GHS Integrity C3 Criticality
+ *              applications.
+ *
+ * $Id: integrity-C3.lnt 2681 2011-06-19 12:14:07Z jaerikss $
+ *
+ *******************************************************************************
+ * HISTORY:
+ *
+ %PL%
+ *%PCMS_HEADER_SUBSTITUTION_END%
+ ******************************************************************************/
+
+
+/*******************************************************************************
+ * Project common configuration files
+ */
+%LINT_CONFIG_DIR%\integrity-C2.lnt

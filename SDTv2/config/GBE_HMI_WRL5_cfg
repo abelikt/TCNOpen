@@ -1,0 +1,24 @@
+#
+# Copyright     Bobardier Transportation 2013
+#
+# Component     SDTv2 Library
+#
+# File          GBE_HMI_WRL5_cfg
+#
+# Requirements  SDT_LIB-REQ-017
+#
+# Abstract      Build definitions for HMI411 Linux
+#               uses WRL5, created binary also
+#               compatible with HMI410 and HMI500
+#
+
+ARCH        = linux-x86-wrl5-hmi
+CPU         = i686
+TARGET_OS   = LINUX
+TOOLCHAIN   = i686-wrs-linux-gnu-
+OSDEP_NAME  = linux
+
+SDTLIBFEATURES = -DSDT_ENABLE_IPT 
+
+PLATFORM_CPPFLAGS = $(SDTLIBFEATURES) -m32 --sysroot=$(GB_SYSROOT)/sysroot
+PLATFORM_LDFLAGS  = --sysroot=$(GB_SYSROOT)/sysroot 
