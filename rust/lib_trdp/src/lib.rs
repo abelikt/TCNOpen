@@ -166,7 +166,9 @@ mod tests {
         let mut pPubHandle: *mut TRDP_PUB_T  = &mut pubHandle;
         let comid = 1001;
         let interval = 1000000;
-        let data:  [u8; 32]= [0;32];
+        let mut data:  [u8; 32]= [0xAA;32];
+        data[0] = 0x55;
+        data[31] = 0x55;
         let pData = &data as *const u8;
         let data_size= 32;
         let err = unsafe {tlp_publish
