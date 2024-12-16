@@ -139,11 +139,13 @@ mod tests {
         println!("The error {:?}", err);
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
-        for _ in (0..=10) {
+        for i in (0..=20) {
             let mut rfds: fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
             let mut tv: timeval = unsafe { mem::zeroed() };
+            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:1_000_000};
+            let min_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:100_00 as i64};
 
             // Fix this later, if necessary
             // unsafe { libc::FD_ZERO(&mut rfds as *mut libc::fd_set) ; }
@@ -158,14 +160,14 @@ mod tests {
             }
 
             // Fix this later
-            // if (vos_cmpTime(&tv, &max_tv) > 0)
-            // {
-            //     tv = max_tv;
-            // }
-            // else if (vos_cmpTime(&tv, &min_tv) < 0)
-            // {
-            //     tv = min_tv;
-            // }
+            if (unsafe{vos_cmpTime(&tv, &max_tv)} > 0)
+            {
+                tv = max_tv;
+            }
+            else if (unsafe{vos_cmpTime(&tv, &min_tv)} < 0)
+            {
+                tv = min_tv;
+            }
 
             let mut pWriteableFD: *mut fd_set = ptr::null_mut();
             let mut rv = unsafe {
@@ -178,12 +180,18 @@ mod tests {
                 )
             };
 
-            let delay = time::Duration::from_millis(100);
-            thread::sleep(delay);
+            // let delay = time::Duration::from_millis(100);
+            // thread::sleep(delay);
 
             unsafe {
                 tlc_process(psession, &mut rfds, &mut rv as *mut i32);
             }
+            println!("Procesing");
+            data[0] = i;
+            let err = unsafe{ tlp_put(psession, pubHandle, pData, 32)};
+            println!("The error {:?}", err);
+            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+
         }
         unsafe { tlp_unpublish(psession, pubHandle)};
         unsafe { tlc_closeSession(psession)};
