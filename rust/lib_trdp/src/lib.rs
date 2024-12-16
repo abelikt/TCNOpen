@@ -58,8 +58,7 @@ mod tests {
 
         let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
 
-        println!("The error {:?}", err);
-        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_init failed");
 
         let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
         let mut psession: *mut TRDP_SESSION = &mut session;
@@ -98,8 +97,7 @@ mod tests {
                 pProcessConfig,
             )
         };
-        println!("The error {:?}", err);
-        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_openSession failed");
 
         let mut ele: PD_ELE = unsafe { mem::zeroed() };
         let mut pubHandle: TRDP_PUB_T = &mut ele;
@@ -130,50 +128,45 @@ mod tests {
                 data_size,             //dataSize: UINT32,
             )
         };
-
-        println!("The error {:?}", err);
-        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_publish failed");
 
         let err = unsafe { tlc_updateSession(psession) };
-        println!("The error {:?}", err);
-        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
 
         for i in 0..=100 {
             let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
             let mut tv: timeval = unsafe { mem::zeroed() };
-            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:100_000};
-            let min_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:10_000 as i64};
+            let max_tv: TRDP_TIME_T = TRDP_TIME_T {
+                tv_sec: 0,
+                tv_usec: 100_000,
+            };
+            let min_tv: TRDP_TIME_T = TRDP_TIME_T {
+                tv_sec: 0,
+                tv_usec: 10_000 as i64,
+            };
 
             // Fix this later, if necessary
             // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
             let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
 
-
-            let p_rfds_2: *mut fd_set = unsafe{ &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
+            let p_rfds_2: *mut fd_set =
+                unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
             // Same thing with transmutate
             // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
 
             unsafe { libc::FD_ZERO(p_rfds) };
 
             unsafe {
-                tlc_getInterval(
-                    psession,
-                    &mut tv,
-                    p_rfds_2,
-                    &mut noDesc as *mut i32,
-                );
+                tlc_getInterval(psession, &mut tv, p_rfds_2, &mut noDesc as *mut i32);
             }
 
             println!("tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
-            if (unsafe{vos_cmpTime(&tv, &max_tv)} > 0)
-            {
+            if (unsafe { vos_cmpTime(&tv, &max_tv) } > 0) {
                 tv = max_tv;
-            }
-            else if (unsafe{vos_cmpTime(&tv, &min_tv)} < 0)
-            {
+            } else if (unsafe { vos_cmpTime(&tv, &min_tv) } < 0) {
                 tv = min_tv;
             }
 
@@ -194,24 +187,18 @@ mod tests {
             // let delay = time::Duration::from_millis(100);
             // thread::sleep(delay);
 
-            let err = unsafe {
-                tlc_process(psession, p_rfds_2, &mut rv as *mut i32)
-            };
+            let err = unsafe { tlc_process(psession, p_rfds_2, &mut rv as *mut i32) };
 
-            println!("The error {:?}", err);
-            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
             println!("Procesing ... {}", i);
             data[0] = i;
 
-            let err = unsafe{ tlp_put(psession, pubHandle, pData, 32)};
-
-            println!("The error {:?}", err);
-            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
-
+            let err = unsafe { tlp_put(psession, pubHandle, pData, 32) };
+            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
         }
-        unsafe { tlp_unpublish(psession, pubHandle)};
-        unsafe { tlc_closeSession(psession)};
-        unsafe { tlc_terminate()};
+        unsafe { tlp_unpublish(psession, pubHandle) };
+        unsafe { tlc_closeSession(psession) };
+        unsafe { tlc_terminate() };
     }
 }
