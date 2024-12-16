@@ -31,9 +31,15 @@ mod tests {
     use super::*;
     use std::mem;
     use std::ptr;
+    use std::time;
+    use std::thread;
 
+    use libc;
+
+    /// The code of this example is mostly aligned with the sendHello.c
+    /// demo application
     #[test]
-    fn test_tlc_init() {
+    fn test_sendHello() {
         let pRefCon: *mut raw::c_void = ptr::null_mut();
 
         // Todo direct assignment fails, so we pipe through callback
@@ -54,6 +60,7 @@ mod tests {
         let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
 
         println!("The error {:?}", err);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
         /*
         tlc_openSession(&appHandle,
@@ -130,6 +137,7 @@ mod tests {
             )
         };
         println!("The error {:?}", err);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
 
         /*
@@ -181,5 +189,45 @@ mod tests {
         )};
 
         println!("The error {:?}", err);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+
+        let err = unsafe {tlc_updateSession(psession) };
+        println!("The error {:?}", err);
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+
+        for _ in (0..=10) {
+            //let mut rfds : TRDP_FDS_T;
+            let mut rfds : fd_set = unsafe{mem::zeroed()}; // bindings.rs have their own fd_set
+            //let mut rfds = libc::fd_set{};
+            let mut noDesc:i32 =0;
+
+            let mut tv : timeval = unsafe{mem::zeroed()};
+
+            // Fix this later, if necessary
+            // unsafe { libc::FD_ZERO(&mut rfds as *mut libc::fd_set) ; }
+
+            unsafe {tlc_getInterval(psession, &mut tv, &mut rfds as *mut fd_set, &mut noDesc as *mut i32);}
+
+            // Fix this later
+            // if (vos_cmpTime(&tv, &max_tv) > 0)
+            // {
+            //     tv = max_tv;
+            // }
+            // else if (vos_cmpTime(&tv, &min_tv) < 0)
+            // {
+            //     tv = min_tv;
+            // }
+
+            let mut pWriteableFD : *mut fd_set = ptr::null_mut();
+            let mut rv = unsafe{ vos_select(noDesc, &mut rfds, pWriteableFD, ptr::null_mut() as *mut fd_set, &mut tv) };
+
+            let delay = time::Duration::from_millis(1000);
+            thread::sleep(delay);
+
+            unsafe {tlc_process(psession, &mut rfds, &mut rv as *mut i32);}
+
+
+        }
+
     }
 }
