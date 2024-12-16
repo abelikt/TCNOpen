@@ -6,9 +6,17 @@ Components for IEC61375 standardised communication.
 
 This is an inofficial fork of the TCNOpen project into a git repository.
 
-The intention is to analyse different aspects of the TRDP and SDTv2 protocols.
-
 See also: https://sourceforge.net/projects/tcnopen/
+
+A clone of the commits on sourceforge will be maintained in the svn branch.
+
+The intention of this fork is to have the code in git,
+to analyse different aspects of the TRDP and SDTv2 protocols and play with
+(highly) experimental extensions to them.
+Some of these extensions are language bindings and usage examles in Rust.
+They will be located here for some time until they are moved to their own
+crate.
+
 
 Licenses
 --------
@@ -35,6 +43,8 @@ This was tested on v 2.1.0.0
 
 Run TRDP Examples
 -----------------
+
+(on branch experiments_2100)
 
 This was tested on v 2.1.0.0
 
