@@ -15,7 +15,8 @@ to analyse different aspects of the TRDP and SDTv2 protocols and play with
 (highly) experimental extensions to them.
 Some of these extensions are language bindings and usage examles in Rust.
 They will be located here for some time until they are moved to their own
-crate.
+crate. For now, until we have a safe abstraction, the Rust code is unsafe
+by nature.
 
 
 Licenses
