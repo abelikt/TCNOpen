@@ -140,26 +140,33 @@ mod tests {
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
         for i in (0..=20) {
-            let mut rfds: fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
+            let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
             let mut tv: timeval = unsafe { mem::zeroed() };
-            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:1_000_000};
+            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:200_000};
             let min_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:100_00 as i64};
 
             // Fix this later, if necessary
-            // unsafe { libc::FD_ZERO(&mut rfds as *mut libc::fd_set) ; }
+            // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
+            let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
+
+
+            let p_rfds_2: *mut fd_set = unsafe{ &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
+            // Same thing with transmutate
+            // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
+
+            unsafe { libc::FD_ZERO(p_rfds) };
 
             unsafe {
                 tlc_getInterval(
                     psession,
                     &mut tv,
-                    &mut rfds as *mut fd_set,
+                    p_rfds_2,
                     &mut noDesc as *mut i32,
                 );
             }
 
-            // Fix this later
             if (unsafe{vos_cmpTime(&tv, &max_tv)} > 0)
             {
                 tv = max_tv;
@@ -173,7 +180,7 @@ mod tests {
             let mut rv = unsafe {
                 vos_select(
                     noDesc,
-                    &mut rfds,
+                    p_rfds_2,
                     pWriteableFD,
                     ptr::null_mut() as *mut fd_set,
                     &mut tv,
@@ -184,9 +191,9 @@ mod tests {
             // thread::sleep(delay);
 
             unsafe {
-                tlc_process(psession, &mut rfds, &mut rv as *mut i32);
+                tlc_process(psession, p_rfds_2, &mut rv as *mut i32);
             }
-            println!("Procesing");
+            println!("Procesing ... {}", i);
             data[0] = i;
             let err = unsafe{ tlp_put(psession, pubHandle, pData, 32)};
             println!("The error {:?}", err);
