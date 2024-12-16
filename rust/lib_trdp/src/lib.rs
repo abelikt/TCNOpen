@@ -31,9 +31,8 @@ mod tests {
     use super::*;
     use std::mem;
     use std::ptr;
-    use std::thread;
-    use std::time;
-
+    // use std::thread;
+    // use std::time;
     use libc;
 
     /// The code of this example is mostly aligned with the sendHello.c
@@ -106,7 +105,7 @@ mod tests {
         let mut pubHandle: TRDP_PUB_T = &mut ele;
         let mut pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
         let comid = 1001;
-        let interval = 1000000;
+        let interval = 100_000;
         let mut data: [u8; 32] = [0xAA; 32];
         data[0] = 0x55;
         data[31] = 0x55;
@@ -139,13 +138,13 @@ mod tests {
         println!("The error {:?}", err);
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
-        for i in (0..=20) {
+        for i in 0..=100 {
             let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
             let mut tv: timeval = unsafe { mem::zeroed() };
-            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:200_000};
-            let min_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:100_00 as i64};
+            let max_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:100_000};
+            let min_tv : TRDP_TIME_T  = TRDP_TIME_T{tv_sec:0, tv_usec:10_000 as i64};
 
             // Fix this later, if necessary
             // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
@@ -167,6 +166,8 @@ mod tests {
                 );
             }
 
+            println!("tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
+
             if (unsafe{vos_cmpTime(&tv, &max_tv)} > 0)
             {
                 tv = max_tv;
@@ -175,6 +176,8 @@ mod tests {
             {
                 tv = min_tv;
             }
+
+            println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
             let mut pWriteableFD: *mut fd_set = ptr::null_mut();
             let mut rv = unsafe {
@@ -186,16 +189,23 @@ mod tests {
                     &mut tv,
                 )
             };
+            println!("Ready descriptors {:?}", rv);
 
             // let delay = time::Duration::from_millis(100);
             // thread::sleep(delay);
 
-            unsafe {
-                tlc_process(psession, p_rfds_2, &mut rv as *mut i32);
-            }
+            let err = unsafe {
+                tlc_process(psession, p_rfds_2, &mut rv as *mut i32)
+            };
+
+            println!("The error {:?}", err);
+            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
+
             println!("Procesing ... {}", i);
             data[0] = i;
+
             let err = unsafe{ tlp_put(psession, pubHandle, pData, 32)};
+
             println!("The error {:?}", err);
             assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR);
 
