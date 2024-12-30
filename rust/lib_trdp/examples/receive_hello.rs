@@ -62,7 +62,9 @@ fn main() {
     let mut psession: *mut TRDP_SESSION = &mut session;
     let mut pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
     // 192.168.53.104
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
+    // 0xc0a83568
+
+    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83567;
     let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
     let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
 
@@ -144,7 +146,7 @@ fn main() {
             libc::INADDR_ANY, // VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
             ownIpAddr_b, // dstIP,                     /*    Default destination    (or MC Group)  */
             TRDP_FLAGS_NONE as TRDP_FLAGS_T, // TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-            1_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
+            2_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
             TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO, // TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
         )
     };
