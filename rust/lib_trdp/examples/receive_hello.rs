@@ -1,13 +1,12 @@
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
 /*
- cargo run --example receive_hello
+cargo run --example receive_hello
 
 
- */
+*/
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use std::ffi::CStr;
@@ -37,7 +36,7 @@ pub unsafe extern "C" fn debug_callback(
     println!("Log: {}", msg);
 }
 
-fn main(){
+fn main() {
     let pRefCon: *mut raw::c_void = ptr::null_mut();
 
     // Todo direct assignment fails, so we pipe through callback
@@ -85,8 +84,8 @@ fn main(){
     let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
     let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &processConfig;
 
-    let mut pdInfo : TRDP_PD_INFO_T = unsafe{mem::zeroed()};
-    let mut ppdInfo : *mut TRDP_PD_INFO_T = &mut pdInfo as *mut TRDP_PD_INFO_T;
+    let mut pdInfo: TRDP_PD_INFO_T = unsafe { mem::zeroed() };
+    let mut ppdInfo: *mut TRDP_PD_INFO_T = &mut pdInfo as *mut TRDP_PD_INFO_T;
 
     let err = unsafe {
         tlc_openSession(
@@ -131,21 +130,24 @@ fn main(){
     // 192.168.53.103
     let ownIpAddr_b: TRDP_IP_ADDR_T = 0xc0a83567;
 
-    let err = unsafe { tlp_subscribe(
-        psession,  // appHandle,                 /*    our application identifier            */
-        pSubHandle, // &subHandle,                /*    our subscription identifier           */
-        ptr::null(), // NULL,                      /*    user reference                        */
-        None, // TRDP_PD_CALLBACK_T // NULL,                      /*    callback functiom                     */
-        0, // 0u,  //serviceId
-        comid,  // comId,                     /*    ComID                                 */
-        0, // 0,                         /*    etbTopoCnt: local consist only        */
-        0, // 0,                         /*    opTopoCnt                             */
-        0,0, // VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
-        ownIpAddr_b, // dstIP,                     /*    Default destination    (or MC Group)  */
-        TRDP_FLAGS_NONE as TRDP_FLAGS_T, // TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-        1_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
-        TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO // TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
-    )};
+    let err = unsafe {
+        tlp_subscribe(
+            psession,    // appHandle,                 /*    our application identifier            */
+            pSubHandle, // &subHandle,                /*    our subscription identifier           */
+            ptr::null(), // NULL,                      /*    user reference                        */
+            None, // TRDP_PD_CALLBACK_T // NULL,                      /*    callback functiom                     */
+            0,    // 0u,  //serviceId
+            comid, // comId,                     /*    ComID                                 */
+            0,    // 0,                         /*    etbTopoCnt: local consist only        */
+            0,    // 0,                         /*    opTopoCnt                             */
+            libc::INADDR_ANY,
+            libc::INADDR_ANY, // VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
+            ownIpAddr_b, // dstIP,                     /*    Default destination    (or MC Group)  */
+            TRDP_FLAGS_NONE as TRDP_FLAGS_T, // TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
+            1_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
+            TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO, // TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
+        )
+    };
 
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_subscibefailed");
     // drop:        tlc_terminate();
@@ -176,8 +178,7 @@ fn main(){
         // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
         let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
 
-        let p_rfds_2: *mut fd_set =
-            unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
+        let p_rfds_2: *mut fd_set = unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
         // Same thing with transmutate
         // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
 
@@ -218,14 +219,9 @@ fn main(){
 
         //receivedSize = sizeof(gBuffer);
         let mut receivedSize: u32 = 1024;
-        let preceivedSize : *mut u32 = &mut receivedSize as *mut u32;
+        let preceivedSize: *mut u32 = &mut receivedSize as *mut u32;
 
-        let err = unsafe {tlp_get(
-            psession,
-            subHandle,
-            ppdInfo,
-            pData,
-            preceivedSize)};
+        let err = unsafe { tlp_get(psession, subHandle, ppdInfo, pData, preceivedSize) };
 
         //assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_get failed");
         println!("Error {:?}", err);
