@@ -17,11 +17,8 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use std::ffi::CStr;
 use std::os::raw;
-
 use std::mem;
 use std::ptr;
-// use std::thread;
-// use std::time;
 use libc;
 
 use lib_trdp;
@@ -66,7 +63,7 @@ fn main() {
 
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
-    let mut pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
+    let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
     // 192.168.53.104
     // 0xc0a83568
 
@@ -93,7 +90,7 @@ fn main() {
     let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &processConfig;
 
     let mut pdInfo: TRDP_PD_INFO_T = unsafe { mem::zeroed() };
-    let mut ppdInfo: *mut TRDP_PD_INFO_T = &mut pdInfo as *mut TRDP_PD_INFO_T;
+    let ppdInfo: *mut TRDP_PD_INFO_T = &mut pdInfo as *mut TRDP_PD_INFO_T;
 
     let err = unsafe {
         tlc_openSession(
@@ -110,7 +107,7 @@ fn main() {
 
     let mut ele: PD_ELE = unsafe { mem::zeroed() };
     let mut subHandle: TRDP_SUB_T = &mut ele;
-    let mut pSubHandle: *mut TRDP_SUB_T = &mut subHandle;
+    let pSubHandle: *mut TRDP_SUB_T = &mut subHandle;
 
     let comid = 0; // sendHello.c sends with comid 0
     // 1001;
@@ -167,9 +164,9 @@ fn main() {
     let mut data: [u8; 1024] = [0xAA; 1024];
     data[0] = 0x55;
     data[31] = 0x55;
-    let mut pData: *mut u8 = &mut data as *mut u8;
+    let pData: *mut u8 = &mut data as *mut u8;
 
-    for i in 0..=100 {
+    for _ in 0..=100 {
         let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
         let mut noDesc: i32 = 0;
 
@@ -207,7 +204,7 @@ fn main() {
 
         // println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
-        let mut pWriteableFD: *mut fd_set = ptr::null_mut();
+        let pWriteableFD: *mut fd_set = ptr::null_mut();
         let mut rv = unsafe {
             vos_select(
                 noDesc,
@@ -249,6 +246,7 @@ fn main() {
             println!("Pdinfo {:?}", pdInfo);
             println!("Pdinfo.comid {:?}", pdInfo.comId);
             println!("Pdinfo ssc {:?}", pdInfo.seqCount);
+            print!("As hex: ");
             for r in 0..receivedSize {
                 let d = data[r as usize];
                 //print!("{:x} {:?} {} ", d, d.is_ascii(), char::from(d));
