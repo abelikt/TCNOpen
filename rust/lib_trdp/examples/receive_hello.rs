@@ -3,8 +3,14 @@
 #![allow(non_snake_case)]
 
 /*
-cargo run --example receive_hello
 
+Run Example:
+
+    cargo run --example receive_hello
+
+Needs a sendHello instance:
+
+    ./sendHello -o 192.168.53.104 -t 192.168.53.103
 
 */
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -246,9 +252,11 @@ fn main() {
             for r in 0..receivedSize {
                 let d = data[r as usize];
                 //print!("{:x} {:?} {} ", d, d.is_ascii(), char::from(d));
-                print!("{}", char::from(d));
+                print!("0x{:x} ", d);
             }
             println!("");
+            let s : String = (0..receivedSize).map( |x| char::from( data[x as usize] ) ).collect();
+            println!("As String: {}", s)
 
         }
     }
