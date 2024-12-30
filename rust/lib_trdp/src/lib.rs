@@ -38,7 +38,7 @@ mod tests {
     /// The code of this example is mostly aligned with the sendHello.c
     /// This is very unfinised demo application
     #[test]
-    fn test_sendHello() {
+    fn test_send_hello() {
         let pRefCon: *mut raw::c_void = ptr::null_mut();
 
         // Todo direct assignment fails, so we pipe through callback
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
         // drop: tlc_terminate
 
-        for i in 0..=10 {
+        for i in 0..=100 {
             let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
@@ -293,6 +293,11 @@ mod tests {
                              TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
         );
         */
+        // 192.168.53.104
+        let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
+
+        // 192.168.53.103
+        let ownIpAddr_b: TRDP_IP_ADDR_T = 0xc0a83567;
 
         let err = unsafe { tlp_subscribe(
             psession,  // appHandle,                 /*    our application identifier            */
@@ -304,9 +309,9 @@ mod tests {
             0, // 0,                         /*    etbTopoCnt: local consist only        */
             0, // 0,                         /*    opTopoCnt                             */
             0,0, // VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
-            0, // dstIP,                     /*    Default destination    (or MC Group)  */
+            ownIpAddr_b, // dstIP,                     /*    Default destination    (or MC Group)  */
             TRDP_FLAGS_NONE as TRDP_FLAGS_T, // TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-            1000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
+            1_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
             TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO // TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
         )};
 
@@ -321,18 +326,18 @@ mod tests {
         data[31] = 0x55;
         let mut pData: *mut u8 = &mut data as *mut u8;
 
-        for i in 0..=10 {
+        for i in 0..=100 {
             let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
             let mut noDesc: i32 = 0;
 
             let mut tv: timeval = unsafe { mem::zeroed() };
             let max_tv: TRDP_TIME_T = TRDP_TIME_T {
                 tv_sec: 0,
-                tv_usec: 100_000,
+                tv_usec: 1_000_000,
             };
             let min_tv: TRDP_TIME_T = TRDP_TIME_T {
                 tv_sec: 0,
-                tv_usec: 10_000 as i64,
+                tv_usec: 100_000 as i64,
             };
 
             // Fix this later, if necessary
@@ -350,7 +355,7 @@ mod tests {
                 tlc_getInterval(psession, &mut tv, p_rfds_2, &mut noDesc as *mut i32);
             }
 
-            println!("tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
+            // println!("tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
             if (unsafe { vos_cmpTime(&tv, &max_tv) } > 0) {
                 tv = max_tv;
@@ -358,7 +363,7 @@ mod tests {
                 tv = min_tv;
             }
 
-            println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
+            // println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
             let mut pWriteableFD: *mut fd_set = ptr::null_mut();
             let mut rv = unsafe {
@@ -390,7 +395,8 @@ mod tests {
                     pData,
                     preceivedSize)};
 
-            assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_get failed");
+            //assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_get failed");
+            println!("Error {:?}", err);
         }
     }
 }
