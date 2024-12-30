@@ -2,16 +2,18 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-/*
-Run Example:
 
-    cargo run --example receive_hello
+//! Very crude implementation of an example that use lib_trdp
+//!
+//! Run Example:
+//!
+//!     cargo run --example receive_hello
+//!
+//! Needs a sendHello instance:
+//!
+//!     ./sendHello -o 192.168.53.104 -t 192.168.53.103
 
-Needs a sendHello instance:
 
-    ./sendHello -o 192.168.53.104 -t 192.168.53.103
-
-*/
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
