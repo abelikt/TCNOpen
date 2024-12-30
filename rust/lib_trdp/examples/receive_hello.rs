@@ -106,7 +106,8 @@ fn main() {
     let mut subHandle: TRDP_SUB_T = &mut ele;
     let mut pSubHandle: *mut TRDP_SUB_T = &mut subHandle;
 
-    let comid = 1001;
+    let comid = 0; // sendHello.c sends with comid 0
+    // 1001;
 
     /*
     memset(gBuffer, 0, sizeof(gBuffer));
@@ -127,7 +128,7 @@ fn main() {
     );
     */
     // 192.168.53.104
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
+    //let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
 
     // 192.168.53.103
     let ownIpAddr_b: TRDP_IP_ADDR_T = 0xc0a83567;
@@ -210,7 +211,7 @@ fn main() {
                 &mut tv,
             )
         };
-        println!("Ready descriptors {:?}", rv);
+        // println!("Ready descriptors {:?}", rv);
 
         // let delay = time::Duration::from_millis(100);
         // thread::sleep(delay);
@@ -219,6 +220,11 @@ fn main() {
 
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
+        if rv > 0
+        {
+            println!("other descriptors were ready\n");
+        }
+
         //receivedSize = sizeof(gBuffer);
         let mut receivedSize: u32 = 1024;
         let preceivedSize: *mut u32 = &mut receivedSize as *mut u32;
@@ -226,6 +232,24 @@ fn main() {
         let err = unsafe { tlp_get(psession, subHandle, ppdInfo, pData, preceivedSize) };
 
         //assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_get failed");
-        println!("Error {:?}", err);
+        match err {
+            TRDP_ERR_T_TRDP_NO_ERR => println!("Success, received {}", receivedSize),
+            TRDP_ERR_T_TRDP_TIMEOUT_ERR => println!("Error: Timeout"),
+            TRDP_ERR_T_TRDP_NODATA_ERR => println!("Error: No Data "),
+            _ => println!("Error {:?}", err)
+        }
+        if err == TRDP_ERR_T_TRDP_NO_ERR {
+            //println!("State rv {:?} size {:?}", rv, receivedSize);
+            println!("Pdinfo {:?}", pdInfo);
+            println!("Pdinfo.comid {:?}", pdInfo.comId);
+            println!("Pdinfo ssc {:?}", pdInfo.seqCount);
+            for r in 0..receivedSize {
+                let d = data[r as usize];
+                //print!("{:x} {:?} {} ", d, d.is_ascii(), char::from(d));
+                print!("{}", char::from(d));
+            }
+            println!("");
+
+        }
     }
 }
