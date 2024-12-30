@@ -3,7 +3,6 @@
 #![allow(non_snake_case)]
 
 /*
-
 Run Example:
 
     cargo run --example receive_hello
@@ -15,11 +14,11 @@ Needs a sendHello instance:
 */
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use std::ffi::CStr;
-use std::os::raw;
-use std::mem;
-use std::ptr;
 use libc;
+use std::ffi::CStr;
+use std::mem;
+use std::os::raw;
+use std::ptr;
 
 use lib_trdp;
 
@@ -110,26 +109,8 @@ fn main() {
     let pSubHandle: *mut TRDP_SUB_T = &mut subHandle;
 
     let comid = 0; // sendHello.c sends with comid 0
-    // 1001;
+                   // send_hello : 1001;
 
-    /*
-    memset(gBuffer, 0, sizeof(gBuffer));
-
-    err = tlp_subscribe( appHandle,                 /*    our application identifier            */
-                         &subHandle,                /*    our subscription identifier           */
-                         NULL,                      /*    user reference                        */
-                         NULL,                      /*    callback functiom                     */
-                         0u,
-                         comId,                     /*    ComID                                 */
-                         0,                         /*    etbTopoCnt: local consist only        */
-                         0,                         /*    opTopoCnt                             */
-                         VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
-                         dstIP,                     /*    Default destination    (or MC Group)  */
-                         TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-                         PD_COMID_CYCLE * 3,        /*    Time out in us                        */
-                         TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
-    );
-    */
     // 192.168.53.104
     //let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
 
@@ -138,25 +119,25 @@ fn main() {
 
     let err = unsafe {
         tlp_subscribe(
-            psession,    // appHandle,                 /*    our application identifier            */
-            pSubHandle, // &subHandle,                /*    our subscription identifier           */
-            ptr::null(), // NULL,                      /*    user reference                        */
-            None, // TRDP_PD_CALLBACK_T // NULL,                      /*    callback functiom                     */
-            0,    // 0u,  //serviceId
-            comid, // comId,                     /*    ComID                                 */
-            0,    // 0,                         /*    etbTopoCnt: local consist only        */
-            0,    // 0,                         /*    opTopoCnt                             */
+            psession,    /*    our application identifier            */
+            pSubHandle,  /*    our subscription identifier           */
+            ptr::null(), /*    user reference                        */
+            None,        /*    callback functiom                     */
+            0,           //serviceId
+            comid,       /*    ComID                                 */
+            0,           /*    etbTopoCnt: local consist only        */
+            0,           /*    opTopoCnt                             */
             libc::INADDR_ANY,
-            libc::INADDR_ANY, // VOS_INADDR_ANY, VOS_INADDR_ANY,    /*    Source IP filter              */
-            ownIpAddr_b, // dstIP,                     /*    Default destination    (or MC Group)  */
-            TRDP_FLAGS_NONE as TRDP_FLAGS_T, // TRDP_FLAGS_DEFAULT,        /*    TRDP flags                            */
-            2_000_000, // PD_COMID_CYCLE * 3,        /*    Time out in us                        */
-            TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO, // TRDP_TO_SET_TO_ZERO        /*    delete invalid data on timeout        */
+            libc::INADDR_ANY,                /*    Source IP filter              */
+            ownIpAddr_b,                     /*    Default destination    (or MC Group)  */
+            TRDP_FLAGS_NONE as TRDP_FLAGS_T, /*    TRDP flags                            */
+            2_000_000,                       /*    Time out in us                        */
+            TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO, /*    delete invalid data on timeout        */
         )
     };
 
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_subscibefailed");
-    // drop:        tlc_terminate();
+    // todo: drop:        tlc_terminate();
 
     let err = unsafe { tlc_updateSession(psession) };
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
@@ -223,23 +204,20 @@ fn main() {
 
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
-        if rv > 0
-        {
+        if rv > 0 {
             println!("other descriptors were ready\n");
         }
 
-        //receivedSize = sizeof(gBuffer);
         let mut receivedSize: u32 = 1024;
         let preceivedSize: *mut u32 = &mut receivedSize as *mut u32;
 
         let err = unsafe { tlp_get(psession, subHandle, ppdInfo, pData, preceivedSize) };
 
-        //assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_get failed");
         match err {
             TRDP_ERR_T_TRDP_NO_ERR => println!("Success, received {}", receivedSize),
             TRDP_ERR_T_TRDP_TIMEOUT_ERR => println!("Error: Timeout"),
             TRDP_ERR_T_TRDP_NODATA_ERR => println!("Error: No Data "),
-            _ => println!("Error {:?}", err)
+            _ => println!("Error {:?}", err),
         }
         if err == TRDP_ERR_T_TRDP_NO_ERR {
             //println!("State rv {:?} size {:?}", rv, receivedSize);
@@ -253,9 +231,10 @@ fn main() {
                 print!("0x{:x} ", d);
             }
             println!("");
-            let s : String = (0..receivedSize).map( |x| char::from( data[x as usize] ) ).collect();
+            let s: String = (0..receivedSize)
+                .map(|x| char::from(data[x as usize]))
+                .collect();
             println!("As String: {}", s)
-
         }
     }
 }
