@@ -2,7 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-//! Very crude implementation of some tests that use lib_trdp
+//! Very crude implementation of some tests that uses lib_trdp from Rust
+//! See examples for exemplary receiver and sender.
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 

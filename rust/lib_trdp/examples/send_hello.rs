@@ -3,7 +3,8 @@
 #![allow(non_snake_case)]
 
 
-//! Very crude implementation of an example that use lib_trdp
+//! Very crude implementation of an example that uses lib_trdp from Rust.
+//! Work in progress!!!
 //!
 //! Run Example:
 //!
@@ -150,7 +151,7 @@ fn main() {
 
         let p_rfds_2: *mut fd_set =
             unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
-        // Same thing with transmutate
+        // Same thing with transmute
         // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
 
         unsafe { libc::FD_ZERO(p_rfds) };
