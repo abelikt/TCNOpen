@@ -2,7 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-
 //! Very crude implementation of an example that use lib_trdp
 //!
 //! Run Example:
@@ -13,7 +12,6 @@
 //!
 //!     ./sendHello -o 192.168.53.104 -t 192.168.53.103
 
-
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
@@ -23,22 +21,7 @@ use std::os::raw;
 use std::ptr;
 
 use lib_trdp;
-
-/// # Safety
-/// Gets called from C and therefore unsafe
-#[no_mangle]
-pub unsafe extern "C" fn debug_callback(
-    _pRefCon: *mut raw::c_void,
-    _categrory: u32,
-    _pTime: *const i8,
-    _pFile: *const i8,
-    _LineNumber: u16,
-    pMsgStr: *const i8,
-) {
-    let msg_str: &str = CStr::from_ptr(pMsgStr).to_str().unwrap();
-    let msg: &str = msg_str.strip_suffix("\n").unwrap();
-    println!("Log: {}", msg);
-}
+use lib_trdp::debug_callback;
 
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
