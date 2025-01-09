@@ -8,6 +8,12 @@
 //! Run Example:
 //!
 //!     cargo run --example send_hello
+//!
+//! Add second address
+//!     sudo ip address add 192.168.53.103/24 dev enp8s0
+//!     sudo ip address add 192.168.53.104/24 dev enp8s0
+//!
+//! Sender 104 -> 103
 
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -49,8 +55,11 @@ fn main() {
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
     let mut pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
-    // 192.168.53.104
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
+
+
+    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568; // 192.168.53.104
+    let destIpAddr: TRDP_IP_ADDR_T = 0xc0a83567; // 192.168.53.103
+
     let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
     let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
 
@@ -107,7 +116,7 @@ fn main() {
             0,                     //etbTopoCnt: UINT32,
             0,                     //opTrnTopoCnt: UINT32,
             ownIpAddr,             //srcIpAddr: TRDP_IP_ADDR_T,
-            0,                     //destIpAddr: TRDP_IP_ADDR_T,
+            destIpAddr,            // destIpAddr: TRDP_IP_ADDR_T,
             interval,              //interval: UINT32,
             0,                     //redId: UINT32,
             TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,

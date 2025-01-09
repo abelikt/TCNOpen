@@ -10,6 +10,14 @@
 //!
 //! Needs a sendHello instance:
 //!
+//! Build examples
+//!     cd ../../trdp
+//!     make example
+//!
+//!
+//! Run Example
+//!     export LD_LIBRARY_PATH=$HOME/Repos/tcnopen-trdp/trdp/bld/output/linux-rel/
+//!     ../../trdp/bld/output/linux-rel/sendHello -o 192.168.53.104 -t 192.168.53.103
 //!     ./sendHello -o 192.168.53.104 -t 192.168.53.103
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -51,10 +59,9 @@ fn main() {
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
     let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
-    // 192.168.53.104
-    // 0xc0a83568
 
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
+    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83567; // 192.168.53.103
+
     let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
     let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
 
@@ -98,12 +105,6 @@ fn main() {
 
     let comid = 0; // sendHello.c sends with comid 0
                    // send_hello : 1001;
-
-    // 192.168.53.104
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568;
-
-    // 192.168.53.103
-    let ownIpAddr_b: TRDP_IP_ADDR_T = 0xc0a83567;
 
     let err = unsafe {
         tlp_subscribe(
