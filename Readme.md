@@ -13,9 +13,12 @@ A clone of the commits on sourceforge will be maintained in the svn branch.
 The intention of this fork is to have the code in git,
 to analyse different aspects of the TRDP and SDTv2 protocols and play with
 (highly) experimental extensions to them.
-Some of these extensions are language bindings and usage examles in Rust.
+
+Some of these extensions are language bindings and usage examples in Rust.
 They will be located here for some time until they are moved to their own
-crate. For now, until we have a safe abstraction, the Rust code is unsafe
+crate.
+
+For now, until we have a safe abstraction, the Rust code is unsafe
 by nature.
 
 
@@ -52,8 +55,13 @@ This was tested on v 2.1.0.0
     git checkout experiments_2100
 
 Build
+
     make libtrdp
     make example
+
+Build for lazy people
+
+    make clean && make libtrdp && make example
 
 Add second IP address. E.g.:
 
@@ -80,6 +88,9 @@ Run local tests:
 
 Run Rust Examples
 -----------------
+
+Both Rust example should behave similar to the C examples and also work
+interchangeable.
 
     cargo run --example send_hello
 
