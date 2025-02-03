@@ -5,6 +5,8 @@
 //! Very crude implementation of an example that uses lib_trdp from Rust.
 //! Work in progress!!!
 //!
+//! Should be compatible to the C example receiveHello.
+//!
 //! Run Example:
 //!
 //!     cargo run --example receive_hello
@@ -29,6 +31,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 use libc;
 use std::ffi::CStr;
 use std::mem;
+use std::net;
 use std::os::raw;
 use std::ptr;
 
@@ -214,9 +217,12 @@ fn main() {
         }
         if err == TRDP_ERR_T_TRDP_NO_ERR {
             //println!("State rv {:?} size {:?}", rv, receivedSize);
-            println!("Pdinfo {:?}", pdInfo);
+            //println!("Pdinfo {:?}", pdInfo);
+            println!("Pdinfo.srcIpAddr {:?}", net::Ipv4Addr::from(pdInfo.srcIpAddr));
+            println!("Pdinfo.destIpAddr {:?}", net::Ipv4Addr::from(pdInfo.destIpAddr));
             println!("Pdinfo.comid {:?}", pdInfo.comId);
             println!("Pdinfo ssc {:?}", pdInfo.seqCount);
+
             print!("As hex: ");
             for r in 0..receivedSize {
                 let d = data[r as usize];
