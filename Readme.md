@@ -51,9 +51,17 @@ This was tested on v 2.1.0.0
 
     git checkout experiments_2100
 
+Build
+    make libtrdp
+    make example
+
 Add second IP address. E.g.:
 
     sudo ip address add 192.168.53.103/24 dev enp8s0
+
+Set library path
+
+    export LD_LIBRARY_PATH=bld/output/linux-rel/
 
 View help:
 
@@ -62,14 +70,20 @@ View help:
 
 Run hello clients:
 
-    bld/output/linux-rel/receiveHello -o 192.168.53.104
-    bld/output/linux-rel/sendHello -o 192.168.53.103 -t 192.168.53.104
+    bld/output/linux-rel/receiveHello -o 192.168.53.103
+    bld/output/linux-rel/sendHello -o 192.168.53.104 -t 192.168.53.103
 
 Run local tests:
 
     bld/output/linux-rel/localtest -o 192.168.53.103 -i 192.168.53.104
     bld/output/linux-rel/localtest2 -o 192.168.53.103 -i 192.168.53.104
 
+Run Rust Examples
+-----------------
+
+    cargo run --example send_hello
+
+    cargo run --example receive_hello
 
 Build SDTv2
 -----------
