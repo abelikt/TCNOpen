@@ -6,6 +6,8 @@
 //! Very crude implementation of an example that uses lib_trdp from Rust.
 //! Work in progress!!!
 //!
+//! Should be compatible to the C example sendHello.
+//!
 //! Run Example:
 //!
 //!     cargo run --example send_hello
@@ -101,11 +103,19 @@ fn main() {
 
     let comid = 1001;
     let interval = 100_000;
-    let mut data: [u8; 32] = [0xAA; 32];
-    data[0] = 0x55;
-    data[31] = 0x55;
+    const buffer_size : usize = 24;
+    let mut data: [u8; buffer_size] = [0x00; buffer_size];
+    //data[0] = 0x55;
+    //data[buffer_size-1] = 0x55;
     let pData = &data as *const u8;
-    let data_size = 32;
+
+    // Mimic C example
+    let b = format!("Hello World");
+    let a = b.as_bytes();
+    let size = a.len();
+    data[..size].copy_from_slice(a);
+
+
     let err = unsafe {
         tlp_publish(
             psession, // appHandle: TRDP_APP_SESSION_T,
@@ -122,7 +132,7 @@ fn main() {
             0,                     //redId: UINT32,
             TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
             pData,                 //pData: *const UINT8,
-            data_size,             //dataSize: UINT32,
+            buffer_size as u32,             //dataSize: UINT32,
         )
     };
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_publish failed");
@@ -190,9 +200,13 @@ fn main() {
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
         println!("Procesing ... {}", i);
-        data[0] = i;
+        //data[0] = i;
+        let b = format!("Just a Counter: {i:08}"); // Keep temporary value
+        let a = b.as_bytes();
+        let size = a.len();
+        data[..size].copy_from_slice(a);
 
-        let err = unsafe { tlp_put(psession, pubHandle, pData, 32) };
+        let err = unsafe { tlp_put(psession, pubHandle, pData, size as u32) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
     }
     unsafe { tlp_unpublish(psession, pubHandle) };
