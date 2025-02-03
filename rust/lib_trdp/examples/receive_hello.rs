@@ -20,6 +20,10 @@
 //!     ../../trdp/bld/output/linux-rel/sendHello -o 192.168.53.104 -t 192.168.53.103
 //!     ./sendHello -o 192.168.53.104 -t 192.168.53.103
 
+// TODO: open issue Ignored PD
+// Log: Ignore PD received for IP 192.168.53.104 which is not this sessions realIP (0xc0a83567)
+// Error: Timeout
+
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
