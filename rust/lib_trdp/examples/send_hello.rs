@@ -101,7 +101,7 @@ fn main() {
     let mut pubHandle: TRDP_PUB_T = &mut ele;
     let mut pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
 
-    let comid = 1001;
+    let comid = 0; //1001; // Allign with C example
     let interval = 100_000;
     const buffer_size : usize = 24;
     let mut data: [u8; buffer_size] = [0x00; buffer_size];
