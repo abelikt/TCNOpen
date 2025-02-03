@@ -29,7 +29,7 @@
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
-use std::ffi::CStr;
+//use std::ffi::CStr;
 use std::mem;
 use std::net;
 use std::os::raw;

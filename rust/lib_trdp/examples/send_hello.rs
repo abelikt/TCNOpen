@@ -22,13 +22,13 @@
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
-use std::ffi::CStr;
+//use std::ffi::CStr;
 use std::mem;
 use std::os::raw;
 use std::ptr;
 
 use lib_trdp;
-use lib_trdp::debug_callback;
+//use lib_trdp::debug_callback;
 
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
@@ -57,7 +57,7 @@ fn main() {
 
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
-    let mut pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
+    let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
 
 
     let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568; // 192.168.53.104
@@ -99,7 +99,7 @@ fn main() {
 
     let mut ele: PD_ELE = unsafe { mem::zeroed() };
     let mut pubHandle: TRDP_PUB_T = &mut ele;
-    let mut pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
+    let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
 
     let comid = 0; //1001; // Allign with C example
     let interval = 100_000;
@@ -180,7 +180,7 @@ fn main() {
 
         println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
-        let mut pWriteableFD: *mut fd_set = ptr::null_mut();
+        let pWriteableFD: *mut fd_set = ptr::null_mut();
         let mut rv = unsafe {
             vos_select(
                 noDesc,
