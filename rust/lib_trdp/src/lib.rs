@@ -39,6 +39,5 @@ mod tests {
     use libc;
 
     #[test]
-    fn test_stuff() {
-    }
+    fn test_stuff() {}
 }

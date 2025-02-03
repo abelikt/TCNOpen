@@ -2,7 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-
 //! Very crude implementation of an example that uses lib_trdp from Rust.
 //! Work in progress!!!
 //!
@@ -17,7 +16,6 @@
 //!     sudo ip address add 192.168.53.104/24 dev enp8s0
 //!
 //! Sender 104 -> 103
-
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -58,7 +56,6 @@ fn main() {
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
     let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
-
 
     let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568; // 192.168.53.104
     let destIpAddr: TRDP_IP_ADDR_T = 0xc0a83567; // 192.168.53.103
@@ -103,7 +100,7 @@ fn main() {
 
     let comid = 0; //1001; // Allign with C example
     let interval = 100_000;
-    const buffer_size : usize = 24;
+    const buffer_size: usize = 24;
     let mut data: [u8; buffer_size] = [0x00; buffer_size];
     //data[0] = 0x55;
     //data[buffer_size-1] = 0x55;
@@ -114,7 +111,6 @@ fn main() {
     let a = b.as_bytes();
     let size = a.len();
     data[..size].copy_from_slice(a);
-
 
     let err = unsafe {
         tlp_publish(
@@ -132,7 +128,7 @@ fn main() {
             0,                     //redId: UINT32,
             TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
             pData,                 //pData: *const UINT8,
-            buffer_size as u32,             //dataSize: UINT32,
+            buffer_size as u32,    //dataSize: UINT32,
         )
     };
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_publish failed");
@@ -159,8 +155,7 @@ fn main() {
         // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
         let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
 
-        let p_rfds_2: *mut fd_set =
-            unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
+        let p_rfds_2: *mut fd_set = unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
         // Same thing with transmute
         // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
 

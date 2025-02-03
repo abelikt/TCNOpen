@@ -125,7 +125,7 @@ fn main() {
             0,           /*    opTopoCnt                             */
             libc::INADDR_ANY,
             libc::INADDR_ANY,                /*    Source IP filter              */
-            ownIpAddr,                     /*    Default destination    (or MC Group)  */
+            ownIpAddr,                       /*    Default destination    (or MC Group)  */
             TRDP_FLAGS_NONE as TRDP_FLAGS_T, /*    TRDP flags                            */
             2_000_000,                       /*    Time out in us                        */
             TRDP_TO_BEHAVIOR_T_TRDP_TO_SET_TO_ZERO, /*    delete invalid data on timeout        */
@@ -218,8 +218,14 @@ fn main() {
         if err == TRDP_ERR_T_TRDP_NO_ERR {
             //println!("State rv {:?} size {:?}", rv, receivedSize);
             //println!("Pdinfo {:?}", pdInfo);
-            println!("Pdinfo.srcIpAddr {:?}", net::Ipv4Addr::from(pdInfo.srcIpAddr));
-            println!("Pdinfo.destIpAddr {:?}", net::Ipv4Addr::from(pdInfo.destIpAddr));
+            println!(
+                "Pdinfo.srcIpAddr {:?}",
+                net::Ipv4Addr::from(pdInfo.srcIpAddr)
+            );
+            println!(
+                "Pdinfo.destIpAddr {:?}",
+                net::Ipv4Addr::from(pdInfo.destIpAddr)
+            );
             println!("Pdinfo.comid {:?}", pdInfo.comId);
             println!("Pdinfo ssc {:?}", pdInfo.seqCount);
 
