@@ -86,6 +86,12 @@ Run local tests:
     bld/output/linux-rel/localtest -o 192.168.53.103 -i 192.168.53.104
     bld/output/linux-rel/localtest2 -o 192.168.53.103 -i 192.168.53.104
 
+Build doxygen docu
+
+    cd trdp
+    make doxygen
+    firefox doc/html/index.html
+
 Run Rust Examples
 -----------------
 
