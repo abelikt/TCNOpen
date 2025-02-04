@@ -21,6 +21,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
 //use std::ffi::CStr;
+use std::net;
 use std::mem;
 use std::os::raw;
 use std::ptr;
@@ -28,10 +29,36 @@ use std::ptr;
 use lib_trdp;
 //use lib_trdp::debug_callback;
 
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Destination IP
+    #[arg(short, long)]
+    destination: String,
+
+    #[arg(short, long)]
+    /// Source IP
+    source: String,
+
+}
+
+
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
 ///
 fn main() {
+
+    let cli = Cli::parse();
+
+    let dest_ip = cli.destination.parse::<net::Ipv4Addr>()
+        .expect("Cannot parse destination address");
+    println!("Destination will be  {dest_ip:?}");
+    let src_ip = cli.source.parse::<net::Ipv4Addr>()
+        .expect("Cannot parse source address");
+    println!("Source will be  {src_ip:?}");
+
     let pRefCon: *mut raw::c_void = ptr::null_mut();
 
     // Todo direct assignment fails, so we pipe through callback
@@ -57,8 +84,8 @@ fn main() {
     let mut psession: *mut TRDP_SESSION = &mut session;
     let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
 
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83568; // 192.168.53.104
-    let destIpAddr: TRDP_IP_ADDR_T = 0xc0a83567; // 192.168.53.103
+    let ownIpAddr: TRDP_IP_ADDR_T = src_ip.to_bits();
+    let destIpAddr: TRDP_IP_ADDR_T = dest_ip.to_bits();
 
     let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
     let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();

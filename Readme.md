@@ -92,7 +92,7 @@ Run Rust Examples
 Both Rust example should behave similar to the C examples and also work
 interchangeable.
 
-    cargo run --example send_hello
+    cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104
 
     cargo run --example receive_hello
 
