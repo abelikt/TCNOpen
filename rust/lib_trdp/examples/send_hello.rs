@@ -2,14 +2,15 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-//! Very crude implementation of an example that uses lib_trdp from Rust.
-//! Work in progress!!!
-//!
+//! Crude implementation of example sendHello that uses lib_trdp from Rust.
 //! Should be compatible to the C example sendHello.
+//! Structure and variable names are also kept similar to be able to map Rust
+//! and C calls. No abstraction is used in this example leading to non-idiomatic
+//! code wit many unsafe calls and inherent pointer madness.
 //!
 //! Run Example:
 //!
-//!     cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104
+//!     cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104 --comid 0
 //!
 //! Add second address
 //!     sudo ip address add 192.168.53.103/24 dev enp8s0
@@ -24,7 +25,7 @@ use std::net;
 use std::os::raw;
 use std::ptr;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 use lib_trdp;
 
@@ -140,17 +141,16 @@ fn main() {
     let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
 
     let interval = 100_000;
+
     const buffer_size: usize = 24;
     let mut data: [u8; buffer_size] = [0x00; buffer_size];
-    //data[0] = 0x55;
-    //data[buffer_size-1] = 0x55;
     let pData = &data as *const u8;
 
     // Mimic C example
-    let b = format!("Hello World");
-    let a = b.as_bytes();
-    let size = a.len();
-    data[..size].copy_from_slice(a);
+    let initial_message = format!("Hello World");
+    let message_bytes = initial_message.as_bytes();
+    let size = message_bytes.len();
+    data[..size].copy_from_slice(message_bytes);
 
     let err = unsafe {
         tlp_publish(
@@ -175,10 +175,15 @@ fn main() {
 
     let err = unsafe { tlc_updateSession(psession) };
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
-    // drop: tlc_terminate
 
     for i in 0..=100 {
-        let mut rfds: libc::fd_set = unsafe { mem::zeroed() }; // bindings.rs have their own fd_set
+
+        println!("Procesing interval: {}", i);
+
+        // Create a file descriptor set for later use with the select call
+        // (bindings.rs provides a binding but its unclear how to use it with FD_ZERO)
+        let mut rfds: libc::fd_set = unsafe { mem::zeroed() };
+
         let mut noDesc: i32 = 0;
 
         let mut tv: timeval = unsafe { mem::zeroed() };
@@ -191,12 +196,11 @@ fn main() {
             tv_usec: 10_000 as i64,
         };
 
-        // Fix this later, if necessary
-        // let p_rfds : *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
+        // Prepare rfds file descriptor set for later use with the select call
+        // Simplify this madness later, if possible
         let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
-
         let p_rfds_2: *mut fd_set = unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
-        // Same thing with transmute
+        // Same trick with transmute:
         // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
 
         unsafe { libc::FD_ZERO(p_rfds) };
@@ -204,18 +208,18 @@ fn main() {
         unsafe {
             tlc_getInterval(psession, &mut tv, p_rfds_2, &mut noDesc as *mut i32);
         }
-
-        println!("tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
+        println!("    tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
         if (unsafe { vos_cmpTime(&tv, &max_tv) } > 0) {
             tv = max_tv;
         } else if (unsafe { vos_cmpTime(&tv, &min_tv) } < 0) {
             tv = min_tv;
         }
-
-        println!("tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
+        println!("    tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
 
         let pWriteableFD: *mut fd_set = ptr::null_mut();
+
+        // TODO Replace and simplify this with a clock_nanosleep / thread::sleep()
         let mut rv = unsafe {
             vos_select(
                 noDesc,
@@ -225,21 +229,18 @@ fn main() {
                 &mut tv,
             )
         };
-        println!("Ready descriptors {:?}", rv);
+        println!("    Ready descriptors : {:?}", rv);
 
         // let delay = time::Duration::from_millis(100);
         // thread::sleep(delay);
 
         let err = unsafe { tlc_process(psession, p_rfds_2, &mut rv as *mut i32) };
-
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
-        println!("Procesing ... {}", i);
-        //data[0] = i;
-        let b = format!("Just a Counter: {i:08}"); // Keep temporary value
-        let a = b.as_bytes();
-        let size = a.len();
-        data[..size].copy_from_slice(a);
+        let temp_string = format!("Just a Counter: {i:08}"); // Keep temporary value
+        let message_bytes = temp_string.as_bytes();
+        let size = message_bytes.len();
+        data[..size].copy_from_slice(message_bytes);
 
         let err = unsafe { tlp_put(psession, pubHandle, pData, size as u32) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
