@@ -48,11 +48,11 @@ This was tested on v 2.1.0.0
 Run TRDP Examples
 -----------------
 
-(on branch experiments_2100)
+(on branch experiments_2100 / main)
 
-This was tested on v 2.1.0.0
+This was tested on v 2.1.0.0 but should also run on main
 
-    git checkout experiments_2100
+    git checkout main
 
 Build
 
@@ -95,10 +95,14 @@ Build doxygen docu
 Run Rust Examples
 -----------------
 
-Both Rust example should behave similar to the C examples and also work
+(on branch main)
+
+
+Both Rust examples should behave similar to the C examples and also work
 interchangeable.
 
     cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104
+    cargo run --example send_hello -- --help
 
     cargo run --example receive_hello
 
