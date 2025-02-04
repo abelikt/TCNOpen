@@ -9,27 +9,24 @@
 //!
 //! Run Example:
 //!
-//!     cargo run --example send_hello
+//!     cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104
 //!
 //! Add second address
 //!     sudo ip address add 192.168.53.103/24 dev enp8s0
 //!     sudo ip address add 192.168.53.104/24 dev enp8s0
 //!
-//! Sender 104 -> 103
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
-//use std::ffi::CStr;
-use std::net;
 use std::mem;
+use std::net;
 use std::os::raw;
 use std::ptr;
 
-use lib_trdp;
-//use lib_trdp::debug_callback;
-
 use clap::{Parser, Subcommand};
+
+use lib_trdp;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -41,21 +38,21 @@ struct Cli {
     #[arg(short, long)]
     /// Source IP
     source: String,
-
 }
-
 
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
-///
 fn main() {
-
     let cli = Cli::parse();
 
-    let dest_ip = cli.destination.parse::<net::Ipv4Addr>()
+    let dest_ip = cli
+        .destination
+        .parse::<net::Ipv4Addr>()
         .expect("Cannot parse destination address");
     println!("Destination will be  {dest_ip:?}");
-    let src_ip = cli.source.parse::<net::Ipv4Addr>()
+    let src_ip = cli
+        .source
+        .parse::<net::Ipv4Addr>()
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
