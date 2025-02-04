@@ -38,6 +38,10 @@ struct Cli {
     #[arg(short, long)]
     /// Source IP
     source: String,
+
+    /// Communication IO
+    #[arg(short, long)]
+    comid: Option<u32>,
 }
 
 /// The code of this example is mostly aligned with the sendHello.c
@@ -50,14 +54,25 @@ fn main() {
         .parse::<net::Ipv4Addr>()
         .expect("Cannot parse destination address");
     println!("Destination will be  {dest_ip:?}");
+
     let src_ip = cli
         .source
         .parse::<net::Ipv4Addr>()
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
+    let comid: u32 = match cli.comid {
+        Some(id) => id,
+        None => {
+            println!("No comid specified default will be zero");
+            0
+        }
+    };
+
+    // The user context
     let pRefCon: *mut raw::c_void = ptr::null_mut();
 
+    // Enable debug callback
     // Todo direct assignment fails, so we pipe through callback
     // = note: expected enum `Option<unsafe extern "C" fn(_, _, _, _, _, _)>`
     // found enum `Option<unsafe extern "C" fn(_, _, _, _, _, _) {debug_callback}>`
@@ -99,9 +114,11 @@ fn main() {
         toBehavior: 1,
         ..pd_zero
     };
+
     let pPdDefault: *const TRDP_PD_CONFIG_T = &pdDefault as *const TRDP_PD_CONFIG_T;
 
     let pMdDefault: *const TRDP_MD_CONFIG_T = ptr::null();
+
     let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
     let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &processConfig;
 
@@ -122,7 +139,6 @@ fn main() {
     let mut pubHandle: TRDP_PUB_T = &mut ele;
     let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
 
-    let comid = 0; //1001; // Allign with C example
     let interval = 100_000;
     const buffer_size: usize = 24;
     let mut data: [u8; buffer_size] = [0x00; buffer_size];
