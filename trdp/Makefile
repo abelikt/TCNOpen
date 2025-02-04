@@ -603,6 +603,9 @@ doc/latex/refman.pdf: Doxyfile trdp_if_light.h trdp_types.h
 			make -C doc/latex
 			cp doc/latex/refman.pdf "doc/TCN-TRDP2-D-BOM-033-xx - TRDP Reference Manual.pdf"
 
+doxygen:
+			$(DOXYPATH)doxygen Doxyfile
+
 ###############################################################################
 #
 # install complete library
