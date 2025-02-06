@@ -49,10 +49,18 @@ struct TrdpSender {
     // The user context
     pRefCon: *mut raw::c_void,
     memConfig: TRDP_MEM_CONFIG_T,
+    dest_ip : net::Ipv4Addr,
+    src_ip : net::Ipv4Addr,
+    session: TRDP_SESSION,
+    processConfig: TRDP_PROCESS_CONFIG_T,
+    pdDefault : TRDP_PD_CONFIG_T,
 }
 
 impl TrdpSender {
-    fn new() -> Self {
+    fn new(dest_ip : net::Ipv4Addr, src_ip : net::Ipv4Addr) -> Self {
+        let session: TRDP_SESSION = unsafe { mem::zeroed() };
+        let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
+        let pdDefault : TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
         TrdpSender {
             pRefCon: ptr::null_mut(),
             memConfig: TRDP_MEM_CONFIG_T {
@@ -60,10 +68,15 @@ impl TrdpSender {
                 size: 160000,
                 prealloc: [0; 15],
             },
+            dest_ip,
+            src_ip,
+            session,
+            processConfig,
+            pdDefault,
         }
     }
 
-    fn init(&self) {
+    fn init(&mut self) {
         // Enable debug callback
         let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
         let debug = Some(callback);
@@ -73,6 +86,48 @@ impl TrdpSender {
         let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
 
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_init failed");
+
+        let mut psession: *mut TRDP_SESSION = &mut self.session;
+        let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
+
+        let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
+        let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
+
+        let pd_zero: TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
+        self.pdDefault = TRDP_PD_CONFIG_T {
+            sendParam: TRDP_COM_PARAM_T {
+                qos: TRDP_PD_DEFAULT_QOS as u8,
+                ttl: TRDP_PD_DEFAULT_TTL as u8,
+                retries: 0,
+            },
+            flags: TRDP_FLAGS_NONE as u8,
+            timeout: 1000000,
+            toBehavior: 1,
+            ..pd_zero
+        };
+
+        let pPdDefault: *const TRDP_PD_CONFIG_T = &self.pdDefault as *const TRDP_PD_CONFIG_T;
+
+        let pMdDefault: *const TRDP_MD_CONFIG_T = ptr::null();
+
+        let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &self.processConfig;
+
+        let ownIpAddr: TRDP_IP_ADDR_T = self.src_ip.to_bits();
+        let destIpAddr: TRDP_IP_ADDR_T = self.dest_ip.to_bits();
+
+        let err = unsafe {
+            tlc_openSession(
+                pAppHandle,
+                ownIpAddr,
+                leaderIpAddr,
+                pMarshall,
+                pPdDefault,
+                pMdDefault,
+                pProcessConfig,
+            )
+        };
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_openSession failed");
+
     }
 }
 
@@ -98,51 +153,13 @@ fn main() {
         0
     });
 
-    let sender = TrdpSender::new();
+    let mut sender = TrdpSender::new(dest_ip, src_ip);
     sender.init();
 
-    let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
-    let mut psession: *mut TRDP_SESSION = &mut session;
-    let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
+    let ownIpAddr: TRDP_IP_ADDR_T = sender.src_ip.to_bits();
+    let destIpAddr: TRDP_IP_ADDR_T = sender.dest_ip.to_bits();
 
-    let ownIpAddr: TRDP_IP_ADDR_T = src_ip.to_bits();
-    let destIpAddr: TRDP_IP_ADDR_T = dest_ip.to_bits();
-
-    let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
-    let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
-
-    let pd_zero: TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
-    let pdDefault = TRDP_PD_CONFIG_T {
-        sendParam: TRDP_COM_PARAM_T {
-            qos: TRDP_PD_DEFAULT_QOS as u8,
-            ttl: TRDP_PD_DEFAULT_TTL as u8,
-            retries: 0,
-        },
-        flags: TRDP_FLAGS_NONE as u8,
-        timeout: 1000000,
-        toBehavior: 1,
-        ..pd_zero
-    };
-
-    let pPdDefault: *const TRDP_PD_CONFIG_T = &pdDefault as *const TRDP_PD_CONFIG_T;
-
-    let pMdDefault: *const TRDP_MD_CONFIG_T = ptr::null();
-
-    let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
-    let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &processConfig;
-
-    let err = unsafe {
-        tlc_openSession(
-            pAppHandle,
-            ownIpAddr,
-            leaderIpAddr,
-            pMarshall,
-            pPdDefault,
-            pMdDefault,
-            pProcessConfig,
-        )
-    };
-    assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_openSession failed");
+    let mut psession: *mut TRDP_SESSION = &mut sender.session;
 
     let mut ele: PD_ELE = unsafe { mem::zeroed() };
     let mut pubHandle: TRDP_PUB_T = &mut ele;
@@ -159,6 +176,7 @@ fn main() {
     let message_bytes = initial_message.as_bytes();
     let size = message_bytes.len();
     data[..size].copy_from_slice(message_bytes);
+
 
     let err = unsafe {
         tlp_publish(
