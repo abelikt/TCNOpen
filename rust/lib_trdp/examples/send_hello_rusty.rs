@@ -45,6 +45,25 @@ struct Cli {
     comid: Option<u32>,
 }
 
+struct TrdpSender{
+    // The user context
+    pRefCon: *mut raw::c_void,
+    memConfig : TRDP_MEM_CONFIG_T,
+}
+
+impl TrdpSender{
+    fn new() -> Self {
+        TrdpSender{
+            pRefCon : ptr::null_mut(),
+            memConfig : TRDP_MEM_CONFIG_T {
+                p: ptr::null_mut() as *mut UINT8,
+                size: 160000,
+                prealloc: [0; 15],
+            },
+        }
+    }
+}
+
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
 fn main() {
@@ -69,9 +88,6 @@ fn main() {
         }
     );
 
-    // The user context
-    let pRefCon: *mut raw::c_void = ptr::null_mut();
-
     // Enable debug callback
     // Todo direct assignment fails, so we pipe through callback
     // = note: expected enum `Option<unsafe extern "C" fn(_, _, _, _, _, _)>`
@@ -80,13 +96,10 @@ fn main() {
     let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
     let debug = Some(callback);
 
-    let memConfig = TRDP_MEM_CONFIG_T {
-        p: ptr::null_mut() as *mut UINT8,
-        size: 160000,
-        prealloc: [0; 15],
-    };
+    let sender = TrdpSender::new();
 
-    let pMemConfig = &memConfig as *const TRDP_MEM_CONFIG_T;
+    let pMemConfig = &sender.memConfig as *const TRDP_MEM_CONFIG_T;
+    let pRefCon = sender.pRefCon;
 
     let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
 
@@ -175,12 +188,12 @@ fn main() {
     let err = unsafe { tlc_updateSession(psession) };
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
 
+    let p_rfds: *mut fd_set = ptr::null_mut();
+    let p_tv: *mut i32 = ptr::null_mut();
+
     for i in 0..=100 {
 
         println!("Procesing interval: {}", i);
-
-        let p_rfds: *mut fd_set = ptr::null_mut();
-        let p_tv: *mut i32 = ptr::null_mut();
 
         let delay = time::Duration::from_millis(100);
         thread::sleep(delay);
