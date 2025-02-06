@@ -18,11 +18,12 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use libc;
 use std::mem;
 use std::net;
 use std::os::raw;
 use std::ptr;
+use std::time;
+use std::thread;
 
 use clap::Parser;
 
@@ -178,61 +179,13 @@ fn main() {
 
         println!("Procesing interval: {}", i);
 
-        // Create a file descriptor set for later use with the select call
-        // (bindings.rs provides a binding but its unclear how to use it with FD_ZERO)
-        let mut rfds: libc::fd_set = unsafe { mem::zeroed() };
+        let p_rfds: *mut fd_set = ptr::null_mut();
+        let p_tv: *mut i32 = ptr::null_mut();
 
-        let mut noDesc: i32 = 0;
+        let delay = time::Duration::from_millis(100);
+        thread::sleep(delay);
 
-        let mut tv: timeval = unsafe { mem::zeroed() };
-        let max_tv: TRDP_TIME_T = TRDP_TIME_T {
-            tv_sec: 0,
-            tv_usec: 100_000,
-        };
-        let min_tv: TRDP_TIME_T = TRDP_TIME_T {
-            tv_sec: 0,
-            tv_usec: 10_000 as i64,
-        };
-
-        // Prepare rfds file descriptor set for later use with the select call
-        // Simplify this madness later, if possible
-        let p_rfds: *mut libc::fd_set = &mut rfds as *mut libc::fd_set;
-        let p_rfds_2: *mut fd_set = unsafe { &mut *(p_rfds as *mut libc::fd_set as *mut fd_set) };
-        // Same trick with transmute:
-        // let p_rfds_2: *mut fd_set =  unsafe{ std::mem::transmute::< *mut libc::fd_set , *mut fd_set>(p_rfds) };
-
-        unsafe { libc::FD_ZERO(p_rfds) };
-
-        unsafe {
-            tlc_getInterval(psession, &mut tv, p_rfds_2, &mut noDesc as *mut i32);
-        }
-        println!("    tv interval {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
-
-        if (unsafe { vos_cmpTime(&tv, &max_tv) } > 0) {
-            tv = max_tv;
-        } else if (unsafe { vos_cmpTime(&tv, &min_tv) } < 0) {
-            tv = min_tv;
-        }
-        println!("    tv minmax {} {} {}", tv.tv_sec, tv.tv_usec, noDesc);
-
-        let pWriteableFD: *mut fd_set = ptr::null_mut();
-
-        // TODO Replace and simplify this with a clock_nanosleep / thread::sleep()
-        let mut rv = unsafe {
-            vos_select(
-                noDesc,
-                p_rfds_2,
-                pWriteableFD,
-                ptr::null_mut() as *mut fd_set,
-                &mut tv,
-            )
-        };
-        println!("    Ready descriptors : {:?}", rv);
-
-        // let delay = time::Duration::from_millis(100);
-        // thread::sleep(delay);
-
-        let err = unsafe { tlc_process(psession, p_rfds_2, &mut rv as *mut i32) };
+        let err = unsafe { tlc_process(psession, p_rfds, p_tv) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
         let temp_string = format!("Just a Counter: {i:08}"); // Keep temporary value
