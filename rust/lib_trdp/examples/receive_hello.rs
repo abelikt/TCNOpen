@@ -34,14 +34,42 @@ use std::mem;
 use std::net;
 use std::os::raw;
 use std::ptr;
+use clap::Parser;
 
 use lib_trdp;
 use lib_trdp::debug_callback;
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[arg(short, long)]
+    /// Source IP
+    source: String,
+
+    /// Communication IO
+    #[arg(short, long)]
+    comid: Option<u32>,
+}
 
 /// The code of this example is mostly aligned with the sendHello.c
 /// This is very unfinished demo application
 ///
 fn main() {
+    let cli = Cli::parse();
+
+    let src_ip = cli
+        .source
+        .parse::<net::Ipv4Addr>()
+        .expect("Cannot parse source address");
+    println!("Source will be  {src_ip:?}");
+
+    let comid: u32 = cli.comid.unwrap_or_else(
+        || {
+            println!("No comid specified default will be zero");
+            0
+        }
+    );
+
     let pRefCon: *mut raw::c_void = ptr::null_mut();
 
     // Todo direct assignment fails, so we pipe through callback
@@ -67,7 +95,7 @@ fn main() {
     let mut psession: *mut TRDP_SESSION = &mut session;
     let pAppHandle: *mut TRDP_APP_SESSION_T = &mut psession as *mut TRDP_APP_SESSION_T;
 
-    let ownIpAddr: TRDP_IP_ADDR_T = 0xc0a83567; // 192.168.53.103
+    let ownIpAddr: TRDP_IP_ADDR_T = src_ip.to_bits();
 
     let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
     let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
@@ -109,9 +137,6 @@ fn main() {
     let mut ele: PD_ELE = unsafe { mem::zeroed() };
     let mut subHandle: TRDP_SUB_T = &mut ele;
     let pSubHandle: *mut TRDP_SUB_T = &mut subHandle;
-
-    let comid = 0; // sendHello.c sends with comid 0
-                   // send_hello : 1001;
 
     let err = unsafe {
         tlp_subscribe(

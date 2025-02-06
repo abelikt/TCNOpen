@@ -62,13 +62,12 @@ fn main() {
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
-    let comid: u32 = match cli.comid {
-        Some(id) => id,
-        None => {
+    let comid: u32 = cli.comid.unwrap_or_else(
+        || {
             println!("No comid specified default will be zero");
             0
         }
-    };
+    );
 
     // The user context
     let pRefCon: *mut raw::c_void = ptr::null_mut();
