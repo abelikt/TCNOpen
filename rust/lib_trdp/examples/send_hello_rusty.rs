@@ -2,15 +2,14 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-//! Crude implementation of example sendHello that uses lib_trdp from Rust.
-//! Should be compatible to the C example sendHello.
-//! Structure and variable names are also kept similar to be able to map Rust
-//! and C calls. No abstraction is used in this example leading to non-idiomatic
-//! code wit many unsafe calls and inherent pointer madness.
+//! Crude implementation of example sendHello that uses lib_trdp from Rust that should provide
+//! a nicer, more idiomatic, rusty experience.
+//!
+//! Should still be compatible to the C example sendHello and Rust send_hello.
 //!
 //! Run Example:
 //!
-//!     cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104 --comid 0
+//!     cargo run --example send_hello_rusty -- --destination 192.168.53.103 --source 192.168.53.104 --comid 1001
 //!
 //! Add second address
 //!     sudo ip address add 192.168.53.103/24 dev enp8s0
