@@ -101,10 +101,12 @@ Run Rust Examples
 Both Rust examples should behave similar to the C examples and also work
 interchangeable.
 
-    cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104
+    cargo run --example send_hello -- --destination 192.168.53.103 --source 192.168.53.104 -c 1001
     cargo run --example send_hello -- --help
 
-    cargo run --example receive_hello
+    cargo run --example receive_hello -- -s 192.168.53.103 -c 1001
+    cargo run --example receive_hello -- --help
+
 
 Build SDTv2
 -----------
