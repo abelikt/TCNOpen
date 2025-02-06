@@ -62,6 +62,18 @@ impl TrdpSender {
             },
         }
     }
+
+    fn init(&self) {
+        // Enable debug callback
+        let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
+        let debug = Some(callback);
+
+        let pMemConfig = &self.memConfig as *const TRDP_MEM_CONFIG_T;
+        let pRefCon = self.pRefCon;
+        let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
+
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_init failed");
+    }
 }
 
 /// The code of this example is mostly aligned with the sendHello.c
@@ -86,22 +98,8 @@ fn main() {
         0
     });
 
-    // Enable debug callback
-    // Todo direct assignment fails, so we pipe through callback
-    // = note: expected enum `Option<unsafe extern "C" fn(_, _, _, _, _, _)>`
-    // found enum `Option<unsafe extern "C" fn(_, _, _, _, _, _) {debug_callback}>`
-    // let debug = Some( debug_callback );
-    let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
-    let debug = Some(callback);
-
     let sender = TrdpSender::new();
-
-    let pMemConfig = &sender.memConfig as *const TRDP_MEM_CONFIG_T;
-    let pRefCon = sender.pRefCon;
-
-    let err = unsafe { tlc_init(debug, pRefCon, pMemConfig) };
-
-    assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_init failed");
+    sender.init();
 
     let mut session: TRDP_SESSION = unsafe { mem::zeroed() };
     let mut psession: *mut TRDP_SESSION = &mut session;
