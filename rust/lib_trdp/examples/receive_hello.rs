@@ -30,11 +30,11 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use libc;
 //use std::ffi::CStr;
+use clap::Parser;
 use std::mem;
 use std::net;
 use std::os::raw;
 use std::ptr;
-use clap::Parser;
 
 use lib_trdp;
 use lib_trdp::debug_callback;
@@ -63,12 +63,10 @@ fn main() {
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
-    let comid: u32 = cli.comid.unwrap_or_else(
-        || {
-            println!("No comid specified default will be zero");
-            0
-        }
-    );
+    let comid: u32 = cli.comid.unwrap_or_else(|| {
+        println!("No comid specified default will be zero");
+        0
+    });
 
     let pRefCon: *mut raw::c_void = ptr::null_mut();
 

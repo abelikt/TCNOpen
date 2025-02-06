@@ -22,8 +22,8 @@ use std::mem;
 use std::net;
 use std::os::raw;
 use std::ptr;
-use std::time;
 use std::thread;
+use std::time;
 
 use clap::Parser;
 
@@ -45,17 +45,17 @@ struct Cli {
     comid: Option<u32>,
 }
 
-struct TrdpSender{
+struct TrdpSender {
     // The user context
     pRefCon: *mut raw::c_void,
-    memConfig : TRDP_MEM_CONFIG_T,
+    memConfig: TRDP_MEM_CONFIG_T,
 }
 
-impl TrdpSender{
+impl TrdpSender {
     fn new() -> Self {
-        TrdpSender{
-            pRefCon : ptr::null_mut(),
-            memConfig : TRDP_MEM_CONFIG_T {
+        TrdpSender {
+            pRefCon: ptr::null_mut(),
+            memConfig: TRDP_MEM_CONFIG_T {
                 p: ptr::null_mut() as *mut UINT8,
                 size: 160000,
                 prealloc: [0; 15],
@@ -81,12 +81,10 @@ fn main() {
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
-    let comid: u32 = cli.comid.unwrap_or_else(
-        || {
-            println!("No comid specified default will be zero");
-            0
-        }
-    );
+    let comid: u32 = cli.comid.unwrap_or_else(|| {
+        println!("No comid specified default will be zero");
+        0
+    });
 
     // Enable debug callback
     // Todo direct assignment fails, so we pipe through callback
@@ -192,7 +190,6 @@ fn main() {
     let p_tv: *mut i32 = ptr::null_mut();
 
     for i in 0..=100 {
-
         println!("Procesing interval: {}", i);
 
         let delay = time::Duration::from_millis(100);

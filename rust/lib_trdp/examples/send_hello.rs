@@ -62,12 +62,10 @@ fn main() {
         .expect("Cannot parse source address");
     println!("Source will be  {src_ip:?}");
 
-    let comid: u32 = cli.comid.unwrap_or_else(
-        || {
-            println!("No comid specified default will be zero");
-            0
-        }
-    );
+    let comid: u32 = cli.comid.unwrap_or_else(|| {
+        println!("No comid specified default will be zero");
+        0
+    });
 
     // The user context
     let pRefCon: *mut raw::c_void = ptr::null_mut();
@@ -176,7 +174,6 @@ fn main() {
     assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
 
     for i in 0..=100 {
-
         println!("Procesing interval: {}", i);
 
         // Create a file descriptor set for later use with the select call
