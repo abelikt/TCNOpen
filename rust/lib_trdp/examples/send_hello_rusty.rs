@@ -54,8 +54,8 @@ struct TrdpSender {
     psession: TRDP_APP_SESSION_T,
     processConfig: TRDP_PROCESS_CONFIG_T,
     pdDefault: TRDP_PD_CONFIG_T,
-    pubHandle : PD_ELE,
-    pubData : Vec<u8>
+    pubHandle: PD_ELE,
+    pubData: Vec<u8>,
 }
 
 impl TrdpSender {
@@ -76,14 +76,13 @@ impl TrdpSender {
             processConfig,
             pdDefault,
             pubHandle,
-            pubData : Vec::new(),
+            pubData: Vec::new(),
         }
     }
 
     fn init(&mut self) {
         // Enable debug callback
-        let callback: unsafe extern "C" fn(_, _, _, _, _, _)
-            = lib_trdp::debug_callback;
+        let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
         let debug = Some(callback);
 
         let pMemConfig = &self.memConfig as *const TRDP_MEM_CONFIG_T;
@@ -127,12 +126,11 @@ impl TrdpSender {
         };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_openSession failed");
     }
-    fn publish(&mut self, comid:u32) {
+    fn publish(&mut self, comid: u32) {
         let ownIpAddr: TRDP_IP_ADDR_T = self.src_ip.to_bits();
         let destIpAddr: TRDP_IP_ADDR_T = self.dest_ip.to_bits();
 
-        let mut ele: PD_ELE = unsafe { mem::zeroed() };
-        let mut pubHandle: TRDP_PUB_T = &mut ele;
+        let mut pubHandle: TRDP_PUB_T = &mut self.pubHandle;
         let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
 
         let interval = 100_000;
@@ -150,7 +148,7 @@ impl TrdpSender {
         let message_bytes = initial_message.as_bytes();
         let size = message_bytes.len();
         data[..size].copy_from_slice(message_bytes);
-        let pData = data.as_ptr();
+
         let err = unsafe {
             tlp_publish(
                 self.psession, // appHandle: TRDP_APP_SESSION_T,
@@ -166,7 +164,7 @@ impl TrdpSender {
                 interval,              //interval: UINT32,
                 0,                     //redId: UINT32,
                 TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
-                data.as_ptr(),                 //pData: *const UINT8,
+                data.as_ptr(),         //pData: *const UINT8,
                 buffer_size as u32,    //dataSize: UINT32,
             )
         };
@@ -174,7 +172,6 @@ impl TrdpSender {
 
         let err = unsafe { tlc_updateSession(self.psession) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
-
     }
 }
 
@@ -223,7 +220,14 @@ fn main() {
         let size = message_bytes.len();
         data[..size].copy_from_slice(message_bytes);
 
-        let err = unsafe { tlp_put(sender.psession, &mut sender.pubHandle, data.as_ptr(), size as u32) };
+        let err = unsafe {
+            tlp_put(
+                sender.psession,
+                &mut sender.pubHandle,
+                data.as_ptr(),
+                size as u32,
+            )
+        };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
     }
     unsafe { tlp_unpublish(sender.psession, &mut sender.pubHandle) };
