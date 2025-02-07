@@ -54,12 +54,15 @@ struct TrdpSender {
     psession: TRDP_APP_SESSION_T,
     processConfig: TRDP_PROCESS_CONFIG_T,
     pdDefault: TRDP_PD_CONFIG_T,
+    pubHandle : PD_ELE,
+    pubData : Vec<u8>
 }
 
 impl TrdpSender {
     fn new(dest_ip: net::Ipv4Addr, src_ip: net::Ipv4Addr) -> Self {
         let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
         let pdDefault: TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
+        let pubHandle: PD_ELE = unsafe { mem::zeroed() };
         TrdpSender {
             pRefCon: ptr::null_mut(),
             memConfig: TRDP_MEM_CONFIG_T {
@@ -72,6 +75,8 @@ impl TrdpSender {
             psession: ptr::null_mut(),
             processConfig,
             pdDefault,
+            pubHandle,
+            pubData : Vec::new(),
         }
     }
 
@@ -122,6 +127,55 @@ impl TrdpSender {
         };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_openSession failed");
     }
+    fn publish(&mut self, comid:u32) {
+        let ownIpAddr: TRDP_IP_ADDR_T = self.src_ip.to_bits();
+        let destIpAddr: TRDP_IP_ADDR_T = self.dest_ip.to_bits();
+
+        let mut ele: PD_ELE = unsafe { mem::zeroed() };
+        let mut pubHandle: TRDP_PUB_T = &mut ele;
+        let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
+
+        let interval = 100_000;
+
+        let buffer_size: usize = 24;
+
+        self.pubData.resize(buffer_size, 0);
+
+        //let mut data: [u8; buffer_size] = [0x00; buffer_size];
+        //let pData = &data as *const u8;
+        let data = self.pubData.as_mut_slice();
+
+        // Mimic C example
+        let initial_message = format!("Hello World");
+        let message_bytes = initial_message.as_bytes();
+        let size = message_bytes.len();
+        data[..size].copy_from_slice(message_bytes);
+        let pData = data.as_ptr();
+        let err = unsafe {
+            tlp_publish(
+                self.psession, // appHandle: TRDP_APP_SESSION_T,
+                pPubHandle,
+                ptr::null(),           //pUserRef: *const ::std::os::raw::c_void,
+                None,                  //pfCbFunction: TRDP_PD_CALLBACK_T,
+                0,                     //serviceId: UINT32,
+                comid,                 //comId: UINT32,
+                0,                     //etbTopoCnt: UINT32,
+                0,                     //opTrnTopoCnt: UINT32,
+                ownIpAddr,             //srcIpAddr: TRDP_IP_ADDR_T,
+                destIpAddr,            // destIpAddr: TRDP_IP_ADDR_T,
+                interval,              //interval: UINT32,
+                0,                     //redId: UINT32,
+                TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
+                data.as_ptr(),                 //pData: *const UINT8,
+                buffer_size as u32,    //dataSize: UINT32,
+            )
+        };
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_publish failed");
+
+        let err = unsafe { tlc_updateSession(self.psession) };
+        assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
+
+    }
 }
 
 /// The code of this example is mostly aligned with the sendHello.c
@@ -148,51 +202,9 @@ fn main() {
 
     let mut sender = TrdpSender::new(dest_ip, src_ip);
     sender.init();
+    sender.publish(comid);
 
-    let ownIpAddr: TRDP_IP_ADDR_T = sender.src_ip.to_bits();
-    let destIpAddr: TRDP_IP_ADDR_T = sender.dest_ip.to_bits();
-
-    let mut psession: *mut TRDP_SESSION = sender.psession;
-
-    let mut ele: PD_ELE = unsafe { mem::zeroed() };
-    let mut pubHandle: TRDP_PUB_T = &mut ele;
-    let pPubHandle: *mut TRDP_PUB_T = &mut pubHandle;
-
-    let interval = 100_000;
-
-    const buffer_size: usize = 24;
-    let mut data: [u8; buffer_size] = [0x00; buffer_size];
-    let pData = &data as *const u8;
-
-    // Mimic C example
-    let initial_message = format!("Hello World");
-    let message_bytes = initial_message.as_bytes();
-    let size = message_bytes.len();
-    data[..size].copy_from_slice(message_bytes);
-
-    let err = unsafe {
-        tlp_publish(
-            psession, // appHandle: TRDP_APP_SESSION_T,
-            pPubHandle,
-            ptr::null(),           //pUserRef: *const ::std::os::raw::c_void,
-            None,                  //pfCbFunction: TRDP_PD_CALLBACK_T,
-            0,                     //serviceId: UINT32,
-            comid,                 //comId: UINT32,
-            0,                     //etbTopoCnt: UINT32,
-            0,                     //opTrnTopoCnt: UINT32,
-            ownIpAddr,             //srcIpAddr: TRDP_IP_ADDR_T,
-            destIpAddr,            // destIpAddr: TRDP_IP_ADDR_T,
-            interval,              //interval: UINT32,
-            0,                     //redId: UINT32,
-            TRDP_FLAGS_NONE as u8, // pktFlags: TRDP_FLAGS_T,
-            pData,                 //pData: *const UINT8,
-            buffer_size as u32,    //dataSize: UINT32,
-        )
-    };
-    assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_publish failed");
-
-    let err = unsafe { tlc_updateSession(psession) };
-    assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
+    let data = sender.pubData.as_mut_slice();
 
     let p_rfds: *mut fd_set = ptr::null_mut();
     let p_tv: *mut i32 = ptr::null_mut();
@@ -203,7 +215,7 @@ fn main() {
         let delay = time::Duration::from_millis(100);
         thread::sleep(delay);
 
-        let err = unsafe { tlc_process(psession, p_rfds, p_tv) };
+        let err = unsafe { tlc_process(sender.psession, p_rfds, p_tv) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
         let temp_string = format!("Just a Counter: {i:08}"); // Keep temporary value
@@ -211,10 +223,10 @@ fn main() {
         let size = message_bytes.len();
         data[..size].copy_from_slice(message_bytes);
 
-        let err = unsafe { tlp_put(psession, pubHandle, pData, size as u32) };
+        let err = unsafe { tlp_put(sender.psession, &mut sender.pubHandle, data.as_ptr(), size as u32) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
     }
-    unsafe { tlp_unpublish(psession, pubHandle) };
-    unsafe { tlc_closeSession(psession) };
+    unsafe { tlp_unpublish(sender.psession, &mut sender.pubHandle) };
+    unsafe { tlc_closeSession(sender.psession) };
     unsafe { tlc_terminate() };
 }
