@@ -165,6 +165,11 @@ impl TrdpSender {
         let err = unsafe { tlc_updateSession(self.psession) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_updateSession failed");
     }
+    fn deinit(&self) {
+        unsafe { tlp_unpublish(self.psession, self.pPubHandle) };
+        unsafe { tlc_closeSession(self.psession) };
+        unsafe { tlc_terminate() };
+    }
 }
 
 /// The code of this example is mostly aligned with the sendHello.c
@@ -194,17 +199,14 @@ fn main() {
     sender.publish(comid);
 
     let data = sender.pubData.as_mut_slice();
-
-    let p_rfds: *mut fd_set = ptr::null_mut();
-    let p_tv: *mut i32 = ptr::null_mut();
+    let delay = time::Duration::from_millis(100);
 
     for i in 0..=100 {
         println!("Procesing interval: {}", i);
 
-        let delay = time::Duration::from_millis(100);
         thread::sleep(delay);
 
-        let err = unsafe { tlc_process(sender.psession, p_rfds, p_tv) };
+        let err = unsafe { tlc_process(sender.psession, ptr::null_mut(), ptr::null_mut()) };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_process failed");
 
         let temp_string = format!("Just a Counter: {i:08}"); // Keep temporary value
@@ -222,7 +224,5 @@ fn main() {
         };
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlp_put failed");
     }
-    unsafe { tlp_unpublish(sender.psession, sender.pPubHandle) };
-    unsafe { tlc_closeSession(sender.psession) };
-    unsafe { tlc_terminate() };
+    sender.deinit();
 }
