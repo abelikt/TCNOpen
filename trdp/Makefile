@@ -38,7 +38,7 @@ include rules.mk
 
 MD = mkdir -p
 	
-CFLAGS += -D$(TARGET_OS)
+CFLAGS += -D$(TARGET_OS) -Wall
 
 # Set paths
 INCPATH += -I src/api
