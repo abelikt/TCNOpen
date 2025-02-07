@@ -49,17 +49,17 @@ struct TrdpSender {
     // The user context
     pRefCon: *mut raw::c_void,
     memConfig: TRDP_MEM_CONFIG_T,
-    dest_ip : net::Ipv4Addr,
-    src_ip : net::Ipv4Addr,
+    dest_ip: net::Ipv4Addr,
+    src_ip: net::Ipv4Addr,
     psession: TRDP_APP_SESSION_T,
     processConfig: TRDP_PROCESS_CONFIG_T,
-    pdDefault : TRDP_PD_CONFIG_T,
+    pdDefault: TRDP_PD_CONFIG_T,
 }
 
 impl TrdpSender {
-    fn new(dest_ip : net::Ipv4Addr, src_ip : net::Ipv4Addr) -> Self {
+    fn new(dest_ip: net::Ipv4Addr, src_ip: net::Ipv4Addr) -> Self {
         let processConfig: TRDP_PROCESS_CONFIG_T = unsafe { mem::zeroed() };
-        let pdDefault : TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
+        let pdDefault: TRDP_PD_CONFIG_T = unsafe { mem::zeroed() };
         TrdpSender {
             pRefCon: ptr::null_mut(),
             memConfig: TRDP_MEM_CONFIG_T {
@@ -69,7 +69,7 @@ impl TrdpSender {
             },
             dest_ip,
             src_ip,
-            psession : ptr::null_mut(),
+            psession: ptr::null_mut(),
             processConfig,
             pdDefault,
         }
@@ -77,7 +77,8 @@ impl TrdpSender {
 
     fn init(&mut self) {
         // Enable debug callback
-        let callback: unsafe extern "C" fn(_, _, _, _, _, _) = lib_trdp::debug_callback;
+        let callback: unsafe extern "C" fn(_, _, _, _, _, _)
+            = lib_trdp::debug_callback;
         let debug = Some(callback);
 
         let pMemConfig = &self.memConfig as *const TRDP_MEM_CONFIG_T;
@@ -87,7 +88,6 @@ impl TrdpSender {
         assert_eq!(err, TRDP_ERR_T_TRDP_NO_ERR, "tlc_init failed");
 
         let pAppHandle: *mut TRDP_APP_SESSION_T = &mut self.psession as *mut TRDP_APP_SESSION_T;
-
         let leaderIpAddr: TRDP_IP_ADDR_T = 0x0;
         let pMarshall: *const TRDP_MARSHALL_CONFIG_T = ptr::null();
 
@@ -105,13 +105,9 @@ impl TrdpSender {
         };
 
         let pPdDefault: *const TRDP_PD_CONFIG_T = &self.pdDefault as *const TRDP_PD_CONFIG_T;
-
         let pMdDefault: *const TRDP_MD_CONFIG_T = ptr::null();
-
         let pProcessConfig: *const TRDP_PROCESS_CONFIG_T = &self.processConfig;
-
         let ownIpAddr: TRDP_IP_ADDR_T = self.src_ip.to_bits();
-        let destIpAddr: TRDP_IP_ADDR_T = self.dest_ip.to_bits();
 
         let err = unsafe {
             tlc_openSession(
